@@ -1,0 +1,4 @@
+import { useFinanceStore } from '../transactions/store';
+import { calculateBalance } from '../../lib/calculations/finance';
+import { formatCurrency } from '../../lib/formatters/formatters';
+export function AccountsPage() { const { accounts, transactions } = useFinanceStore(); return <div className="space-y-6"><h1 className="text-3xl font-black">Contas e carteiras</h1><div className="grid gap-4 md:grid-cols-3">{accounts.map(a=><section key={a.id} className="card p-5"><div className="flex justify-between"><b>{a.name}</b><span className="badge bg-slate-100 text-slate-700">{a.type}</span></div><p className="mt-4 text-sm text-slate-500">Saldo atual calculado</p><h2 className="text-2xl font-black">{formatCurrency(calculateBalance(transactions.filter(t=>t.account===a.name), a.initialBalance))}</h2><p className="mt-2 text-sm">{a.active?'Ativa':'Inativa'}</p></section>)}</div></div>; }
