@@ -97,52 +97,52 @@ export function TransactionForm({
       setForm({ ...form, [key]: event.target.value });
 
   return (
-    <form onSubmit={submit} className="card grid gap-4 p-5 md:grid-cols-3">
-      <div>
+    <form onSubmit={submit} className="card grid gap-4 p-5 sm:p-6 md:grid-cols-3">
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Data</label>
         <input className="input" type="date" value={form.date} onChange={input('date')} required />
       </div>
-      <div className="md:col-span-2">
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45 md:col-span-2">
         <label className="label">Descrição</label>
         <input className="input" value={form.description} onChange={input('description')} required placeholder="Ex.: Mercado, salário, Uber" />
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Tipo</label>
         <select className="input" value={form.type} onChange={input('type')}>{types.map((value) => <option key={value}>{value}</option>)}</select>
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Categoria</label>
         <select className="input" value={form.category} onChange={input('category')}>{categories.map((category) => <option key={category.id}>{category.name}</option>)}</select>
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Subcategoria</label>
         <input className="input" value={form.subcategory} onChange={input('subcategory')} placeholder="Opcional" />
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Valor</label>
         <input className="input" inputMode="decimal" value={form.value} onChange={input('value')} placeholder="320,50" required />
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Conta</label>
         <input className="input" value={form.account} onChange={input('account')} />
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Forma de pagamento</label>
         <select className="input" value={form.paymentMethod} onChange={input('paymentMethod')}>{methods.map((value) => <option key={value}>{value}</option>)}</select>
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Status</label>
         <select className="input" value={form.status} onChange={input('status')}>{statuses.map((value) => <option key={value}>{value}</option>)}</select>
       </div>
-      <div>
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45">
         <label className="label">Vencimento</label>
         <input className="input" type="date" value={form.dueDate} onChange={input('dueDate')} />
       </div>
-      <div className="md:col-span-2">
+      <div className="rounded-2xl bg-slate-50/70 p-3 dark:bg-slate-900/45 md:col-span-2">
         <label className="label">Observações</label>
         <input className="input" value={form.notes} onChange={input('notes')} placeholder="Campo livre" />
       </div>
-      <div className="flex gap-3 md:col-span-3">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row md:col-span-3">
         <button className="btn btn-primary" type="submit">{editing ? 'Salvar alterações' : 'Salvar lançamento'}</button>
         {editing && <button className="btn btn-secondary" type="button" onClick={onCancelEdit}>Cancelar edição</button>}
       </div>

@@ -71,15 +71,14 @@ export function TransactionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
-        <div>
-          <h1 className="text-3xl font-black">Lançamentos</h1>
-          <p className="text-slate-500">Cadastre, edite, duplique, filtre e marque movimentações como pagas.</p>
-        </div>
+      <div className="card p-5 sm:p-6">
+        <p className="text-xs font-black uppercase tracking-[.2em] text-teal-700 dark:text-teal-300">Movimentações</p>
+        <h1 className="mt-1 text-3xl font-black tracking-[-.05em] sm:text-4xl">Lançamentos</h1>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">Cadastre, edite, duplique, filtre e marque movimentações como pagas.</p>
       </div>
       <TransactionForm categories={categories} editing={editing} onCancelEdit={() => setEditing(null)} onSave={(transaction) => { upsertTransaction(transaction); setEditing(null); }} />
-      <section className="card p-5">
-        <div className="mb-4 grid gap-3 md:grid-cols-4 xl:grid-cols-7">
+      <section className="card p-5 sm:p-6">
+        <div className="mb-5 grid gap-3 rounded-3xl bg-slate-50/70 p-3 dark:bg-slate-900/45 md:grid-cols-4 xl:grid-cols-7">
           <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-3 text-slate-400" size={18} />
             <input className="input pl-10" value={filters.search} onChange={update('search')} placeholder="Buscar descrição, categoria ou conta" />

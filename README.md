@@ -1,5 +1,7 @@
 # FinançasPro
 
+**Versão 1.2** — acabamento visual premium, UX refinada, responsividade e padronização visual sem alteração de regras de negócio.
+
 Aplicação React + TypeScript local-first para organização de finanças pessoais/familiares, com importação Excel/CSV, validação robusta, dashboard, relatórios, backup JSON/criptografado e persistência em IndexedDB.
 
 ## Rodar localmente
