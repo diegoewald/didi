@@ -9,7 +9,7 @@ export type ColumnMapping = Partial<Record<ColumnKey | 'Crédito' | 'Débito' | 
 
 const synonyms: Record<ColumnKey | 'Crédito' | 'Débito' | 'Saldo', string[]> = {
   Data: ['data', 'emissao', 'emissão', 'lancamento', 'lançamento', 'dt', 'data movimento', 'data transação'],
-  Descrição: ['descricao', 'descrição', 'historico', 'histórico', 'detalhe', 'nome', 'lançamento', 'memo'],
+  Descrição: ['descricao', 'descrição', 'historico', 'histórico', 'detalhe', 'nome', 'memo'],
   Tipo: ['tipo', 'natureza', 'entrada/saida', 'entrada saída', 'debito/credito'],
   Categoria: ['categoria', 'grupo', 'classificacao', 'classificação'],
   Subcategoria: ['subcategoria', 'sub grupo', 'subgrupo'],
@@ -69,6 +69,7 @@ export async function readSpreadsheet(file: File): Promise<{ rows: SpreadsheetRo
   } catch (error) {
     throw new Error(
       error instanceof Error ? `Falha de leitura do arquivo: ${error.message}` : 'Falha de leitura do Excel/CSV.',
+      { cause: error },
     );
   }
 }
@@ -181,7 +182,7 @@ export function validateRows(
 
 export function buildTemplateWorkbook(): XLSX.WorkBook {
   const rows = [
-    spreadsheetColumns,
+    [...spreadsheetColumns],
     ['01/05/2026', 'Salário', 'Receita', 'Salário', 'Mensal', '2500,00', 'Banco', 'Transferência', 'Pago', 1, 1, '01/05/2026', '01/05/2026', 'Salário mensal', 'REC001'],
     ['02/05/2026', 'Mercado', 'Despesa', 'Alimentação', 'Supermercado', '320,50', 'Cartão Nubank', 'Crédito', 'Pago', 1, 1, '10/06/2026', '02/05/2026', 'Compra do mês', 'DES001'],
     ['03/05/2026', 'Internet', 'Despesa', 'Contas da casa', 'Internet', '99,90', 'Banco', 'Pix', 'Pendente', 1, 1, '10/05/2026', '', 'Conta mensal', 'DES002'],

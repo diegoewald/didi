@@ -6,16 +6,18 @@ import type { ImportResult, SpreadsheetRow, Transaction } from '../../types';
 import { ColumnMapper } from './ColumnMapper';
 import { ImportPreviewTable } from './ImportPreviewTable';
 
-export function ImportWizard({ existing, onConfirm }: { existing: Transaction[]; onConfirm: (rows: Transaction[]) => Promise<void> }) {
+export function ImportWizard({ existing, onConfirm }: { existing: Transaction[]; onConfirm: (rows: Transaction[]) => Promise<number> }) {
   const [step, setStep] = useState(1);
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<SpreadsheetRow[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({});
   const [result, setResult] = useState<ImportResult>();
   const [message, setMessage] = useState('');
-  const upload = async (file?: File) => { if (!file) return; if (!/\.(xlsx|csv)$/i.test(file.name)) { setMessage('Arquivo inválido. Envie .xlsx ou .csv.'); return; } try { setMessage('Lendo planilha localmente...'); const data = await readSpreadsheet(file); setRows(data.rows); setHeaders(data.headers); setMapping(detectColumnMapping(data.headers)); setStep(3); setMessage(`${data.rows.length} linhas lidas. Nenhum dado foi enviado para servidores.`); } catch(e) { setMessage(e instanceof Error ? e.message : 'Erro inesperado ao ler arquivo.'); } };
+  const [completed, setCompleted] = useState(false);
+  const reset = () => { setStep(1); setHeaders([]); setRows([]); setMapping({}); setResult(undefined); setMessage(''); setCompleted(false); };
+  const upload = async (file?: File) => { if (!file) return; if (!/\.(xlsx|csv)$/i.test(file.name)) { setMessage('Arquivo inválido. Envie .xlsx ou .csv.'); return; } try { setMessage('Lendo planilha localmente...'); const data = await readSpreadsheet(file); setRows(data.rows); setHeaders(data.headers); setMapping(detectColumnMapping(data.headers)); setCompleted(false); setStep(3); setMessage(`${data.rows.length} linhas lidas. Nenhum dado foi enviado para servidores.`); } catch(e) { setMessage(e instanceof Error ? e.message : 'Erro inesperado ao ler arquivo.'); } };
   const validate = () => { const r = validateRows(rows, mapping, existing); setResult(r); setStep(5); setMessage(`${r.validRows.length} válidas, ${r.errors.length} erro(s), ${r.duplicates.length} duplicada(s), ${r.ignoredRows} vazia(s).`); };
-  const confirm = async () => { if (!result?.validRows.length) return; await onConfirm(result.validRows); setStep(7); setMessage(`${result.validRows.length} lançamentos importados com sucesso.`); };
+  const confirm = async () => { if (completed) return; if (!result?.validRows.length) { setMessage('Nenhuma linha válida foi importada. Revise os erros e tente novamente.'); return; } const imported = await onConfirm(result.validRows); setCompleted(true); setStep(7); setRows([]); setHeaders([]); setMapping({}); setMessage(imported > 0 ? `Importação concluída com sucesso. ${imported} lançamentos foram importados.` : 'Nenhuma linha nova foi importada. Os lançamentos desta prévia já existiam.'); };
   const template = () => { XLSX.writeFile(buildTemplateWorkbook(), 'modelo-financaspro.xlsx'); };
   const steps = ['Upload', 'Leitura', 'Mapeamento', 'Validação', 'Prévia', 'Confirmação', 'Resultado'];
 
@@ -49,7 +51,7 @@ export function ImportWizard({ existing, onConfirm }: { existing: Transaction[];
         </label>
       )}
       {step >= 3 && step < 5 && <><ColumnMapper headers={headers} mapping={mapping} onChange={setMapping} /><button className="btn btn-primary self-start" onClick={validate}>Validar dados e gerar prévia</button></>}
-      {step >= 5 && result && <div className="space-y-5"><div className="grid gap-3 md:grid-cols-4"><Metric label="Importar" value={result.validRows.length} /><Metric label="Erros" value={result.errors.length} /><Metric label="Duplicados" value={result.duplicates.length} /><Metric label="Ignorados" value={result.ignoredRows} /></div>{result.errors.concat(result.duplicates).length > 0 && <div className="max-h-52 overflow-auto rounded-3xl border border-rose-200 bg-rose-50/90 p-4 text-sm font-semibold text-rose-900 dark:border-rose-900 dark:bg-rose-950/45 dark:text-rose-100 scrollbar">{result.errors.concat(result.duplicates).map((error, index) => <p key={index}><b>Linha {error.row}</b> {error.field}: {error.message}</p>)}</div>}<ImportPreviewTable rows={result.validRows} /><button className="btn btn-primary" disabled={!result.validRows.length} onClick={confirm}>Confirmar importação</button></div>}
+      {step >= 5 && result && <div className="space-y-5"><div className="grid gap-3 md:grid-cols-4"><Metric label="Importar" value={result.validRows.length} /><Metric label="Erros" value={result.errors.length} /><Metric label="Duplicados" value={result.duplicates.length} /><Metric label="Ignorados" value={result.ignoredRows} /></div>{result.errors.concat(result.duplicates).length > 0 && <div className="max-h-52 overflow-auto rounded-3xl border border-rose-200 bg-rose-50/90 p-4 text-sm font-semibold text-rose-900 dark:border-rose-900 dark:bg-rose-950/45 dark:text-rose-100 scrollbar">{result.errors.concat(result.duplicates).map((error, index) => <p key={index}><b>Linha {error.row}</b> {error.field}: {error.message}</p>)}</div>}<ImportPreviewTable rows={result.validRows} /><div className="flex flex-wrap gap-3"><button className="btn btn-primary" disabled={!result.validRows.length || completed} onClick={confirm}>{completed ? 'Importação concluída' : 'Confirmar importação'}</button>{completed && <button className="btn btn-secondary" onClick={reset}>Importar outra planilha</button>}</div></div>}
     </section>
   );
 }

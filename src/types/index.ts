@@ -1,7 +1,7 @@
 export type TransactionType = 'Receita' | 'Despesa' | 'Transferência';
 export type TransactionStatus = 'Pago' | 'Pendente' | 'Atrasado' | 'Cancelado';
 export type PaymentMethod = 'Pix' | 'Crédito' | 'Débito' | 'Dinheiro' | 'Boleto' | 'Transferência';
-export type AccountType = 'Banco' | 'Dinheiro' | 'Carteira' | 'Cartão de crédito' | 'Conta digital' | 'Investimento';
+export type AccountType = 'Banco' | 'Dinheiro' | 'Carteira' | 'Cartão de crédito' | 'Conta digital' | 'Investimento' | 'Outro';
 
 export interface Transaction {
   id: string;

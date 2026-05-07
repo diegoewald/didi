@@ -37,14 +37,26 @@ function currentPath(): string {
 
 export default function App() {
   const [path, setPath] = useState(currentPath());
-  const [dark, setDark] = useState(false);
+  const [manualDark, setManualDark] = useState(false);
   const load = useFinanceStore((state) => state.load);
   const loading = useFinanceStore((state) => state.loading);
   const error = useFinanceStore((state) => state.error);
+  const settings = useFinanceStore((state) => state.settings);
+  const upsertSettings = useFinanceStore((state) => state.upsertSettings);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const dark = settings.theme === 'system' ? manualDark : settings.theme === 'dark';
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const sync = () => setManualDark(media.matches);
+    sync();
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
@@ -65,7 +77,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AppLayout current={path} navigate={navigate} dark={dark} toggleDark={() => setDark((value) => !value)}>
+      <AppLayout current={path} navigate={navigate} dark={dark} toggleDark={() => upsertSettings({ ...settings, theme: dark ? 'light' : 'dark' })}>
         <div className="mb-4 rounded-3xl bg-emerald-50 p-4 text-sm font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
           Seus dados financeiros ficam salvos somente no IndexedDB deste navegador. Exporte backups para não perder informações ao limpar o navegador ou trocar de dispositivo.
         </div>

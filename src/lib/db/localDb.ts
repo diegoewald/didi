@@ -2,6 +2,8 @@ import { openDB, type DBSchema } from 'idb';
 import type { Account, AppSettings, Budget, Category, CreditCard, Goal, Transaction } from '../../types';
 import { defaultAccounts, defaultBudgets, defaultCategories, defaultCreditCards, defaultGoals, defaultSettings } from '../../constants/defaults';
 
+type StoreName = 'transactions' | 'categories' | 'accounts' | 'creditCards' | 'budgets' | 'goals' | 'settings';
+
 interface FinancasProDB extends DBSchema {
   transactions: { key: string; value: Transaction };
   categories: { key: string; value: Category };
@@ -24,26 +26,26 @@ const dbPromise = openDB<FinancasProDB>('financaspro-local-db', 1, {
   },
 });
 
-export async function getAll<K extends keyof FinancasProDB>(store: K): Promise<FinancasProDB[K]['value'][]> {
+export async function getAll<K extends StoreName>(store: K): Promise<FinancasProDB[K]['value'][]> {
   return (await dbPromise).getAll(store);
 }
 
-export async function putMany<K extends keyof FinancasProDB>(store: K, values: FinancasProDB[K]['value'][]): Promise<void> {
+export async function putMany<K extends StoreName>(store: K, values: FinancasProDB[K]['value'][]): Promise<void> {
   const db = await dbPromise;
   const tx = db.transaction(store, 'readwrite');
   await Promise.all(values.map((value) => tx.store.put(value)));
   await tx.done;
 }
 
-export async function putOne<K extends keyof FinancasProDB>(store: K, value: FinancasProDB[K]['value']): Promise<void> {
+export async function putOne<K extends StoreName>(store: K, value: FinancasProDB[K]['value']): Promise<void> {
   await (await dbPromise).put(store, value);
 }
 
-export async function deleteOne<K extends keyof FinancasProDB>(store: K, id: string): Promise<void> {
+export async function deleteOne<K extends StoreName>(store: K, id: string): Promise<void> {
   await (await dbPromise).delete(store, id);
 }
 
-export async function clearStore<K extends keyof FinancasProDB>(store: K): Promise<void> {
+export async function clearStore<K extends StoreName>(store: K): Promise<void> {
   await (await dbPromise).clear(store);
 }
 
@@ -58,7 +60,7 @@ export async function seedDefaultsIfNeeded(): Promise<void> {
 
 export async function clearAllData(): Promise<void> {
   await Promise.all(
-    (['transactions', 'categories', 'accounts', 'creditCards', 'budgets', 'goals', 'settings'] as Array<keyof FinancasProDB>).map((store) =>
+    (['transactions', 'categories', 'accounts', 'creditCards', 'budgets', 'goals', 'settings'] as StoreName[]).map((store) =>
       clearStore(store),
     ),
   );
