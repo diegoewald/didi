@@ -3,7 +3,7 @@ import { routes } from '../../app/routes';
 
 export function Sidebar({ current, navigate }: { current: string; navigate: (path: string) => void }) {
   return (
-    <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 flex-col border-r border-white/60 bg-white/82 p-5 shadow-[18px_0_60px_rgba(15,23,42,.06)] backdrop-blur-2xl dark:border-slate-800/70 dark:bg-slate-950/78 lg:flex">
+    <aside className="fixed left-0 top-0 z-30 hidden h-screen w-72 flex-col border-r border-white/60 bg-white/80 p-5 shadow-[18px_0_60px_rgba(15,23,42,.06)] backdrop-blur-2xl dark:border-slate-800/70 dark:bg-slate-950/75 lg:flex">
       <button onClick={() => navigate('/dashboard')} className="group flex items-center gap-3 rounded-3xl p-2 text-left transition hover:bg-slate-100/80 dark:hover:bg-slate-900">
         <div className="rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-indigo-600 p-3 text-white shadow-xl shadow-teal-500/20 transition group-hover:scale-105">
           <ShieldCheck />
@@ -22,11 +22,11 @@ export function Sidebar({ current, navigate }: { current: string; navigate: (pat
               onClick={() => navigate(route.path)}
               className={`group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-extrabold transition-all duration-200 ${
                 active
-                  ? 'bg-slate-950 text-white shadow-xl shadow-slate-900/18 dark:bg-white dark:text-slate-950 dark:shadow-white/10'
+                  ? 'bg-slate-950 text-white shadow-xl shadow-slate-900/20 dark:bg-white dark:text-slate-950 dark:shadow-white/10'
                   : 'text-slate-600 hover:bg-white hover:text-slate-950 hover:shadow-md dark:text-slate-300 dark:hover:bg-slate-900 dark:hover:text-white'
               }`}
             >
-              <span className={`rounded-xl p-2 transition ${active ? 'bg-white/14 dark:bg-slate-950/10' : 'bg-slate-100 text-slate-500 group-hover:bg-teal-50 group-hover:text-teal-700 dark:bg-slate-900 dark:text-slate-400 dark:group-hover:bg-teal-950 dark:group-hover:text-teal-200'}`}>
+              <span className={`rounded-xl p-2 transition ${active ? 'bg-white/20 dark:bg-slate-950/10' : 'bg-slate-100 text-slate-500 group-hover:bg-teal-50 group-hover:text-teal-700 dark:bg-slate-900 dark:text-slate-400 dark:group-hover:bg-teal-950 dark:group-hover:text-teal-200'}`}>
                 <route.icon size={17} />
               </span>
               <span className="truncate">{route.label}</span>

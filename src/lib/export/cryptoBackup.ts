@@ -4,13 +4,24 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const asBufferSource = (bytes: Uint8Array): ArrayBuffer => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 const iterations = 210_000;
+const base64ChunkSize = 0x8000;
 
 function bytesToBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
+  let binary = '';
+  for (let index = 0; index < bytes.length; index += base64ChunkSize) {
+    const chunk = bytes.subarray(index, index + base64ChunkSize);
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
 }
 
 function base64ToBytes(value: string): Uint8Array {
-  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {

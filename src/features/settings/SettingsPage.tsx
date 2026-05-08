@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AppSettings } from '../../types';
 import { confirmStrong } from '../../components/ui/ConfirmDialog';
 import { exportBackup, parseBackup } from '../../lib/export/backup';
@@ -7,6 +7,11 @@ import { useFinanceStore } from '../transactions/store';
 export function SettingsPage() {
   const store = useFinanceStore();
   const [settings, setSettings] = useState<AppSettings>(store.settings);
+
+  useEffect(() => {
+    setSettings(store.settings);
+  }, [store.settings]);
+
   const payload = () => ({ version: 1 as const, exportedAt: new Date().toISOString(), transactions: store.transactions, categories: store.categories, accounts: store.accounts, creditCards: store.creditCards, budgets: store.budgets, goals: store.goals, settings: store.settings });
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -18,7 +23,6 @@ export function SettingsPage() {
     try {
       const password = window.prompt('Se o backup for criptografado, informe a senha. Caso contrário deixe em branco.') || undefined;
       await store.restore(await parseBackup(file, password));
-      setSettings(store.settings);
       alert('Backup importado com sucesso.');
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Erro ao importar backup.');

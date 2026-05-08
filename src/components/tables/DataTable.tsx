@@ -38,7 +38,7 @@ export function DataTable({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {rows.map((transaction) => (
-              <tr key={transaction.id} className="group bg-white/82 transition hover:bg-teal-50/45 dark:bg-slate-950/35 dark:hover:bg-slate-900/80">
+              <tr key={transaction.id} className="group bg-white/80 transition hover:bg-teal-50/45 dark:bg-slate-950/35 dark:hover:bg-slate-900/80">
                 <td className="px-5 py-4 font-black text-slate-700 dark:text-slate-200">{formatDateBR(transaction.date)}</td>
                 <td className="max-w-[260px] px-5 py-4">
                   <b className="block truncate text-slate-950 dark:text-white">{transaction.description}</b>
