@@ -1,10 +1,10 @@
-# FinançasPro V1.5.5
+# FinançasPro V1.5.6
 
 FinançasPro é um app de finanças pessoais **local-first** feito com React, TypeScript e Vite. Ele ajuda a controlar lançamentos, categorias, contas, cartões, orçamentos, metas, relatórios, importação Excel/CSV e backups.
 
 > **Privacidade:** o app não tem login, backend ou sincronização em nuvem nesta versão. Seus dados ficam no **IndexedDB do navegador** em cada dispositivo.
 
-## O que mudou na V1.5.5
+## O que mudou na V1.5.6
 
 - Correção crítica para abrir no celular pelo IP do PC sem depender de `crypto.randomUUID`.
 - Backup criptografado agora falha de forma amigável quando o navegador bloqueia `crypto.subtle` em HTTP por IP local.
@@ -208,7 +208,7 @@ Dados ficam no IndexedDB. Restaure um backup exportado anteriormente.
 
 ## Futuro
 
-Não faz parte da V1.5.5, mas pode entrar em versões futuras:
+Não faz parte da V1.5.6, mas pode entrar em versões futuras:
 
 - login;
 - sincronização entre dispositivos;
