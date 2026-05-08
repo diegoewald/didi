@@ -59,7 +59,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   creditCards: [],
   budgets: [],
   goals: [],
-  settings: defaultSettings,
+  settings: readCachedSettings(),
   loading: false,
   async load() {
     set({ loading: true, error: undefined });
@@ -76,7 +76,8 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       ]);
       set({ transactions, categories, accounts, creditCards, budgets, goals, settings: settingsRows[0] ?? readCachedSettings(), loading: false });
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : 'Erro ao carregar IndexedDB.', loading: false });
+      console.error('Erro ao carregar IndexedDB:', error);
+      set({ error: 'Não foi possível abrir seus dados locais no IndexedDB. Recarregue a página ou restaure um backup se o problema continuar.', loading: false });
     }
   },
   async addTransactions(items) {

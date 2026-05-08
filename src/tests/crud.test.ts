@@ -20,7 +20,7 @@ const tx = (partial: Partial<Transaction>): Transaction => ({
   ...partial,
 });
 
-describe('CRUD helpers V1.4', () => {
+describe('CRUD helpers V1.5', () => {
   it('cria, edita e exclui metas por id', () => {
     const created = upsertById([], { id: 'goal-1', name: 'Viagem' });
     const edited = upsertById(created, { id: 'goal-1', name: 'Viagem 2026' });

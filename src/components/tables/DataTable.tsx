@@ -12,62 +12,90 @@ function statusClass(status: TransactionStatus): string {
   return classes[status];
 }
 
-export function DataTable({
-  rows,
-  onEdit,
-  onDelete,
-  onDuplicate,
-  onMarkPaid,
-}: {
+interface DataTableProps {
   rows: Transaction[];
   onEdit?: (transaction: Transaction) => void;
   onDelete?: (transaction: Transaction) => void;
   onDuplicate?: (transaction: Transaction) => void;
   onMarkPaid?: (transaction: Transaction) => void;
-}) {
+}
+
+export function DataTable({ rows, onEdit, onDelete, onDuplicate, onMarkPaid }: DataTableProps) {
   return (
-    <div className="overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800/80 dark:bg-slate-950/90">
-      <div className="overflow-auto scrollbar">
-        <table className="w-full min-w-[1040px] border-collapse text-sm">
-          <thead>
-            <tr className="bg-slate-50/95 text-left text-[.72rem] uppercase tracking-[.11em] text-slate-600 dark:text-slate-300 dark:bg-slate-900/95 dark:text-slate-400">
-              {['Data', 'Descrição', 'Tipo', 'Categoria', 'Valor', 'Conta', 'Status', 'Pagamento', 'Ações'].map((header) => (
-                <th key={header} className="px-5 py-4 font-black first:rounded-tl-[1.35rem] last:rounded-tr-[1.35rem]">{header}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-            {rows.map((transaction) => (
-              <tr key={transaction.id} className="group bg-white/90 transition hover:bg-teal-50/45 dark:bg-slate-950/90 dark:hover:bg-slate-900/90">
-                <td className="px-5 py-4 font-black text-slate-700 dark:text-slate-200">{formatDateBR(transaction.date)}</td>
-                <td className="max-w-[260px] px-5 py-4">
-                  <b className="block truncate text-slate-950 dark:text-white">{transaction.description}</b>
-                  <p className="mt-1 truncate text-xs font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400">{transaction.notes}</p>
-                </td>
-                <td className="px-5 py-4">
-                  <span className={`badge ${transaction.type === 'Receita' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200' : transaction.type === 'Despesa' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200'}`}>{transaction.type}</span>
-                </td>
-                <td className="px-5 py-4 font-semibold text-slate-700 dark:text-slate-200">
-                  {transaction.category}
-                  <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400">{transaction.subcategory}</p>
-                </td>
-                <td className="px-5 py-4 text-base font-black tracking-[-.02em] text-slate-950 dark:text-white">{formatCurrency(transaction.value)}</td>
-                <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{transaction.account}</td>
-                <td className="px-5 py-4"><span className={`badge ring-1 ${statusClass(transaction.status)}`}>{transaction.status}</span></td>
-                <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{transaction.paymentMethod}</td>
-                <td className="px-5 py-4">
-                  <div className="flex flex-wrap gap-2 opacity-95 transition group-hover:opacity-100">
-                    <button className="btn btn-secondary !min-h-0 !p-2.5" title="Editar" aria-label="Editar lançamento" onClick={() => onEdit?.(transaction)}><Pencil size={15} /></button>
-                    <button className="btn btn-secondary !min-h-0 !p-2.5" title="Duplicar" aria-label="Duplicar lançamento" onClick={() => onDuplicate?.(transaction)}><Copy size={15} /></button>
-                    {transaction.status !== 'Pago' && <button className="btn btn-secondary !min-h-0 !p-2.5" title="Marcar como pago" aria-label="Marcar lançamento como pago" onClick={() => onMarkPaid?.(transaction)}><CheckCircle2 size={15} /></button>}
-                    <button className="btn !min-h-0 !p-2.5 bg-rose-50 text-rose-700 ring-1 ring-rose-100 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:ring-rose-900" title="Excluir" aria-label="Excluir lançamento" onClick={() => onDelete?.(transaction)}><Trash2 size={15} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <>
+      <div className="grid gap-3 md:hidden">
+        {rows.map((transaction) => (
+          <article key={transaction.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-black uppercase tracking-[.12em] text-slate-500 dark:text-slate-400">{formatDateBR(transaction.date)}</p>
+                <h3 className="mt-1 truncate text-base font-black text-slate-950 dark:text-white">{transaction.description}</h3>
+              </div>
+              <strong className="shrink-0 text-right text-base font-black text-slate-950 dark:text-white">{formatCurrency(transaction.value)}</strong>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className={`badge ${transaction.type === 'Receita' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200' : transaction.type === 'Despesa' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200'}`}>{transaction.type}</span>
+              <span className={`badge ring-1 ${statusClass(transaction.status)}`}>{transaction.status}</span>
+              <span className="badge">{transaction.paymentMethod}</span>
+            </div>
+            <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+              <div><dt className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">Categoria</dt><dd className="font-bold text-slate-800 dark:text-slate-100">{transaction.category}</dd></div>
+              <div><dt className="text-xs font-black uppercase text-slate-500 dark:text-slate-400">Conta</dt><dd className="font-bold text-slate-800 dark:text-slate-100">{transaction.account}</dd></div>
+            </dl>
+            {transaction.notes && <p className="mt-3 rounded-2xl bg-slate-50 p-3 text-sm font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300">{transaction.notes}</p>}
+            <div className="mt-4 grid grid-cols-4 gap-2">
+              <button className="btn btn-secondary !min-h-11 !p-2.5" title="Editar" aria-label="Editar lançamento" onClick={() => onEdit?.(transaction)}><Pencil size={16} /></button>
+              <button className="btn btn-secondary !min-h-11 !p-2.5" title="Duplicar" aria-label="Duplicar lançamento" onClick={() => onDuplicate?.(transaction)}><Copy size={16} /></button>
+              <button className="btn btn-secondary !min-h-11 !p-2.5" title="Marcar como pago" aria-label="Marcar lançamento como pago" disabled={transaction.status === 'Pago'} onClick={() => onMarkPaid?.(transaction)}><CheckCircle2 size={16} /></button>
+              <button className="btn btn-danger !min-h-11 !p-2.5" title="Excluir" aria-label="Excluir lançamento" onClick={() => onDelete?.(transaction)}><Trash2 size={16} /></button>
+            </div>
+          </article>
+        ))}
       </div>
-    </div>
+
+      <div className="hidden overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800/80 dark:bg-slate-950/90 md:block">
+        <div className="overflow-auto scrollbar">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
+            <thead>
+              <tr className="bg-slate-50/95 text-left text-[.72rem] uppercase tracking-[.11em] text-slate-600 dark:bg-slate-900/95 dark:text-slate-300">
+                {['Data', 'Descrição', 'Tipo', 'Categoria', 'Valor', 'Conta', 'Status', 'Pagamento', 'Ações'].map((header) => (
+                  <th key={header} className="px-5 py-4 font-black first:rounded-tl-[1.35rem] last:rounded-tr-[1.35rem]">{header}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+              {rows.map((transaction) => (
+                <tr key={transaction.id} className="group bg-white/90 transition hover:bg-teal-50/45 dark:bg-slate-950/90 dark:hover:bg-slate-900/90">
+                  <td className="px-5 py-4 font-black text-slate-700 dark:text-slate-200">{formatDateBR(transaction.date)}</td>
+                  <td className="max-w-[260px] px-5 py-4">
+                    <b className="block truncate text-slate-950 dark:text-white">{transaction.description}</b>
+                    <p className="mt-1 truncate text-xs font-medium text-slate-600 dark:text-slate-300">{transaction.notes}</p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`badge ${transaction.type === 'Receita' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200' : transaction.type === 'Despesa' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200'}`}>{transaction.type}</span>
+                  </td>
+                  <td className="px-5 py-4 font-semibold text-slate-700 dark:text-slate-200">
+                    {transaction.category}
+                    <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300">{transaction.subcategory}</p>
+                  </td>
+                  <td className="px-5 py-4 text-base font-black tracking-[-.02em] text-slate-950 dark:text-white">{formatCurrency(transaction.value)}</td>
+                  <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{transaction.account}</td>
+                  <td className="px-5 py-4"><span className={`badge ring-1 ${statusClass(transaction.status)}`}>{transaction.status}</span></td>
+                  <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{transaction.paymentMethod}</td>
+                  <td className="px-5 py-4">
+                    <div className="flex flex-wrap gap-2 opacity-95 transition group-hover:opacity-100">
+                      <button className="btn btn-secondary !min-h-0 !p-2.5" title="Editar" aria-label="Editar lançamento" onClick={() => onEdit?.(transaction)}><Pencil size={15} /></button>
+                      <button className="btn btn-secondary !min-h-0 !p-2.5" title="Duplicar" aria-label="Duplicar lançamento" onClick={() => onDuplicate?.(transaction)}><Copy size={15} /></button>
+                      {transaction.status !== 'Pago' && <button className="btn btn-secondary !min-h-0 !p-2.5" title="Marcar como pago" aria-label="Marcar lançamento como pago" onClick={() => onMarkPaid?.(transaction)}><CheckCircle2 size={15} /></button>}
+                      <button className="btn !min-h-0 !p-2.5 bg-rose-50 text-rose-700 ring-1 ring-rose-100 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-200 dark:ring-rose-900" title="Excluir" aria-label="Excluir lançamento" onClick={() => onDelete?.(transaction)}><Trash2 size={15} /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>
   );
 }

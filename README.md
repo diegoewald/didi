@@ -1,93 +1,213 @@
-# FinançasPro
+# FinançasPro V1.5
 
-**Versão 1.4.2** — ultra revisão técnica com reconstrução do tema claro/escuro, importação mais segura, mensagens mais claras e revisão de estabilidade antes da V1.5 mobile.
+FinançasPro é um app de finanças pessoais **local-first** feito com React, TypeScript e Vite. Ele ajuda a controlar lançamentos, categorias, contas, cartões, orçamentos, metas, relatórios, importação Excel/CSV e backups.
 
-FinançasPro é uma aplicação React + TypeScript local-first para organização de finanças pessoais/familiares. Ela oferece dashboard, lançamentos, categorias, contas, cartões, orçamentos, metas, resumo mensal, relatórios, importação Excel/CSV, backup JSON/criptografado e persistência no IndexedDB do navegador.
+> **Privacidade:** o app não tem login, backend ou sincronização em nuvem nesta versão. Seus dados ficam no **IndexedDB do navegador** em cada dispositivo.
 
-## Instalação
+## O que mudou na V1.5
+
+- Visual mais estável no desktop e no celular.
+- Tema claro/escuro padronizado com tokens globais de UI.
+- Menu mobile com acesso a todas as telas.
+- Lançamentos em cards no celular e tabela no desktop.
+- Importação mais segura contra clique duplo e duplicados.
+- Script `dev:host` para abrir no celular usando o PC como servidor local.
+- Arquivos para deploy estático em Vercel e Netlify.
+- Manifest simples para instalação como app/PWA leve.
+
+## Comandos principais
+
+```bash
+npm install
+npm run dev
+npm run dev:host
+npm run build
+npm run preview
+npm run test
+npm run lint
+```
+
+## Como instalar
 
 ```bash
 npm install
 ```
 
-> Os dados ficam somente no IndexedDB do navegador usado. Exporte backups antes de limpar dados do navegador, trocar de máquina ou testar restauração.
+O projeto não usa `latest` nas dependências. O `package-lock.json` deve ser mantido para instalações reproduzíveis.
 
-## Rodar em desenvolvimento
+## Como rodar no PC
 
 ```bash
 npm run dev
 ```
 
-Depois abra a URL exibida pelo Vite, normalmente `http://localhost:5173/`.
+Abra a URL exibida no terminal, normalmente:
 
-### Abrir no celular pela rede local
-
-Para testar rapidamente em outro dispositivo conectado à mesma rede Wi-Fi:
-
-```bash
-npm run dev -- --host 0.0.0.0
+```text
+http://localhost:5173/
 ```
 
-Use no celular o endereço IP do computador com a porta exibida pelo Vite, por exemplo `http://192.168.0.10:5173/`. Esta V1.4.2 não é a V1.5 mobile; o objetivo aqui é apenas facilitar acesso local para conferência.
+## Como rodar no celular pelo host do PC
 
-## Testes e qualidade
+Use quando quiser testar o FinançasPro no celular sem publicar online.
+
+1. Conecte **PC e celular no mesmo Wi‑Fi**.
+2. No PC, rode:
 
 ```bash
-npm run test
-npm run lint
+npm run dev:host
+```
+
+3. Descubra o IPv4 do PC:
+   - **Windows:** abra CMD/PowerShell e rode `ipconfig`; procure “Endereço IPv4”.
+   - **macOS:** rode `ipconfig getifaddr en0` ou veja em Ajustes de Rede.
+   - **Linux:** rode `hostname -I` ou `ip addr`.
+4. No celular, abra:
+
+```text
+http://IP-DO-PC:5173/
+```
+
+Exemplo:
+
+```text
+http://192.168.0.10:5173/
+```
+
+Mantenha o terminal aberto. Se não abrir, confira firewall, antivírus, Wi‑Fi convidado e se o IP está correto.
+
+## Como publicar na Vercel
+
+Configuração esperada:
+
+- **Build command:** `npm run build`
+- **Output directory:** `dist`
+
+O arquivo `vercel.json` redireciona rotas internas para `index.html`, então refresh em `/lancamentos`, `/relatorios` etc. não quebra.
+
+## Como publicar na Netlify
+
+Configuração esperada:
+
+- **Build command:** `npm run build`
+- **Publish directory:** `dist`
+
+O arquivo `netlify.toml` e `public/_redirects` preparam a aplicação SPA para refresh em rotas internas.
+
+## Preview de produção local
+
+Depois do build:
+
+```bash
 npm run build
+npm run preview
 ```
 
-- `npm run test`: executa Vitest para funções críticas de importação, parsing, cálculos e CRUD.
-- `npm run lint`: executa ESLint.
-- `npm run build`: valida TypeScript e gera build de produção com Vite.
+## Tema claro, escuro e sistema
 
-## Tema claro/escuro/sistema
+Acesse **Configurações** para escolher:
 
-Acesse **Configurações** (`/configuracoes`) e escolha:
+- **Sistema:** segue o tema do navegador/sistema operacional.
+- **Claro:** força tema claro.
+- **Escuro:** força tema escuro.
 
-- **Sistema**: acompanha `prefers-color-scheme` do navegador/sistema operacional.
-- **Claro**: força tema claro.
-- **Escuro**: força tema escuro.
+A preferência é salva no IndexedDB e também em cache local para evitar piscada de tema ao abrir o app.
 
-A preferência é salva no IndexedDB e também espelhada em cache local para reduzir piscadas de tema durante o carregamento inicial. O botão **Tema** no cabeçalho alterna rapidamente entre claro e escuro.
+## Como importar Excel/CSV
 
-## Como importar planilha
+1. Abra **Importar**.
+2. Escolha um arquivo `.xlsx` ou `.csv`.
+3. Revise o mapeamento automático.
+4. Se necessário, ajuste manualmente as colunas.
+5. Clique em **Validar dados e gerar prévia**.
+6. Confira erros, duplicados e a prévia.
+7. Clique em **Confirmar importação**.
 
-1. Acesse **Importar** (`/importar`).
-2. Selecione um arquivo `.xlsx` ou `.csv`.
-3. Revise o mapeamento detectado automaticamente.
-4. Clique em **Validar dados e gerar prévia**.
-5. Confira erros, duplicados e a prévia.
-6. Clique em **Confirmar importação**.
+O app aceita:
 
-Após a confirmação, a prévia é encerrada para evitar clique duplo ou reimportação acidental. O app mostra a mensagem “Importação concluída com sucesso. X lançamentos foram importados.” quando há novos lançamentos, desabilita a confirmação daquela prévia e exibe **Importar outra planilha**.
+- Data + Descrição/Histórico + Valor;
+- Data + Histórico + Valor negativo;
+- Data + Histórico + Crédito + Débito;
+- campos extras como Saldo para facilitar mapeamento de extratos.
 
-A deduplicação usa `ID externo` quando existir; caso contrário, usa data + descrição normalizada + valor. Isso protege contra a mesma planilha ser enviada novamente.
+## Como evitar duplicados
+
+A importação evita duplicidade por:
+
+- `ID externo`, quando a planilha tem esse campo;
+- ou combinação de data + descrição normalizada + valor.
+
+Depois de confirmar uma importação, a prévia é escondida, o botão de confirmar fica indisponível e aparece **Importar outra planilha**. Isso evita clique duplo e reimportação acidental.
 
 ## Backup e restauração
 
-Acesse **Backups** (`/backups`) ou **Configurações** (`/configuracoes`) para:
+Abra **Backups** ou **Configurações** para:
 
 - exportar backup JSON simples;
 - exportar backup criptografado com senha;
-- importar backup simples ou criptografado;
-- apagar dados locais com confirmação.
+- restaurar backup simples ou criptografado;
+- apagar dados locais com confirmação forte.
 
-O backup criptografado usa Web Crypto com PBKDF2 + AES-GCM. A conversão Base64 é feita em blocos para reduzir risco de erro em arquivos maiores.
+Backups criptografados usam Web Crypto com PBKDF2 + AES-GCM. A conversão Base64 é feita em blocos para lidar melhor com arquivos grandes.
 
-## Arquitetura
+## Avisos importantes sobre dados locais
 
-- `src/app`: composição da aplicação e rotas client-side.
-- `src/components`: layout, UI, tabelas, formulários e wizard de importação.
-- `src/features`: módulos de negócio (dashboard, lançamentos, importação, categorias, contas, cartões, orçamentos, metas, resumo mensal, relatórios, backup e configurações).
-- `src/lib/db`: IndexedDB via `idb`, seed de dados padrão e restauração/limpeza.
-- `src/lib/spreadsheet`: leitura `.xlsx`/`.csv`, mapeamento inteligente, validação e geração de modelo.
-- `src/lib/calculations`: cálculos financeiros com `decimal.js`.
-- `src/lib/export`: exportações Excel/CSV, backup JSON e backup criptografado.
-- `src/lib/crud`: helpers de upsert/delete, orçamento único e prevenção de duplicidade.
-- `src/tests`: testes de cálculos, importação, parsing e helpers CRUD.
+- Dados ficam no IndexedDB do navegador usado.
+- Limpar dados do navegador pode apagar suas informações.
+- PC e celular **não sincronizam automaticamente** nesta versão.
+- Para mover dados entre dispositivos, exporte backup em um dispositivo e restaure no outro.
+- Deploy na Vercel/Netlify não envia seus dados para a nuvem; cada navegador mantém seus próprios dados locais.
 
-## Privacidade
+## Telas disponíveis
 
-O FinançasPro roda localmente no navegador e não exige login, backend ou sincronização online. Nenhum dado financeiro é enviado para servidores pelo app. Faça backup regularmente para evitar perda de dados locais.
+- Dashboard
+- Lançamentos
+- Importar
+- Categorias
+- Contas
+- Cartões
+- Orçamentos
+- Metas
+- Resumo mensal
+- Relatórios
+- Backups
+- Configurações
+
+No celular, toque em **Mais** na barra inferior para acessar todas as telas.
+
+## Solução de problemas comuns
+
+### O celular não abre o app pelo IP do PC
+
+- Confirme que PC e celular estão no mesmo Wi‑Fi.
+- Use `npm run dev:host`, não apenas `npm run dev`.
+- Verifique firewall do sistema operacional.
+- Confira se a URL usa `http://` e a porta correta.
+
+### Uma rota publicada dá 404 ao atualizar a página
+
+- Na Vercel, confira se `vercel.json` foi enviado.
+- Na Netlify, confira `netlify.toml` e `public/_redirects`.
+
+### Importação mostra duplicados
+
+Isso é esperado se o arquivo já foi importado. Revise a lista e importe apenas linhas novas.
+
+### Backup criptografado não restaura
+
+- Confira a senha.
+- Use o arquivo JSON criptografado original.
+- Se a senha foi perdida, não é possível recuperar esse backup.
+
+### Dados sumiram após limpar navegador
+
+Dados ficam no IndexedDB. Restaure um backup exportado anteriormente.
+
+## Futuro
+
+Não faz parte da V1.5, mas pode entrar em versões futuras:
+
+- login;
+- sincronização entre dispositivos;
+- backup em nuvem;
+- criptografia ponta a ponta para dados sincronizados.

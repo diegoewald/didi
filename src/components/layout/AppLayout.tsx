@@ -27,7 +27,7 @@ export function AppLayout({
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.25em] text-teal-700 dark:text-teal-300">
-                <Sparkles size={14} /> FinançasPro V1.4.2
+                <Sparkles size={14} /> FinançasPro V1.5
               </div>
               <h2 className="truncate text-lg font-black tracking-[-.03em] text-slate-950 dark:text-white sm:text-2xl">
                 Controle financeiro premium
@@ -44,7 +44,7 @@ export function AppLayout({
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl p-3 sm:p-5 lg:p-8">{children}</main>
+        <main className="mx-auto max-w-7xl px-3 py-4 sm:px-5 sm:py-6 lg:p-8">{children}</main>
       </div>
       <MobileNav current={current} navigate={navigate} />
     </div>

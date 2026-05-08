@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="FinançasPro">
+  <rect width="512" height="512" rx="112" fill="#0f766e"/>
+  <path d="M128 304c42 54 100 78 176 70 49-6 83-27 112-58" fill="none" stroke="#ccfbf1" stroke-width="42" stroke-linecap="round"/>
+  <path d="M145 236h222" stroke="#fff" stroke-width="40" stroke-linecap="round"/>
+  <path d="M184 174h144" stroke="#fff" stroke-width="40" stroke-linecap="round"/>
+</svg>

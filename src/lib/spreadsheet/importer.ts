@@ -192,9 +192,9 @@ export function buildTemplateWorkbook(): XLSX.WorkBook {
   XLSX.utils.book_append_sheet(
     workbook,
     XLSX.utils.aoa_to_sheet([
-      ['Data', 'Histórico', 'Valor', 'Saldo'],
-      ['04/05/2026', 'PIX RECEBIDO CLIENTE', '150,00', '150,00'],
-      ['05/05/2026', 'UBER TRIP', '-32,90', '117,10'],
+      ['Data', 'Histórico', 'Valor', 'Crédito', 'Débito', 'Saldo'],
+      ['04/05/2026', 'PIX RECEBIDO CLIENTE', '', '150,00', '', '150,00'],
+      ['05/05/2026', 'UBER TRIP', '-32,90', '', '32,90', '117,10'],
     ]),
     'Exemplo Extrato',
   );

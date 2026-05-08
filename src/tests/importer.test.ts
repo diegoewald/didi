@@ -27,6 +27,20 @@ describe('importação de planilha', () => {
     expect(result.validRows[0].value).toBe('2500.00');
   });
 
+
+
+  it('aceita extratos com colunas separadas de crédito e débito', () => {
+    const rows = [
+      { Data: '06/05/2026', Histórico: 'PIX CLIENTE', Crédito: '250,00', Débito: '', Saldo: '250,00' },
+      { Data: '07/05/2026', Histórico: 'MERCADO BAIRRO', Crédito: '', Débito: '89,90', Saldo: '160,10' },
+    ];
+    const result = validateRows(rows, detectColumnMapping(Object.keys(rows[0])), []);
+    expect(result.validRows).toHaveLength(2);
+    expect(result.validRows[0].type).toBe('Receita');
+    expect(result.validRows[1].type).toBe('Despesa');
+    expect(result.validRows[1].value).toBe('89.90');
+  });
+
   it('aceita extratos bancários com valor negativo e histórico', () => {
     const rows = [{ Data: '05/05/2026', Histórico: 'UBER TRIP', Valor: '-32,90', Saldo: '117,10' }];
     const result = validateRows(rows, detectColumnMapping(Object.keys(rows[0])), []);

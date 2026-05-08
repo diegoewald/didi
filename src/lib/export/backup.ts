@@ -24,13 +24,19 @@ export async function exportEncryptedBackup(
 }
 
 export async function parseBackup(file: File, password?: string): Promise<BackupPayload> {
-  const json = JSON.parse(await file.text()) as unknown;
-  if (isEncryptedEnvelope(json)) {
-    if (!password) throw new Error('Informe a senha para restaurar este backup criptografado.');
-    const decrypted = await decryptBackup(json, password);
-    return backupSchema.parse(decrypted) as BackupPayload;
+  try {
+    const json = JSON.parse(await file.text()) as unknown;
+    if (isEncryptedEnvelope(json)) {
+      if (!password) throw new Error('Informe a senha para restaurar este backup criptografado.');
+      const decrypted = await decryptBackup(json, password);
+      return backupSchema.parse(decrypted) as BackupPayload;
+    }
+    return backupSchema.parse(json) as BackupPayload;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('senha')) throw error;
+    console.error('Falha ao restaurar backup:', error);
+    throw new Error('Backup inválido ou incompatível. Confira o arquivo e tente novamente.', { cause: error });
   }
-  return backupSchema.parse(json) as BackupPayload;
 }
 
 function isEncryptedEnvelope(value: unknown): value is EncryptedBackupEnvelope {

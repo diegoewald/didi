@@ -36,7 +36,7 @@ export function DashboardPage() {
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-teal-700 dark:text-teal-300">Painel executivo</p>
             <h1 className="mt-2 text-3xl font-black tracking-[-.05em] text-slate-950 dark:text-white sm:text-4xl">Dashboard financeiro</h1>
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300 dark:text-slate-400">Visão executiva com caixa, competência, saúde financeira e alertas inteligentes.</p>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">Visão executiva com caixa, competência, saúde financeira e alertas inteligentes.</p>
           </div>
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-100">
             Saúde financeira: {summary.healthScore}/100

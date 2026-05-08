@@ -7,7 +7,7 @@ export function EmptyState({ title, description }: { title: string; description:
         <Inbox size={34} />
       </div>
       <h3 className="mt-4 text-lg font-black tracking-[-.02em]">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-slate-300 dark:text-slate-400">{description}</p>
+      <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-slate-600 dark:text-slate-300">{description}</p>
     </div>
   );
 }
