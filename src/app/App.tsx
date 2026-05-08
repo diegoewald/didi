@@ -78,11 +78,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AppLayout current={path} navigate={navigate} dark={dark} toggleDark={() => upsertSettings({ ...settings, theme: dark ? 'light' : 'dark' })}>
-        <div className="mb-4 rounded-3xl bg-emerald-50 p-4 text-sm font-bold text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
+        <div className="mb-4 rounded-3xl p-4 text-sm font-bold alert-success">
           Seus dados financeiros ficam salvos somente no IndexedDB deste navegador. Exporte backups para não perder informações ao limpar o navegador ou trocar de dispositivo.
         </div>
         {loading && <div className="card mb-4 p-4 font-bold">Carregando dados locais...</div>}
-        {error && <div className="mb-4 rounded-2xl bg-rose-100 p-4 font-bold text-rose-800">{error}</div>}
+        {error && <div className="mb-4 rounded-2xl p-4 font-bold alert-error">{error}</div>}
         <Page />
       </AppLayout>
     </ErrorBoundary>

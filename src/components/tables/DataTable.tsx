@@ -26,11 +26,11 @@ export function DataTable({
   onMarkPaid?: (transaction: Transaction) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/72 shadow-sm dark:border-slate-800/80 dark:bg-slate-950/50">
+    <div className="overflow-hidden rounded-[1.4rem] border border-slate-200/80 bg-white/90 shadow-sm dark:border-slate-800/80 dark:bg-slate-950/90">
       <div className="overflow-auto scrollbar">
         <table className="w-full min-w-[1040px] border-collapse text-sm">
           <thead>
-            <tr className="bg-slate-50/95 text-left text-[.72rem] uppercase tracking-[.11em] text-slate-500 dark:bg-slate-900/95 dark:text-slate-400">
+            <tr className="bg-slate-50/95 text-left text-[.72rem] uppercase tracking-[.11em] text-slate-600 dark:text-slate-300 dark:bg-slate-900/95 dark:text-slate-400">
               {['Data', 'Descrição', 'Tipo', 'Categoria', 'Valor', 'Conta', 'Status', 'Pagamento', 'Ações'].map((header) => (
                 <th key={header} className="px-5 py-4 font-black first:rounded-tl-[1.35rem] last:rounded-tr-[1.35rem]">{header}</th>
               ))}
@@ -38,18 +38,18 @@ export function DataTable({
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
             {rows.map((transaction) => (
-              <tr key={transaction.id} className="group bg-white/80 transition hover:bg-teal-50/45 dark:bg-slate-950/35 dark:hover:bg-slate-900/80">
+              <tr key={transaction.id} className="group bg-white/90 transition hover:bg-teal-50/45 dark:bg-slate-950/90 dark:hover:bg-slate-900/90">
                 <td className="px-5 py-4 font-black text-slate-700 dark:text-slate-200">{formatDateBR(transaction.date)}</td>
                 <td className="max-w-[260px] px-5 py-4">
                   <b className="block truncate text-slate-950 dark:text-white">{transaction.description}</b>
-                  <p className="mt-1 truncate text-xs font-medium text-slate-500 dark:text-slate-400">{transaction.notes}</p>
+                  <p className="mt-1 truncate text-xs font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400">{transaction.notes}</p>
                 </td>
                 <td className="px-5 py-4">
                   <span className={`badge ${transaction.type === 'Receita' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200' : transaction.type === 'Despesa' ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-200' : 'bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200'}`}>{transaction.type}</span>
                 </td>
                 <td className="px-5 py-4 font-semibold text-slate-700 dark:text-slate-200">
                   {transaction.category}
-                  <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">{transaction.subcategory}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-600 dark:text-slate-300 dark:text-slate-400">{transaction.subcategory}</p>
                 </td>
                 <td className="px-5 py-4 text-base font-black tracking-[-.02em] text-slate-950 dark:text-white">{formatCurrency(transaction.value)}</td>
                 <td className="px-5 py-4 font-semibold text-slate-600 dark:text-slate-300">{transaction.account}</td>

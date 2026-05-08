@@ -18,16 +18,16 @@ export function AppLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(135deg,#f8fafc_0%,#eefdf9_38%,#eef4ff_100%)] pb-24 text-slate-950 dark:bg-[linear-gradient(135deg,#020617_0%,#062b2b_42%,#111827_100%)] dark:text-slate-100 lg:pb-0">
+    <div className="relative min-h-screen overflow-hidden app-surface pb-24 lg:pb-0">
       <div className="premium-glow pointer-events-none fixed -left-32 top-8 h-80 w-80 rounded-full bg-teal-300/30 blur-3xl dark:bg-teal-500/15" />
       <div className="premium-glow pointer-events-none fixed -right-36 top-32 h-96 w-96 rounded-full bg-indigo-300/30 blur-3xl dark:bg-indigo-500/20" />
       <Sidebar current={current} navigate={navigate} />
       <div className="relative lg:pl-72">
-        <header className="sticky top-0 z-20 border-b border-white/50 px-3 py-3 glass sm:px-4 lg:px-8">
+        <header className="sticky top-0 z-20 border-b border-slate-200/70 dark:border-slate-800/80 px-3 py-3 glass sm:px-4 lg:px-8">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.25em] text-teal-700 dark:text-teal-300">
-                <Sparkles size={14} /> FinançasPro V1.4
+                <Sparkles size={14} /> FinançasPro V1.4.2
               </div>
               <h2 className="truncate text-lg font-black tracking-[-.03em] text-slate-950 dark:text-white sm:text-2xl">
                 Controle financeiro premium

@@ -4,6 +4,25 @@ import { defaultSettings } from '../../constants/defaults';
 import { clearAllData, deleteOne, getAll, putMany, putOne, seedDefaultsIfNeeded } from '../../lib/db/localDb';
 import { deleteById, filterNewTransactions, hasDuplicateBudget, upsertById } from '../../lib/crud/collections';
 
+
+function readCachedSettings(): AppSettings {
+  try {
+    const cached = localStorage.getItem('financaspro-settings');
+    return cached ? { ...defaultSettings, ...JSON.parse(cached), id: 'settings' } : defaultSettings;
+  } catch (error) {
+    console.warn('Não foi possível ler tema em cache.', error);
+    return defaultSettings;
+  }
+}
+
+function cacheSettings(settings: AppSettings): void {
+  try {
+    localStorage.setItem('financaspro-settings', JSON.stringify(settings));
+  } catch (error) {
+    console.warn('Não foi possível salvar tema em cache.', error);
+  }
+}
+
 interface FinanceStore {
   transactions: Transaction[];
   categories: Category[];
@@ -55,7 +74,7 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
         getAll('goals'),
         getAll('settings'),
       ]);
-      set({ transactions, categories, accounts, creditCards, budgets, goals, settings: settingsRows[0] ?? defaultSettings, loading: false });
+      set({ transactions, categories, accounts, creditCards, budgets, goals, settings: settingsRows[0] ?? readCachedSettings(), loading: false });
     } catch (error) {
       set({ error: error instanceof Error ? error.message : 'Erro ao carregar IndexedDB.', loading: false });
     }
@@ -134,10 +153,12 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   async upsertSettings(settings) {
     const next = { ...settings, id: 'settings' };
     await putOne('settings', next);
+    cacheSettings(next);
     set({ settings: next });
   },
   async restore(payload) {
     await clearAllData();
+    const restoredSettings = { ...payload.settings, id: 'settings' };
     await Promise.all([
       putMany('transactions', payload.transactions),
       putMany('categories', payload.categories),
@@ -145,13 +166,15 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
       putMany('creditCards', payload.creditCards),
       putMany('budgets', payload.budgets),
       putMany('goals', payload.goals),
-      putOne('settings', { ...payload.settings, id: 'settings' }),
+      putOne('settings', restoredSettings),
     ]);
+    cacheSettings(restoredSettings);
     await get().load();
   },
   async wipe() {
     await clearAllData();
     await seedDefaultsIfNeeded();
+    cacheSettings({ ...defaultSettings, id: 'settings' });
     await get().load();
   },
 }));

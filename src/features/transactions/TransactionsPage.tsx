@@ -74,7 +74,7 @@ export function TransactionsPage() {
       <div className="card p-5 sm:p-6">
         <p className="text-xs font-black uppercase tracking-[.2em] text-teal-700 dark:text-teal-300">Movimentações</p>
         <h1 className="mt-1 text-3xl font-black tracking-[-.05em] sm:text-4xl">Lançamentos</h1>
-        <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">Cadastre, edite, duplique, filtre e marque movimentações como pagas.</p>
+        <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300 dark:text-slate-400">Cadastre, edite, duplique, filtre e marque movimentações como pagas.</p>
       </div>
       <TransactionForm categories={categories} editing={editing} onCancelEdit={() => setEditing(null)} onSave={(transaction) => { upsertTransaction(transaction); setEditing(null); }} />
       <section className="card p-5 sm:p-6">

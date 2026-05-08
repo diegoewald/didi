@@ -1,66 +1,93 @@
 # FinançasPro
 
-**Versão 1.4** — CRUD completo nas telas internas de configurações, contas, cartões, metas, orçamentos e categorias, com fluxo de importação protegido contra reenvio acidental.
+**Versão 1.4.2** — ultra revisão técnica com reconstrução do tema claro/escuro, importação mais segura, mensagens mais claras e revisão de estabilidade antes da V1.5 mobile.
 
-Aplicação React + TypeScript local-first para organização de finanças pessoais/familiares, com importação Excel/CSV, validação robusta, dashboard, relatórios, backup JSON/criptografado e persistência em IndexedDB.
+FinançasPro é uma aplicação React + TypeScript local-first para organização de finanças pessoais/familiares. Ela oferece dashboard, lançamentos, categorias, contas, cartões, orçamentos, metas, resumo mensal, relatórios, importação Excel/CSV, backup JSON/criptografado e persistência no IndexedDB do navegador.
 
-## Rodar localmente
+## Instalação
 
 ```bash
 npm install
+```
+
+> Os dados ficam somente no IndexedDB do navegador usado. Exporte backups antes de limpar dados do navegador, trocar de máquina ou testar restauração.
+
+## Rodar em desenvolvimento
+
+```bash
 npm run dev
-npm run build
+```
+
+Depois abra a URL exibida pelo Vite, normalmente `http://localhost:5173/`.
+
+### Abrir no celular pela rede local
+
+Para testar rapidamente em outro dispositivo conectado à mesma rede Wi-Fi:
+
+```bash
+npm run dev -- --host 0.0.0.0
+```
+
+Use no celular o endereço IP do computador com a porta exibida pelo Vite, por exemplo `http://192.168.0.10:5173/`. Esta V1.4.2 não é a V1.5 mobile; o objetivo aqui é apenas facilitar acesso local para conferência.
+
+## Testes e qualidade
+
+```bash
 npm run test
 npm run lint
+npm run build
 ```
+
+- `npm run test`: executa Vitest para funções críticas de importação, parsing, cálculos e CRUD.
+- `npm run lint`: executa ESLint.
+- `npm run build`: valida TypeScript e gera build de produção com Vite.
+
+## Tema claro/escuro/sistema
+
+Acesse **Configurações** (`/configuracoes`) e escolha:
+
+- **Sistema**: acompanha `prefers-color-scheme` do navegador/sistema operacional.
+- **Claro**: força tema claro.
+- **Escuro**: força tema escuro.
+
+A preferência é salva no IndexedDB e também espelhada em cache local para reduzir piscadas de tema durante o carregamento inicial. O botão **Tema** no cabeçalho alterna rapidamente entre claro e escuro.
+
+## Como importar planilha
+
+1. Acesse **Importar** (`/importar`).
+2. Selecione um arquivo `.xlsx` ou `.csv`.
+3. Revise o mapeamento detectado automaticamente.
+4. Clique em **Validar dados e gerar prévia**.
+5. Confira erros, duplicados e a prévia.
+6. Clique em **Confirmar importação**.
+
+Após a confirmação, a prévia é encerrada para evitar clique duplo ou reimportação acidental. O app mostra a mensagem “Importação concluída com sucesso. X lançamentos foram importados.” quando há novos lançamentos, desabilita a confirmação daquela prévia e exibe **Importar outra planilha**.
+
+A deduplicação usa `ID externo` quando existir; caso contrário, usa data + descrição normalizada + valor. Isso protege contra a mesma planilha ser enviada novamente.
+
+## Backup e restauração
+
+Acesse **Backups** (`/backups`) ou **Configurações** (`/configuracoes`) para:
+
+- exportar backup JSON simples;
+- exportar backup criptografado com senha;
+- importar backup simples ou criptografado;
+- apagar dados locais com confirmação.
+
+O backup criptografado usa Web Crypto com PBKDF2 + AES-GCM. A conversão Base64 é feita em blocos para reduzir risco de erro em arquivos maiores.
 
 ## Arquitetura
 
 - `src/app`: composição da aplicação e rotas client-side.
 - `src/components`: layout, UI, tabelas, formulários e wizard de importação.
-- `src/features`: módulos de negócio (dashboard, lançamentos, resumo mensal, categorias, contas, cartões, orçamentos, metas, relatórios, backup e configurações).
-- `src/lib/db`: IndexedDB via `idb`, com seed de dados padrão.
-- `src/lib/spreadsheet`: leitura de `.xlsx`/`.csv`, mapeamento inteligente, validação, suporte a extratos comuns e geração do modelo.
+- `src/features`: módulos de negócio (dashboard, lançamentos, importação, categorias, contas, cartões, orçamentos, metas, resumo mensal, relatórios, backup e configurações).
+- `src/lib/db`: IndexedDB via `idb`, seed de dados padrão e restauração/limpeza.
+- `src/lib/spreadsheet`: leitura `.xlsx`/`.csv`, mapeamento inteligente, validação e geração de modelo.
 - `src/lib/calculations`: cálculos financeiros com `decimal.js`.
-- `src/lib/export`: exportações Excel/CSV, backup JSON e backup criptografado com Web Crypto.
-- `src/lib/crud`: helpers isolados para upsert/delete, orçamento único e prevenção de duplicidade de importação.
-- `src/tests`: testes de cálculos, importação e helpers CRUD.
-
-## Configurações
-
-Acesse `/configuracoes` para escolher tema claro/escuro/sistema, primeiro dia do mês financeiro, visão caixa/competência, exportar/importar backup e apagar dados com confirmação forte. As configurações são salvas no IndexedDB e persistem após recarregar.
-
-## Contas
-
-Acesse `/contas` para adicionar, editar, ativar/desativar e excluir contas. Se houver lançamentos vinculados, o app solicita uma conta de destino antes de excluir para evitar perda de vínculo.
-
-## Cartões
-
-Acesse `/cartoes` para cadastrar cartões, editar limite, melhor dia de compra, fechamento, vencimento, conta associada e cor. A ação de pagar fatura fica identificada como “em breve”, sem botão falso.
-
-## Metas
-
-Acesse `/metas` para criar, editar e excluir metas financeiras com nome, valor alvo, valor atual, data alvo, categoria e cor. A tela mostra progresso percentual e simulação mensal.
-
-## Orçamentos
-
-Acesse `/orcamentos` para criar, editar e excluir limites mensais por categoria. O app mostra gasto realizado, percentual consumido e alerta visual acima de 80% ou 100%. Não é permitido duplicar orçamento da mesma categoria no mesmo mês.
-
-## Como importar planilha sem duplicar dados
-
-1. Acesse `/importar`.
-2. Selecione um `.xlsx` ou `.csv`.
-3. Revise o mapeamento, valide e confira a prévia.
-4. Clique em **Confirmar importação** uma única vez.
-5. Após sucesso, o botão é desabilitado e a mensagem informa quantos lançamentos foram importados.
-6. Para novo arquivo, clique em **Importar outra planilha**.
-
-Além disso, o store filtra transações já existentes por `ID externo` ou por combinação de data, descrição e valor, evitando duplicidade mesmo se a mesma prévia for enviada novamente.
-
-## Backup
-
-Use `/backups` ou `/configuracoes` para exportar backup JSON, importar backup ou limpar todos os dados. Backups criptografados continuam disponíveis na tela de backups.
+- `src/lib/export`: exportações Excel/CSV, backup JSON e backup criptografado.
+- `src/lib/crud`: helpers de upsert/delete, orçamento único e prevenção de duplicidade.
+- `src/tests`: testes de cálculos, importação, parsing e helpers CRUD.
 
 ## Privacidade
 
-O FinançasPro roda localmente no navegador e não exige APIs externas. Dados financeiros ficam no IndexedDB do próprio usuário; exporte backups regularmente para evitar perda ao limpar dados do navegador ou trocar de dispositivo.
+O FinançasPro roda localmente no navegador e não exige login, backend ou sincronização online. Nenhum dado financeiro é enviado para servidores pelo app. Faça backup regularmente para evitar perda de dados locais.

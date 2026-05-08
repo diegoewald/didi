@@ -20,7 +20,7 @@ export function ReportsPage() {
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
         <div>
           <h1 className="text-3xl font-black">Relatórios</h1>
-          <p className="text-slate-500">Filtros por período, categoria, conta, status, forma de pagamento e palavra-chave.</p>
+          <p className="text-slate-600 dark:text-slate-300">Filtros por período, categoria, conta, status, forma de pagamento e palavra-chave.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button className="btn btn-secondary" onClick={() => exportTransactionsXlsx(rows)}>Exportar Excel</button>

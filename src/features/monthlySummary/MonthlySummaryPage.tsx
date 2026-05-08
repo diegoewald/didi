@@ -24,7 +24,7 @@ export function MonthlySummaryPage() {
       <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
         <div>
           <h1 className="text-3xl font-black">Resumo mensal</h1>
-          <p className="text-slate-500">Entradas, saídas, saldo, maiores gastos e categorias do mês selecionado.</p>
+          <p className="text-slate-600 dark:text-slate-300">Entradas, saídas, saldo, maiores gastos e categorias do mês selecionado.</p>
         </div>
         <div className="flex gap-2">
           <input className="input" type="month" value={month} onChange={(event) => setMonth(event.target.value)} />
@@ -55,7 +55,7 @@ export function MonthlySummaryPage() {
           <div className="mt-4 space-y-2">
             {biggest.map((transaction) => (
               <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3 dark:bg-slate-900" key={transaction.id}>
-                <div><b>{transaction.description}</b><p className="text-xs text-slate-500">{transaction.category}</p></div>
+                <div><b>{transaction.description}</b><p className="text-xs text-slate-600 dark:text-slate-300">{transaction.category}</p></div>
                 <b>{formatCurrency(transaction.value)}</b>
               </div>
             ))}

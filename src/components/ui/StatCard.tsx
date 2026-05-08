@@ -23,9 +23,9 @@ export function StatCard({ title, value, hint, icon: Icon, trend, tone = 'blue' 
       <div className="absolute -right-12 -top-14 h-32 w-32 rounded-full bg-teal-200/24 blur-2xl transition group-hover:scale-110 dark:bg-teal-500/10" />
       <div className="relative flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[.16em] text-slate-500 dark:text-slate-400">{title}</p>
+          <p className="text-xs font-black uppercase tracking-[.16em] text-slate-600 dark:text-slate-300 dark:text-slate-400">{title}</p>
           <h3 className="mt-2 truncate text-2xl font-black tracking-[-.04em] text-slate-950 dark:text-white sm:text-3xl">{value}</h3>
-          {hint && <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-500 dark:text-slate-400">{hint}</p>}
+          {hint && <p className="mt-2 line-clamp-2 text-xs font-semibold text-slate-600 dark:text-slate-300 dark:text-slate-400">{hint}</p>}
         </div>
         <div className={`rounded-3xl bg-gradient-to-br ${map[tone]} p-3.5 text-white shadow-2xl transition group-hover:-translate-y-0.5 group-hover:scale-105`}>
           <Icon size={23} />

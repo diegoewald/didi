@@ -36,7 +36,7 @@ export function DashboardPage() {
           <div>
             <p className="text-xs font-black uppercase tracking-[.24em] text-teal-700 dark:text-teal-300">Painel executivo</p>
             <h1 className="mt-2 text-3xl font-black tracking-[-.05em] text-slate-950 dark:text-white sm:text-4xl">Dashboard financeiro</h1>
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">Visão executiva com caixa, competência, saúde financeira e alertas inteligentes.</p>
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 dark:text-slate-300 dark:text-slate-400">Visão executiva com caixa, competência, saúde financeira e alertas inteligentes.</p>
           </div>
           <div className="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-black text-emerald-800 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-100">
             Saúde financeira: {summary.healthScore}/100
@@ -88,8 +88,8 @@ export function DashboardPage() {
             ))}
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/80"><p className="text-xs font-bold text-slate-500">Taxa de economia</p><b className="text-xl">{summary.savingsRate.toFixed(1)}%</b></div>
-            <div className="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/80"><p className="text-xs font-bold text-slate-500">Mês atual x anterior</p><b className="text-xl">{trend.toFixed(1)}%</b></div>
+            <div className="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/80"><p className="text-xs font-bold text-slate-600 dark:text-slate-300">Taxa de economia</p><b className="text-xl">{summary.savingsRate.toFixed(1)}%</b></div>
+            <div className="rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/80"><p className="text-xs font-bold text-slate-600 dark:text-slate-300">Mês atual x anterior</p><b className="text-xl">{trend.toFixed(1)}%</b></div>
           </div>
         </section>
       </div>
@@ -97,13 +97,13 @@ export function DashboardPage() {
         <section className="card p-5 sm:p-6">
           <h3 className="mb-4 flex items-center gap-2 text-lg font-black tracking-[-.03em]"><BadgeDollarSign className="text-teal-600" />Top 10 maiores despesas</h3>
           <div className="space-y-2.5">
-            {top.map((transaction) => <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50/90 p-3.5 transition hover:bg-teal-50 dark:bg-slate-900/70 dark:hover:bg-slate-900"><div className="min-w-0"><b className="block truncate">{transaction.description}</b><p className="text-xs font-medium text-slate-500">{transaction.category} • {formatDateBR(transaction.date)}</p></div><b className="shrink-0">{formatCurrency(transaction.value)}</b></div>)}
+            {top.map((transaction) => <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50/90 p-3.5 transition hover:bg-teal-50 dark:bg-slate-900/70 dark:hover:bg-slate-900"><div className="min-w-0"><b className="block truncate">{transaction.description}</b><p className="text-xs font-medium text-slate-600 dark:text-slate-300">{transaction.category} • {formatDateBR(transaction.date)}</p></div><b className="shrink-0">{formatCurrency(transaction.value)}</b></div>)}
           </div>
         </section>
         <section className="card p-5 sm:p-6">
           <h3 className="mb-4 flex items-center gap-2 text-lg font-black tracking-[-.03em]"><Banknote className="text-teal-600" />Próximas contas a vencer</h3>
           <div className="space-y-2.5">
-            {pending.map((transaction) => <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50/90 p-3.5 transition hover:bg-teal-50 dark:bg-slate-900/70 dark:hover:bg-slate-900"><div className="min-w-0"><b className="block truncate">{transaction.description}</b><p className="text-xs font-medium text-slate-500">Vence em {formatDateBR(transaction.dueDate)}</p></div><b className="shrink-0">{formatCurrency(transaction.value)}</b></div>)}
+            {pending.map((transaction) => <div key={transaction.id} className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50/90 p-3.5 transition hover:bg-teal-50 dark:bg-slate-900/70 dark:hover:bg-slate-900"><div className="min-w-0"><b className="block truncate">{transaction.description}</b><p className="text-xs font-medium text-slate-600 dark:text-slate-300">Vence em {formatDateBR(transaction.dueDate)}</p></div><b className="shrink-0">{formatCurrency(transaction.value)}</b></div>)}
           </div>
         </section>
       </div>

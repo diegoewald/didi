@@ -47,7 +47,7 @@ export function BackupPage() {
         <label className="btn btn-secondary cursor-pointer"><Upload size={18} />Importar backup<input type="file" accept=".json" hidden onChange={(event) => restore(event.target.files?.[0])} /></label>
         <input className="input" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Senha para backup criptografado" />
         <button className="btn btn-secondary" onClick={encrypted}><LockKeyhole size={18} />Exportar criptografado</button>
-        <button className="btn bg-rose-600 text-white xl:col-span-4" onClick={() => confirmStrong('Esta ação apagará todos os dados locais do navegador.') && store.wipe()}>Apagar todos os dados</button>
+        <button className="btn btn-danger xl:col-span-4" onClick={() => confirmStrong('Esta ação apagará todos os dados locais do navegador.') && store.wipe()}>Apagar todos os dados</button>
       </section>
       <section className="rounded-3xl bg-emerald-50 p-5 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-100">
         <b>Privacidade local-first:</b> os dados ficam no IndexedDB do navegador. Backup simples é legível; backup criptografado usa PBKDF2 + AES-GCM no próprio navegador e exige a senha para restauração.
