@@ -1,0 +1,67 @@
+import { openDB, type DBSchema } from 'idb';
+import type { Account, AppSettings, Budget, Category, CreditCard, Goal, Transaction } from '../../types';
+import { defaultAccounts, defaultBudgets, defaultCategories, defaultCreditCards, defaultGoals, defaultSettings } from '../../constants/defaults';
+
+type StoreName = 'transactions' | 'categories' | 'accounts' | 'creditCards' | 'budgets' | 'goals' | 'settings';
+
+interface FinancasProDB extends DBSchema {
+  transactions: { key: string; value: Transaction };
+  categories: { key: string; value: Category };
+  accounts: { key: string; value: Account };
+  creditCards: { key: string; value: CreditCard };
+  budgets: { key: string; value: Budget };
+  goals: { key: string; value: Goal };
+  settings: { key: string; value: AppSettings };
+}
+
+const dbPromise = openDB<FinancasProDB>('financaspro-local-db', 1, {
+  upgrade(db) {
+    if (!db.objectStoreNames.contains('transactions')) db.createObjectStore('transactions', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('categories')) db.createObjectStore('categories', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('accounts')) db.createObjectStore('accounts', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('creditCards')) db.createObjectStore('creditCards', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('budgets')) db.createObjectStore('budgets', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('goals')) db.createObjectStore('goals', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings', { keyPath: 'id' });
+  },
+});
+
+export async function getAll<K extends StoreName>(store: K): Promise<FinancasProDB[K]['value'][]> {
+  return (await dbPromise).getAll(store);
+}
+
+export async function putMany<K extends StoreName>(store: K, values: FinancasProDB[K]['value'][]): Promise<void> {
+  const db = await dbPromise;
+  const tx = db.transaction(store, 'readwrite');
+  await Promise.all(values.map((value) => tx.store.put(value)));
+  await tx.done;
+}
+
+export async function putOne<K extends StoreName>(store: K, value: FinancasProDB[K]['value']): Promise<void> {
+  await (await dbPromise).put(store, value);
+}
+
+export async function deleteOne<K extends StoreName>(store: K, id: string): Promise<void> {
+  await (await dbPromise).delete(store, id);
+}
+
+export async function clearStore<K extends StoreName>(store: K): Promise<void> {
+  await (await dbPromise).clear(store);
+}
+
+export async function seedDefaultsIfNeeded(): Promise<void> {
+  if ((await getAll('categories')).length === 0) await putMany('categories', defaultCategories);
+  if ((await getAll('accounts')).length === 0) await putMany('accounts', defaultAccounts);
+  if ((await getAll('creditCards')).length === 0) await putMany('creditCards', defaultCreditCards);
+  if ((await getAll('goals')).length === 0) await putMany('goals', defaultGoals);
+  if ((await getAll('budgets')).length === 0) await putMany('budgets', defaultBudgets);
+  if ((await getAll('settings')).length === 0) await putOne('settings', { ...defaultSettings, id: 'settings' });
+}
+
+export async function clearAllData(): Promise<void> {
+  await Promise.all(
+    (['transactions', 'categories', 'accounts', 'creditCards', 'budgets', 'goals', 'settings'] as StoreName[]).map((store) =>
+      clearStore(store),
+    ),
+  );
+}

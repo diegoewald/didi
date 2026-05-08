@@ -1,0 +1,6 @@
+import { describe, expect, it } from 'vitest';
+import { calculateBalance, calculateSavingsRate, sumExpenses, sumIncome, futureInstallments } from '../lib/calculations/finance';
+import type { Transaction } from '../types';
+import { createId } from '../lib/utils/id';
+const base = (partial: Partial<Transaction>): Transaction => ({ id: createId(), date: '2026-05-01', description: 'Teste', type: 'Despesa', category: 'Outros', value: '0', account: 'Banco', paymentMethod: 'Pix', status: 'Pago', installment: 1, totalInstallments: 1, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...partial });
+describe('cálculos financeiros com decimal.js', () => { const rows = [base({ type:'Receita', value:'2500.10' }), base({ type:'Despesa', value:'320.05' }), base({ type:'Despesa', value:'10.05', status:'Pendente' }), base({ type:'Transferência', value:'500.00' })]; it('soma receitas, despesas pagas e saldo sem erro de ponto flutuante', () => { expect(sumIncome(rows)).toBe('2500.10'); expect(sumExpenses(rows)).toBe('320.05'); expect(calculateBalance(rows)).toBe('2180.05'); }); it('calcula taxa de economia', () => { expect(calculateSavingsRate('1000','250')).toBe(75); }); it('gera parcelas futuras', () => { expect(futureInstallments(base({ totalInstallments: 3, installment: 1, value:'100' }))).toHaveLength(2); }); });
