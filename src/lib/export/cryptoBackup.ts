@@ -4,6 +4,25 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const iterations = 210_000;
 const base64ChunkSize = 0x8000;
+export const encryptedBackupUnavailableMessage =
+  'Backup criptografado exige navegador compatível ou HTTPS. Use backup simples ou publique online em HTTPS.';
+
+function webCrypto(): Crypto | null {
+  return globalThis.crypto ?? null;
+}
+
+export function isEncryptedBackupSupported(): boolean {
+  const cryptoApi = webCrypto();
+  return Boolean(cryptoApi?.subtle && typeof cryptoApi.getRandomValues === 'function' && globalThis.isSecureContext !== false);
+}
+
+function requireEncryptedBackupSupport(): Crypto {
+  const cryptoApi = webCrypto();
+  if (!cryptoApi?.subtle || typeof cryptoApi.getRandomValues !== 'function' || globalThis.isSecureContext === false) {
+    throw new Error(encryptedBackupUnavailableMessage);
+  }
+  return cryptoApi;
+}
 
 function stableBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const copy = new Uint8Array(bytes.byteLength);
@@ -12,12 +31,16 @@ function stableBytes(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
+  const chunks: string[] = [];
   for (let index = 0; index < bytes.length; index += base64ChunkSize) {
     const chunk = bytes.subarray(index, index + base64ChunkSize);
-    binary += String.fromCharCode.apply(null, Array.from(chunk));
+    let binary = '';
+    for (let chunkIndex = 0; chunkIndex < chunk.length; chunkIndex += 1) {
+      binary += String.fromCharCode(chunk[chunkIndex]);
+    }
+    chunks.push(binary);
   }
-  return btoa(binary);
+  return btoa(chunks.join(''));
 }
 
 function base64ToBytes(value: string): Uint8Array {
@@ -29,11 +52,11 @@ function base64ToBytes(value: string): Uint8Array {
   return bytes;
 }
 
-async function deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
-  const baseKey = await crypto.subtle.importKey('raw', stableBytes(encoder.encode(password)), 'PBKDF2', false, [
+async function deriveKey(password: string, salt: Uint8Array, cryptoApi: Crypto): Promise<CryptoKey> {
+  const baseKey = await cryptoApi.subtle.importKey('raw', stableBytes(encoder.encode(password)), 'PBKDF2', false, [
     'deriveKey',
   ]);
-  return crypto.subtle.deriveKey(
+  return cryptoApi.subtle.deriveKey(
     { name: 'PBKDF2', salt: stableBytes(salt), iterations, hash: 'SHA-256' },
     baseKey,
     { name: 'AES-GCM', length: 256 },
@@ -49,10 +72,11 @@ export async function encryptBackup(
   if (password.length < 8) {
     throw new Error('A senha do backup criptografado deve ter pelo menos 8 caracteres.');
   }
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const iv = crypto.getRandomValues(new Uint8Array(12));
-  const key = await deriveKey(password, salt);
-  const encrypted = await crypto.subtle.encrypt(
+  const cryptoApi = requireEncryptedBackupSupport();
+  const salt = cryptoApi.getRandomValues(new Uint8Array(16));
+  const iv = cryptoApi.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt, cryptoApi);
+  const encrypted = await cryptoApi.subtle.encrypt(
     { name: 'AES-GCM', iv: stableBytes(iv) },
     key,
     stableBytes(encoder.encode(JSON.stringify(payload))),
@@ -75,9 +99,10 @@ export async function decryptBackup(
   if (!envelope.encrypted) {
     throw new Error('Arquivo criptografado inválido.');
   }
+  const cryptoApi = requireEncryptedBackupSupport();
   try {
-    const key = await deriveKey(password, base64ToBytes(envelope.salt));
-    const decrypted = await crypto.subtle.decrypt(
+    const key = await deriveKey(password, base64ToBytes(envelope.salt), cryptoApi);
+    const decrypted = await cryptoApi.subtle.decrypt(
       { name: 'AES-GCM', iv: stableBytes(base64ToBytes(envelope.iv)) },
       key,
       stableBytes(base64ToBytes(envelope.data)),

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import Decimal from 'decimal.js';
 import type { Budget } from '../../types';
+import { createId } from '../../lib/utils/id';
 import { calculateBudgetUsage } from '../../lib/calculations/finance';
 import { parseCurrencyInput, formatCurrency } from '../../lib/formatters/formatters';
 import { useFinanceStore } from '../transactions/store';
 
-const empty = (): Budget => ({ id: crypto.randomUUID(), month: new Date().toISOString().slice(0, 7), category: 'Alimentação', limit: '' });
+const empty = (): Budget => ({ id: createId(), month: new Date().toISOString().slice(0, 7), category: 'Alimentação', limit: '' });
 
 export function BudgetsPage() {
   const { budgets, transactions, categories, upsertBudget, deleteBudget } = useFinanceStore();

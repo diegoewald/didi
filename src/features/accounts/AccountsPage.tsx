@@ -2,10 +2,11 @@ import { useState } from 'react';
 import type { Account, AccountType } from '../../types';
 import { calculateBalance } from '../../lib/calculations/finance';
 import { parseCurrencyInput, formatCurrency } from '../../lib/formatters/formatters';
+import { createId } from '../../lib/utils/id';
 import { useFinanceStore } from '../transactions/store';
 
 const accountTypes: AccountType[] = ['Banco', 'Carteira', 'Cartão de crédito', 'Investimento', 'Dinheiro', 'Conta digital', 'Outro'];
-const empty = (): Account => ({ id: crypto.randomUUID(), name: '', type: 'Banco', initialBalance: '0', color: '#14b8a6', active: true });
+const empty = (): Account => ({ id: createId(), name: '', type: 'Banco', initialBalance: '0', color: '#14b8a6', active: true });
 
 export function AccountsPage() {
   const { accounts, transactions, upsertAccount, deleteAccount } = useFinanceStore();

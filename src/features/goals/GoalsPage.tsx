@@ -2,10 +2,11 @@ import { useState } from 'react';
 import Decimal from 'decimal.js';
 import { differenceInMonths, parseISO } from 'date-fns';
 import type { Goal } from '../../types';
+import { createId } from '../../lib/utils/id';
 import { parseCurrencyInput, formatCurrency, formatDateBR } from '../../lib/formatters/formatters';
 import { useFinanceStore } from '../transactions/store';
 
-const empty = (): Goal => ({ id: crypto.randomUUID(), name: '', targetValue: '', currentValue: '0', targetDate: new Date().toISOString().slice(0, 10), category: 'Emergência', color: '#22c55e' });
+const empty = (): Goal => ({ id: createId(), name: '', targetValue: '', currentValue: '0', targetDate: new Date().toISOString().slice(0, 10), category: 'Emergência', color: '#22c55e' });
 
 export function GoalsPage() {
   const { goals, categories, upsertGoal, deleteGoal } = useFinanceStore();

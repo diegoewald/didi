@@ -3,6 +3,7 @@ import { spreadsheetColumns } from '../../constants/defaults';
 import type { ImportError, ImportResult, SpreadsheetRow, Transaction, TransactionType } from '../../types';
 import { parseCurrencyInput, parseDateInput, parseSignedCurrencyInput } from '../formatters/formatters';
 import { paymentMethods, transactionSchema, transactionStatuses, transactionTypes } from '../validation/schemas';
+import { createId } from '../utils/id';
 
 export type ColumnKey = (typeof spreadsheetColumns)[number];
 export type ColumnMapping = Partial<Record<ColumnKey | 'Crédito' | 'Débito' | 'Saldo', string>>;
@@ -153,7 +154,7 @@ export function validateRows(
     seen.add(duplicateKey);
 
     const transaction: Transaction = {
-      id: crypto.randomUUID(),
+      id: createId(),
       date,
       description,
       type,

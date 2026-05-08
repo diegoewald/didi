@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Category, PaymentMethod, Transaction, TransactionStatus, TransactionType } from '../../types';
 import { parseCurrencyInput } from '../../lib/formatters/formatters';
+import { createId } from '../../lib/utils/id';
 
 const types: TransactionType[] = ['Receita', 'Despesa', 'Transferência'];
 const statuses: TransactionStatus[] = ['Pago', 'Pendente', 'Atrasado', 'Cancelado'];
@@ -80,7 +81,7 @@ export function TransactionForm({
     const now = new Date().toISOString();
     onSave({
       ...form,
-      id: editing?.id ?? crypto.randomUUID(),
+      id: editing?.id ?? createId(),
       value,
       installment: editing?.installment ?? 1,
       totalInstallments: editing?.totalInstallments ?? 1,

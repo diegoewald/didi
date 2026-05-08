@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Budget, Transaction } from '../types';
 import { deleteById, filterNewTransactions, hasDuplicateBudget, upsertById } from '../lib/crud/collections';
 import { calculateBudgetUsage } from '../lib/calculations/finance';
+import { createId } from '../lib/utils/id';
 
 const tx = (partial: Partial<Transaction>): Transaction => ({
-  id: crypto.randomUUID(),
+  id: createId(),
   date: '2026-05-10',
   description: 'Mercado',
   type: 'Despesa',

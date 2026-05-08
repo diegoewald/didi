@@ -1,11 +1,13 @@
-# FinançasPro V1.5
+# FinançasPro V1.5.5
 
 FinançasPro é um app de finanças pessoais **local-first** feito com React, TypeScript e Vite. Ele ajuda a controlar lançamentos, categorias, contas, cartões, orçamentos, metas, relatórios, importação Excel/CSV e backups.
 
 > **Privacidade:** o app não tem login, backend ou sincronização em nuvem nesta versão. Seus dados ficam no **IndexedDB do navegador** em cada dispositivo.
 
-## O que mudou na V1.5
+## O que mudou na V1.5.5
 
+- Correção crítica para abrir no celular pelo IP do PC sem depender de `crypto.randomUUID`.
+- Backup criptografado agora falha de forma amigável quando o navegador bloqueia `crypto.subtle` em HTTP por IP local.
 - Visual mais estável no desktop e no celular.
 - Tema claro/escuro padronizado com tokens globais de UI.
 - Menu mobile com acesso a todas as telas.
@@ -148,7 +150,7 @@ Abra **Backups** ou **Configurações** para:
 - restaurar backup simples ou criptografado;
 - apagar dados locais com confirmação forte.
 
-Backups criptografados usam Web Crypto com PBKDF2 + AES-GCM. A conversão Base64 é feita em blocos para lidar melhor com arquivos grandes.
+Backups criptografados usam Web Crypto com PBKDF2 + AES-GCM. A conversão Base64 é feita em blocos para lidar melhor com arquivos grandes. Em alguns navegadores, `http://IP-DO-PC:5173/` não é considerado contexto seguro para `crypto.subtle`; nesse caso o app mostra a mensagem “Backup criptografado exige navegador compatível ou HTTPS. Use backup simples ou publique online em HTTPS.” e continua funcionando com backup simples.
 
 ## Avisos importantes sobre dados locais
 
@@ -196,6 +198,7 @@ Isso é esperado se o arquivo já foi importado. Revise a lista e importe apenas
 ### Backup criptografado não restaura
 
 - Confira a senha.
+- Se estiver usando o celular em `http://IP-DO-PC:5173/`, alguns navegadores bloqueiam Web Crypto avançado; use backup simples nesse modo ou publique em HTTPS para usar criptografia.
 - Use o arquivo JSON criptografado original.
 - Se a senha foi perdida, não é possível recuperar esse backup.
 
@@ -205,7 +208,7 @@ Dados ficam no IndexedDB. Restaure um backup exportado anteriormente.
 
 ## Futuro
 
-Não faz parte da V1.5, mas pode entrar em versões futuras:
+Não faz parte da V1.5.5, mas pode entrar em versões futuras:
 
 - login;
 - sincronização entre dispositivos;

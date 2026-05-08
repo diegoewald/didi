@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { Category } from '../../types';
+import { createId } from '../../lib/utils/id';
 import { useFinanceStore } from '../transactions/store';
 
-const empty = (): Category => ({ id: crypto.randomUUID(), name: '', color: '#14b8a6', icon: 'Tag', subcategories: [] });
+const empty = (): Category => ({ id: createId(), name: '', color: '#14b8a6', icon: 'Tag', subcategories: [] });
 
 export function CategoriesPage() {
   const { categories, transactions, upsertCategory, deleteCategory } = useFinanceStore();

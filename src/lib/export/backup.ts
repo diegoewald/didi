@@ -3,7 +3,7 @@ import type { BackupPayload, EncryptedBackupEnvelope, Transaction } from '../../
 import { spreadsheetColumns } from '../../constants/defaults';
 import { downloadBlob, safeFileDate } from '../formatters/formatters';
 import { backupSchema } from '../validation/schemas';
-import { encryptBackup, decryptBackup } from './cryptoBackup';
+import { encryptBackup, decryptBackup, encryptedBackupUnavailableMessage } from './cryptoBackup';
 
 export function exportBackup(payload: BackupPayload): void {
   downloadBlob(
@@ -33,7 +33,7 @@ export async function parseBackup(file: File, password?: string): Promise<Backup
     }
     return backupSchema.parse(json) as BackupPayload;
   } catch (error) {
-    if (error instanceof Error && error.message.includes('senha')) throw error;
+    if (error instanceof Error && (error.message.includes('senha') || error.message === encryptedBackupUnavailableMessage)) throw error;
     console.error('Falha ao restaurar backup:', error);
     throw new Error('Backup inválido ou incompatível. Confira o arquivo e tente novamente.', { cause: error });
   }

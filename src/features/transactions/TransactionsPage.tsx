@@ -4,6 +4,7 @@ import type { Transaction, TransactionFilters } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { DataTable } from '../../components/tables/DataTable';
 import { TransactionForm } from './TransactionForm';
+import { createId } from '../../lib/utils/id';
 import { useFinanceStore } from './store';
 
 const currentMonth = new Date().toISOString().slice(5, 7);
@@ -48,7 +49,7 @@ export function TransactionsPage() {
     const now = new Date().toISOString();
     await upsertTransaction({
       ...transaction,
-      id: crypto.randomUUID(),
+      id: createId(),
       description: `${transaction.description} (cópia)`,
       externalId: undefined,
       createdAt: now,

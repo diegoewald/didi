@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import type { CreditCard } from '../../types';
+import { createId } from '../../lib/utils/id';
 import { creditCardInvoice } from '../../lib/calculations/finance';
 import { parseCurrencyInput, formatCurrency } from '../../lib/formatters/formatters';
 import { useFinanceStore } from '../transactions/store';
 
-const empty = (): CreditCard => ({ id: crypto.randomUUID(), name: '', limit: '', bestPurchaseDay: 1, closingDay: 1, dueDay: 10, accountName: 'Cartão Nubank', color: '#7c3aed' });
+const empty = (): CreditCard => ({ id: createId(), name: '', limit: '', bestPurchaseDay: 1, closingDay: 1, dueDay: 10, accountName: 'Cartão Nubank', color: '#7c3aed' });
 const clampDay = (value: number) => Math.min(31, Math.max(1, Number(value || 1)));
 
 export function CreditCardsPage() {
