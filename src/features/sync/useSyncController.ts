@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
-import { fetchRemoteDeletedIds, fetchRemoteSnapshot, flushSyncQueue, mergeSnapshots, migrateLocalSnapshot } from '../../lib/sync/syncService';
+import { fetchRemoteDeletedIds, fetchRemoteSnapshot, flushSyncQueue, mergeSnapshots, migrateLocalSnapshot, migrationErrorMessage, runSupabaseSyncDiagnostic } from '../../lib/sync/syncService';
 import { removeDeletedFromSnapshot } from '../../lib/sync/merge';
 import { clearSyncQueue } from '../../lib/sync/syncQueue';
 import { exportBackup } from '../../lib/export/backup';
@@ -85,7 +85,7 @@ export function useSyncController({ auto = true }: { auto?: boolean } = {}) {
       return summary;
     } catch (error) {
       console.error('Erro ao migrar dados:', error);
-      setStatus('error', 'Erro ao migrar dados. Nenhum dado local foi apagado.');
+      setStatus('error', migrationErrorMessage(error));
       return null;
     }
   }, [applySnapshot, session, setStatus, snapshot]);
@@ -120,5 +120,5 @@ export function useSyncController({ auto = true }: { auto?: boolean } = {}) {
     };
   }, [auto, hasPendingMigration, session, setStatus, syncNow]);
 
-  return { syncNow, migrateLocal, keepLocalOnly, cancelMigration, exportBackupBeforeSync };
+  return { syncNow, migrateLocal, keepLocalOnly, cancelMigration, exportBackupBeforeSync, runSupabaseSyncDiagnostic };
 }

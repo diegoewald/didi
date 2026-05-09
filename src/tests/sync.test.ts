@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { isSupabaseConfigured, resolveSupabaseConfig, supabaseNotConfiguredMessage } from '../lib/supabase/client';
+import { isSupabaseConfigured, resolveSupabaseConfig, summarizeSupabaseResponse, supabaseNotConfiguredMessage } from '../lib/supabase/client';
 import { clearSyncQueue, compactSyncQueue, enqueueSyncOperation, readSyncQueue, writeSyncQueue } from '../lib/sync/syncQueue';
 import { dedupeByIdAndExternalId, dedupeTransactionsByIdentity, mergeByLatest, removeDeletedFromSnapshot } from '../lib/sync/merge';
 import { hasMigratableLocalData, prepareMigrationSnapshot, summarizeSnapshot } from '../lib/sync/migration';
@@ -40,6 +40,12 @@ describe('sync config, migration, merge and queue', () => {
     const config = resolveSupabaseConfig({ VITE_SUPABASE_URL: 'https://projeto.supabase.co/', VITE_SUPABASE_ANON_KEY: 'anon' });
     expect(config.url).toBe('https://projeto.supabase.co');
     expect(isSupabaseConfigured(config)).toBe(true);
+  });
+
+  it('resume resposta técnica do Supabase sem depender de credenciais reais', () => {
+    const summary = summarizeSupabaseResponse({ message: 'violates row-level security policy', code: '42501' });
+    expect(summary).toContain('row-level security');
+    expect(summary).toContain('42501');
   });
 
   it('mantém a versão mais recente por updatedAt', () => {

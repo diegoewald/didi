@@ -133,6 +133,19 @@ A tela **Importar** aceita `.xlsx` e `.csv`, valida colunas, mostra prévia e ev
 - Em HTTP por IP local, alguns navegadores bloqueiam `crypto.subtle`; nesse caso use backup simples ou publique em HTTPS.
 - Restaurar backup nunca exige Supabase.
 
+## Diagnóstico Supabase
+
+Na tela **Configurações**, com usuário logado, use **Testar conexão Supabase** para validar:
+
+- Supabase configurado;
+- sessão ativa;
+- acesso à tabela `sync_queue`;
+- insert/upsert de diagnóstico;
+- leitura após insert;
+- soft delete de diagnóstico.
+
+Se a migração falhar, a V1.6.2 mostra a collection/tabela/item e o detalhe técnico resumido, mantendo todos os dados locais seguros. O console também registra status HTTP, resposta do Supabase, operação e item resumido sem expor observações ou valores completos desnecessários.
+
 ## Como testar RLS
 
 1. Crie dois usuários diferentes no Supabase Auth.

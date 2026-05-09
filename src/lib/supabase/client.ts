@@ -20,6 +20,23 @@ export interface SupabasePublicConfig {
   anonKey: string;
 }
 
+export interface SupabaseErrorDetails {
+  status: number;
+  path: string;
+  method: string;
+  response: unknown;
+}
+
+export class SupabaseRequestError extends Error {
+  details: SupabaseErrorDetails;
+
+  constructor(message: string, details: SupabaseErrorDetails) {
+    super(message);
+    this.name = 'SupabaseRequestError';
+    this.details = details;
+  }
+}
+
 const sessionKey = 'financaspro-supabase-session';
 export const supabaseNotConfiguredMessage = 'Modo local ativo. Configure o Supabase para sincronização online.';
 
@@ -52,6 +69,20 @@ export function getStoredSession(): SupabaseSession | null {
 export function storeSession(session: SupabaseSession | null): void {
   if (!session) localStorage.removeItem(sessionKey);
   else localStorage.setItem(sessionKey, JSON.stringify(session));
+}
+
+export function summarizeSupabaseResponse(response: unknown): string {
+  if (!response) return 'Sem detalhes retornados pelo Supabase.';
+  if (typeof response === 'string') return response.slice(0, 240);
+  if (typeof response === 'object') {
+    const payload = response as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown; error?: unknown };
+    return [payload.message, payload.details, payload.hint, payload.code, payload.error]
+      .filter(Boolean)
+      .map(String)
+      .join(' | ')
+      .slice(0, 360) || JSON.stringify(response).slice(0, 360);
+  }
+  return String(response).slice(0, 240);
 }
 
 function authHeaders(token?: string): HeadersInit {
@@ -119,15 +150,22 @@ export async function signOut(session: SupabaseSession | null): Promise<void> {
 export async function supabaseFetch<T>(path: string, init: RequestInit = {}, session = getStoredSession()): Promise<T> {
   if (!isSupabaseConfigured()) throw new Error(supabaseNotConfiguredMessage);
   if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
+  const method = init.method ?? 'GET';
   const response = await fetch(`${supabaseConfig.url}${path}`, {
     ...init,
     headers: { ...authHeaders(session.access_token), Prefer: 'return=representation', ...(init.headers ?? {}) },
   });
   const text = await response.text();
-  const data = text ? (JSON.parse(text) as T) : ([] as T);
-  if (!response.ok) {
-    console.error('Erro Supabase:', response.status, data);
-    throw new Error('Não foi possível sincronizar agora. Seus dados continuam salvos neste dispositivo.');
+  let data: unknown = [];
+  try {
+    data = text ? JSON.parse(text) : [];
+  } catch {
+    data = text;
   }
-  return data;
+  if (!response.ok) {
+    const details = { status: response.status, path, method, response: data };
+    console.error('Erro Supabase:', details);
+    throw new SupabaseRequestError(`Supabase ${method} ${path} falhou (${response.status}): ${summarizeSupabaseResponse(data)}`, details);
+  }
+  return data as T;
 }

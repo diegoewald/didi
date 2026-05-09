@@ -11,7 +11,7 @@ import { useFinanceStore } from '../transactions/store';
 export function SettingsPage() {
   const store = useFinanceStore();
   const auth = useAuthStore();
-  const { syncNow, migrateLocal, keepLocalOnly, cancelMigration, exportBackupBeforeSync } = useSyncController({ auto: false });
+  const { syncNow, migrateLocal, keepLocalOnly, cancelMigration, exportBackupBeforeSync, runSupabaseSyncDiagnostic } = useSyncController({ auto: false });
   const [settings, setSettings] = useState<AppSettings>(store.settings);
 
   useEffect(() => {
@@ -25,6 +25,17 @@ export function SettingsPage() {
     await store.upsertSettings({ ...settings, currency: 'BRL', dateFormat: 'dd/MM/yyyy' });
     alert('Configurações salvas com sucesso.');
   };
+
+  const runDiagnostic = async () => {
+    try {
+      const result = await runSupabaseSyncDiagnostic();
+      const summary = result.checks.map((check) => `${check.ok ? '✅' : '❌'} ${check.step}: ${check.detail}`).join('\n');
+      alert(`Diagnóstico Supabase\nConfigurado: ${result.configured ? 'sim' : 'não'}\nLogado: ${result.loggedIn ? 'sim' : 'não'}\n${summary}`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Erro ao executar diagnóstico Supabase.');
+    }
+  };
+
   const restore = async (file?: File) => {
     if (!file) return;
     try {
@@ -63,6 +74,7 @@ export function SettingsPage() {
           ) : (
             <>
               <button className="btn btn-primary" onClick={() => void syncNow()}>Sincronizar agora</button>
+              <button className="btn btn-secondary" onClick={() => void runDiagnostic()}>Testar conexão Supabase</button>
               <button className="btn btn-secondary" onClick={exportBackupBeforeSync}>Exportar backup antes de migrar</button>
               <button className="btn btn-secondary" onClick={() => void migrateLocal()}>Migrar dados locais para conta</button>
               <button className="btn btn-secondary" onClick={keepLocalOnly}>Manter apenas neste dispositivo</button>
