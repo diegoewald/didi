@@ -1,6 +1,6 @@
-# FinançasPro V1.6
+# FinançasPro V1.6.1
 
-FinançasPro é um app de finanças pessoais feito com **React + TypeScript + Vite**. Ele continua **local-first** com IndexedDB, importação Excel/CSV e backup local, e na V1.6 adiciona **login e sincronização opcional com Supabase** para usar os mesmos dados no PC e no celular.
+FinançasPro é um app de finanças pessoais feito com **React + TypeScript + Vite**. Ele continua **local-first** com IndexedDB, importação Excel/CSV e backup local, e na V1.6.1 adiciona **login e sincronização opcional com Supabase** para usar os mesmos dados no PC e no celular.
 
 ## Modos de uso
 
@@ -83,6 +83,9 @@ O arquivo `supabase/schema.sql` cria as tabelas:
 - `budgets`
 - `goals`
 - `settings`
+- `sync_queue` (reservada para auditoria/expansão futura)
+
+> Se você aplicou o schema experimental da V1.6.0 em um projeto de teste, reaplique `supabase/schema.sql`. A V1.6.1 usa chave primária composta `(user_id, id)` para evitar colisão entre usuários com IDs locais iguais.
 
 Todas possuem `id`, `user_id`, `data`, `created_at`, `updated_at`, `deleted_at` e RLS para `user_id = auth.uid()`.
 

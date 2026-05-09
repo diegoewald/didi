@@ -2,7 +2,7 @@ import { openDB, type DBSchema } from 'idb';
 import type { Account, AppSettings, Budget, Category, CreditCard, Goal, Transaction } from '../../types';
 import { defaultAccounts, defaultBudgets, defaultCategories, defaultCreditCards, defaultGoals, defaultSettings } from '../../constants/defaults';
 
-type StoreName = 'transactions' | 'categories' | 'accounts' | 'creditCards' | 'budgets' | 'goals' | 'settings';
+export type StoreName = 'transactions' | 'categories' | 'accounts' | 'creditCards' | 'budgets' | 'goals' | 'settings';
 
 interface FinancasProDB extends DBSchema {
   transactions: { key: string; value: Transaction };

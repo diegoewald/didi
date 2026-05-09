@@ -15,7 +15,26 @@ export function readSyncQueue(): SyncOperation[] {
 }
 
 export function writeSyncQueue(queue: SyncOperation[]): void {
-  localStorage.setItem(queueKey, JSON.stringify(queue));
+  localStorage.setItem(queueKey, JSON.stringify(compactSyncQueue(queue)));
+}
+
+export function compactSyncQueue(queue: SyncOperation[]): SyncOperation[] {
+  const compacted = new Map<string, SyncOperation>();
+  for (const operation of queue) {
+    const key = `${operation.collection}:${operation.recordId}`;
+    const previous = compacted.get(key);
+    if (!previous) {
+      compacted.set(key, operation);
+      continue;
+    }
+    compacted.set(key, {
+      ...operation,
+      id: previous.id,
+      attempts: Math.max(previous.attempts, operation.attempts),
+      updatedAt: operation.updatedAt >= previous.updatedAt ? operation.updatedAt : previous.updatedAt,
+    });
+  }
+  return [...compacted.values()].sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));
 }
 
 export function enqueueSyncOperation<K extends SyncCollection>(collection: K, action: SyncOperation<K>['action'], recordId: string, payload?: SyncEntityMap[K]): SyncOperation<K> {

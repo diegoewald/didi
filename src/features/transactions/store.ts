@@ -1,17 +1,17 @@
 import { create } from 'zustand';
 import type { Account, AppSettings, BackupPayload, Budget, Category, CreditCard, Goal, Transaction } from '../../types';
-import type { SyncSnapshot } from '../../lib/sync/syncTypes';
+import type { SyncCollection, SyncEntityMap, SyncSnapshot } from '../../lib/sync/syncTypes';
 import { defaultSettings } from '../../constants/defaults';
-import { clearAllData, deleteOne, getAll, putMany, putOne, seedDefaultsIfNeeded } from '../../lib/db/localDb';
+import { clearAllData, clearStore, deleteOne, getAll, putMany, putOne, seedDefaultsIfNeeded, type StoreName } from '../../lib/db/localDb';
 import { deleteById, filterNewTransactions, hasDuplicateBudget, upsertById } from '../../lib/crud/collections';
 import { enqueueSyncOperation } from '../../lib/sync/syncQueue';
 import { flushSyncQueue } from '../../lib/sync/syncService';
-import type { SyncCollection, SyncEntityMap } from '../../lib/sync/syncTypes';
+import { getStoredSession, isSupabaseConfigured } from '../../lib/supabase/client';
 
 
 function queueSync<K extends SyncCollection>(collection: K, action: 'upsert' | 'delete', recordId: string, payload?: SyncEntityMap[K]): void {
   enqueueSyncOperation(collection, action, recordId, payload);
-  void flushSyncQueue().catch(() => undefined);
+  if (isSupabaseConfigured() && getStoredSession()) void flushSyncQueue().catch(() => undefined);
 }
 
 function readCachedSettings(): AppSettings {
@@ -204,6 +204,8 @@ export const useFinanceStore = create<FinanceStore>((set, get) => ({
   },
   async applySnapshot(snapshot) {
     const settings = snapshot.settings[0] ?? get().settings;
+    const stores: StoreName[] = ['transactions', 'categories', 'accounts', 'creditCards', 'budgets', 'goals', 'settings'];
+    await Promise.all(stores.map((store) => clearStore(store)));
     await Promise.all([
       putMany('transactions', snapshot.transactions),
       putMany('categories', snapshot.categories),

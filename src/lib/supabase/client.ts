@@ -15,21 +15,33 @@ interface AuthResponse {
   msg?: string;
 }
 
+export interface SupabasePublicConfig {
+  url: string;
+  anonKey: string;
+}
+
 const sessionKey = 'financaspro-supabase-session';
+export const supabaseNotConfiguredMessage = 'Modo local ativo. Configure o Supabase para sincronização online.';
 
-export const supabaseConfig = {
-  url: (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, '') ?? '',
-  anonKey: (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? '',
-};
+export function resolveSupabaseConfig(env: Record<string, string | undefined>): SupabasePublicConfig {
+  return {
+    url: (env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, ''),
+    anonKey: (env.VITE_SUPABASE_ANON_KEY ?? '').trim(),
+  };
+}
 
-export function isSupabaseConfigured(): boolean {
-  return Boolean(supabaseConfig.url && supabaseConfig.anonKey);
+export const supabaseConfig = resolveSupabaseConfig(import.meta.env);
+
+export function isSupabaseConfigured(config = supabaseConfig): boolean {
+  return Boolean(config.url && config.anonKey);
 }
 
 export function getStoredSession(): SupabaseSession | null {
   try {
     const raw = localStorage.getItem(sessionKey);
-    return raw ? (JSON.parse(raw) as SupabaseSession) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SupabaseSession;
+    return parsed.access_token && parsed.user?.id ? parsed : null;
   } catch (error) {
     console.warn('Sessão online inválida removida.', error);
     localStorage.removeItem(sessionKey);
@@ -54,8 +66,8 @@ function toFriendlyAuthError(payload: AuthResponse): Error {
   return new Error(payload.error_description || payload.msg || payload.error || 'Não foi possível autenticar. Confira email e senha.');
 }
 
-function normalizeSession(payload: AuthResponse): SupabaseSession {
-  if (!payload.access_token || !payload.user?.id) throw toFriendlyAuthError(payload);
+function normalizeSession(payload: AuthResponse): SupabaseSession | null {
+  if (!payload.access_token || !payload.user?.id) return null;
   return {
     access_token: payload.access_token,
     refresh_token: payload.refresh_token,
@@ -65,7 +77,7 @@ function normalizeSession(payload: AuthResponse): SupabaseSession {
 }
 
 export async function signInWithPassword(email: string, password: string): Promise<SupabaseSession> {
-  if (!isSupabaseConfigured()) throw new Error('Supabase não configurado. Use o modo local ou preencha as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+  if (!isSupabaseConfigured()) throw new Error(supabaseNotConfiguredMessage);
   const response = await fetch(`${supabaseConfig.url}/auth/v1/token?grant_type=password`, {
     method: 'POST',
     headers: authHeaders(),
@@ -74,12 +86,13 @@ export async function signInWithPassword(email: string, password: string): Promi
   const payload = (await response.json()) as AuthResponse;
   if (!response.ok) throw toFriendlyAuthError(payload);
   const session = normalizeSession(payload);
+  if (!session) throw new Error('Sessão não retornada. Confirme seu email e tente entrar novamente.');
   storeSession(session);
   return session;
 }
 
-export async function signUpWithPassword(email: string, password: string): Promise<SupabaseSession> {
-  if (!isSupabaseConfigured()) throw new Error('Supabase não configurado. Use o modo local ou preencha as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.');
+export async function signUpWithPassword(email: string, password: string): Promise<SupabaseSession | null> {
+  if (!isSupabaseConfigured()) throw new Error(supabaseNotConfiguredMessage);
   const response = await fetch(`${supabaseConfig.url}/auth/v1/signup`, {
     method: 'POST',
     headers: authHeaders(),
@@ -104,7 +117,7 @@ export async function signOut(session: SupabaseSession | null): Promise<void> {
 }
 
 export async function supabaseFetch<T>(path: string, init: RequestInit = {}, session = getStoredSession()): Promise<T> {
-  if (!isSupabaseConfigured()) throw new Error('Modo local ativo. Supabase não configurado.');
+  if (!isSupabaseConfigured()) throw new Error(supabaseNotConfiguredMessage);
   if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
   const response = await fetch(`${supabaseConfig.url}${path}`, {
     ...init,

@@ -18,7 +18,7 @@ export function MobileNav({ current, navigate }: { current: string; navigate: (p
       <aside className={`fixed bottom-0 left-0 right-0 z-50 max-h-[82vh] rounded-t-[2rem] border border-slate-200 bg-white p-4 shadow-2xl transition-transform duration-200 dark:border-slate-800 dark:bg-slate-950 lg:hidden ${open ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.18em] text-teal-700 dark:text-teal-300">Menu V1.6</p>
+            <p className="text-xs font-black uppercase tracking-[.18em] text-teal-700 dark:text-teal-300">Menu V1.6.1</p>
             <h2 className="text-xl font-black">Todas as telas</h2>
           </div>
           <button className="btn btn-secondary !min-h-11 !px-3" aria-label="Fechar menu" onClick={() => setOpen(false)}><X size={20} /></button>

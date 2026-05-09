@@ -1,4 +1,4 @@
-import type { SyncEntity } from './syncTypes';
+import type { SyncCollection, SyncEntity, SyncSnapshot } from './syncTypes';
 
 function timestampOf(item: SyncEntity): string {
   const candidate = item as { updatedAt?: string; createdAt?: string; id?: string };
@@ -28,4 +28,17 @@ export function dedupeByIdAndExternalId<T extends { id: string; externalId?: str
     result.push(item);
   }
   return result;
+}
+
+
+export function removeDeletedFromSnapshot(snapshot: SyncSnapshot, deleted: Record<SyncCollection, string[]>): SyncSnapshot {
+  return {
+    transactions: snapshot.transactions.filter((item) => !deleted.transactions.includes(item.id)),
+    categories: snapshot.categories.filter((item) => !deleted.categories.includes(item.id)),
+    accounts: snapshot.accounts.filter((item) => !deleted.accounts.includes(item.id)),
+    creditCards: snapshot.creditCards.filter((item) => !deleted.creditCards.includes(item.id)),
+    budgets: snapshot.budgets.filter((item) => !deleted.budgets.includes(item.id)),
+    goals: snapshot.goals.filter((item) => !deleted.goals.includes(item.id)),
+    settings: snapshot.settings.filter((item) => !item.id || !deleted.settings.includes(item.id)),
+  };
 }

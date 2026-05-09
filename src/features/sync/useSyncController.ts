@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { isSupabaseConfigured } from '../../lib/supabase/client';
-import { fetchRemoteDeletedIds, fetchRemoteSnapshot, flushSyncQueue, mergeSnapshots, migrateLocalSnapshot, removeDeletedFromSnapshot } from '../../lib/sync/syncService';
+import { fetchRemoteDeletedIds, fetchRemoteSnapshot, flushSyncQueue, mergeSnapshots, migrateLocalSnapshot } from '../../lib/sync/syncService';
+import { removeDeletedFromSnapshot } from '../../lib/sync/merge';
 import type { MigrationSummary } from '../../lib/sync/syncTypes';
 import { exportBackup } from '../../lib/export/backup';
 import { useAuthStore } from '../auth/authStore';

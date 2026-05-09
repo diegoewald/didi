@@ -31,7 +31,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   async signUp(email, password) {
     const session = await signUpWithPassword(email, password);
-    set({ session, status: 'online', message: 'Conta criada. Sincronização disponível.' });
+    if (session) set({ session, status: 'online', message: 'Conta criada. Sincronização disponível.' });
+    else set({ session: null, status: 'local', message: 'Conta criada. Confirme seu email e depois entre para sincronizar.' });
   },
   async logout() {
     await signOut(get().session);

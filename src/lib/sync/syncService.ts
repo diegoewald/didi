@@ -1,7 +1,7 @@
 import { deleteOne, putMany, putOne } from '../db/localDb';
-import { supabaseFetch } from '../supabase/client';
+import { getStoredSession, supabaseFetch } from '../supabase/client';
 import { clearSyncOperation, markSyncOperationAttempt, readSyncQueue } from './syncQueue';
-import { mergeByLatest } from './merge';
+import { dedupeByIdAndExternalId, mergeByLatest } from './merge';
 import type { MigrationSummary, SyncCollection, SyncEntityMap, SyncOperation, SyncSnapshot } from './syncTypes';
 
 const tableByCollection: Record<SyncCollection, string> = {
@@ -29,17 +29,21 @@ function withSyncMetadata<T extends { id?: string }>(item: T): T {
 }
 
 async function upsertRemote<K extends SyncCollection>(collection: K, item: SyncEntityMap[K]): Promise<void> {
+  const session = getStoredSession();
+  if (!session?.user.id) throw new Error('Sessão expirada. Entre novamente.');
   const record = withSyncMetadata(item as SyncEntityMap[K] & { id?: string });
-  const body = { id: record.id, data: record, updated_at: updatedAtOf(record), deleted_at: null, source: 'web' };
-  await supabaseFetch(`/rest/v1/${tableByCollection[collection]}?on_conflict=id`, {
+  const body = { id: record.id, user_id: session.user.id, data: record, updated_at: updatedAtOf(record), deleted_at: null, source: 'web' };
+  await supabaseFetch(`/rest/v1/${tableByCollection[collection]}?on_conflict=user_id,id`, {
     method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates' },
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
     body: JSON.stringify(body),
   });
 }
 
 async function softDeleteRemote(collection: SyncCollection, id: string): Promise<void> {
-  await supabaseFetch(`/rest/v1/${tableByCollection[collection]}?id=eq.${encodeURIComponent(id)}`, {
+  const session = getStoredSession();
+  if (!session?.user.id) throw new Error('Sessão expirada. Entre novamente.');
+  await supabaseFetch(`/rest/v1/${tableByCollection[collection]}?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`, {
     method: 'PATCH',
     body: JSON.stringify({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
   });
@@ -89,18 +93,6 @@ export async function fetchRemoteDeletedIds(): Promise<Record<SyncCollection, st
   return { transactions, categories, accounts, creditCards, budgets, goals, settings };
 }
 
-export function removeDeletedFromSnapshot(snapshot: SyncSnapshot, deleted: Record<SyncCollection, string[]>): SyncSnapshot {
-  return {
-    transactions: snapshot.transactions.filter((item) => !deleted.transactions.includes(item.id)),
-    categories: snapshot.categories.filter((item) => !deleted.categories.includes(item.id)),
-    accounts: snapshot.accounts.filter((item) => !deleted.accounts.includes(item.id)),
-    creditCards: snapshot.creditCards.filter((item) => !deleted.creditCards.includes(item.id)),
-    budgets: snapshot.budgets.filter((item) => !deleted.budgets.includes(item.id)),
-    goals: snapshot.goals.filter((item) => !deleted.goals.includes(item.id)),
-    settings: snapshot.settings.filter((item) => !item.id || !deleted.settings.includes(item.id)),
-  };
-}
-
 export async function fetchRemoteSnapshot(): Promise<SyncSnapshot> {
   const [transactions, categories, accounts, creditCards, budgets, goals, settings] = await Promise.all([
     fetchCollection('transactions'),
@@ -116,7 +108,7 @@ export async function fetchRemoteSnapshot(): Promise<SyncSnapshot> {
 
 export function mergeSnapshots(local: SyncSnapshot, remote: SyncSnapshot): SyncSnapshot {
   return {
-    transactions: mergeByLatest(local.transactions, remote.transactions),
+    transactions: dedupeByIdAndExternalId(mergeByLatest(local.transactions, remote.transactions)),
     categories: mergeByLatest(local.categories, remote.categories),
     accounts: mergeByLatest(local.accounts, remote.accounts),
     creditCards: mergeByLatest(local.creditCards, remote.creditCards),
