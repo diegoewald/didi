@@ -1,7 +1,7 @@
 import { deleteOne, putMany, putOne } from '../db/localDb';
 import { getStoredSession, supabaseFetch } from '../supabase/client';
 import { clearSyncOperation, markSyncOperationAttempt, readSyncQueue } from './syncQueue';
-import { dedupeByIdAndExternalId, mergeByLatest } from './merge';
+import { dedupeTransactionsByIdentity, mergeByLatest } from './merge';
 import type { MigrationSummary, SyncCollection, SyncEntityMap, SyncOperation, SyncSnapshot } from './syncTypes';
 
 const tableByCollection: Record<SyncCollection, string> = {
@@ -108,7 +108,7 @@ export async function fetchRemoteSnapshot(): Promise<SyncSnapshot> {
 
 export function mergeSnapshots(local: SyncSnapshot, remote: SyncSnapshot): SyncSnapshot {
   return {
-    transactions: dedupeByIdAndExternalId(mergeByLatest(local.transactions, remote.transactions)),
+    transactions: dedupeTransactionsByIdentity(mergeByLatest(local.transactions, remote.transactions)),
     categories: mergeByLatest(local.categories, remote.categories),
     accounts: mergeByLatest(local.accounts, remote.accounts),
     creditCards: mergeByLatest(local.creditCards, remote.creditCards),

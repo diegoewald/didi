@@ -28,7 +28,7 @@ export function AppLayout({
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[.25em] text-teal-700 dark:text-teal-300">
-                <Sparkles size={14} /> FinançasPro V1.6.1
+                <Sparkles size={14} /> FinançasPro V1.6.2
               </div>
               <h2 className="truncate text-lg font-black tracking-[-.03em] text-slate-950 dark:text-white sm:text-2xl">
                 Controle financeiro premium

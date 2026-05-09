@@ -23,14 +23,14 @@ export interface SupabasePublicConfig {
 const sessionKey = 'financaspro-supabase-session';
 export const supabaseNotConfiguredMessage = 'Modo local ativo. Configure o Supabase para sincronização online.';
 
-export function resolveSupabaseConfig(env: Record<string, string | undefined>): SupabasePublicConfig {
+export function resolveSupabaseConfig(env: { VITE_SUPABASE_URL?: string; VITE_SUPABASE_ANON_KEY?: string }): SupabasePublicConfig {
   return {
     url: (env.VITE_SUPABASE_URL ?? '').trim().replace(/\/$/, ''),
     anonKey: (env.VITE_SUPABASE_ANON_KEY ?? '').trim(),
   };
 }
 
-export const supabaseConfig = resolveSupabaseConfig(import.meta.env);
+export const supabaseConfig = resolveSupabaseConfig({ VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY });
 
 export function isSupabaseConfigured(config = supabaseConfig): boolean {
   return Boolean(config.url && config.anonKey);

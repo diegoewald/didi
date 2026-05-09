@@ -8,6 +8,8 @@ const label = {
   synced: 'Sincronizado',
   error: 'Erro de sync',
   offline: 'Offline',
+  migration_pending: 'Migração pendente',
+  migration_done: 'Migração concluída',
 };
 
 export function SyncStatus() {

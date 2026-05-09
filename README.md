@@ -1,6 +1,6 @@
-# FinançasPro V1.6.1
+# FinançasPro V1.6.2
 
-FinançasPro é um app de finanças pessoais feito com **React + TypeScript + Vite**. Ele continua **local-first** com IndexedDB, importação Excel/CSV e backup local, e na V1.6.1 adiciona **login e sincronização opcional com Supabase** para usar os mesmos dados no PC e no celular.
+FinançasPro é um app de finanças pessoais feito com **React + TypeScript + Vite**. Ele continua **local-first** com IndexedDB, importação Excel/CSV e backup local, e na V1.6.2 adiciona **login e sincronização opcional com Supabase** para usar os mesmos dados no PC e no celular.
 
 ## Modos de uso
 
@@ -85,7 +85,7 @@ O arquivo `supabase/schema.sql` cria as tabelas:
 - `settings`
 - `sync_queue` (reservada para auditoria/expansão futura)
 
-> Se você aplicou o schema experimental da V1.6.0 em um projeto de teste, reaplique `supabase/schema.sql`. A V1.6.1 usa chave primária composta `(user_id, id)` para evitar colisão entre usuários com IDs locais iguais.
+> Se você aplicou o schema experimental da V1.6.0 em um projeto de teste, reaplique `supabase/schema.sql`. A V1.6.2 usa chave primária composta `(user_id, id)` para evitar colisão entre usuários com IDs locais iguais.
 
 Todas possuem `id`, `user_id`, `data`, `created_at`, `updated_at`, `deleted_at` e RLS para `user_id = auth.uid()`.
 
@@ -97,17 +97,20 @@ Todas possuem `id`, `user_id`, `data`, `created_at`, `updated_at`, `deleted_at` 
 
 ## Migrar dados locais para a conta online
 
-1. Faça login.
-2. Vá em **Configurações**.
-3. Clique em **Exportar backup antes de sincronizar**.
-4. Clique em **Migrar dados locais para conta**.
-5. Confirme a migração.
+A V1.6.2 **não envia dados locais para o Supabase automaticamente ao fazer login**. Se existirem dados neste dispositivo, o status muda para **Migração pendente** e a tela Configurações oferece quatro opções:
+
+1. **Exportar backup antes de migrar** — recomendado antes de qualquer envio.
+2. **Migrar dados locais para conta** — envia dados locais para sua conta online depois de confirmação explícita.
+3. **Manter apenas neste dispositivo** — não envia a fila local antiga para a nuvem.
+4. **Cancelar migração** — deixa a decisão para depois.
 
 A migração:
 - não apaga IndexedDB automaticamente;
 - mantém IDs quando possível;
-- evita duplicação por ID/externalId quando os dados são mesclados;
-- mostra resumo de registros enviados;
+- evita duplicação por ID, `externalId` e chave natural `data + descrição + valor` para lançamentos;
+- usa `updatedAt` para manter a versão mais nova em conflitos;
+- migra lançamentos, categorias, contas, cartões, orçamentos, metas e configurações;
+- mostra resumo antes e depois;
 - preserva dados locais se houver falha.
 
 ## Como a sincronização funciona
@@ -116,8 +119,8 @@ A migração:
 - Se o usuário estiver logado, a operação entra em uma fila local e é enviada ao Supabase.
 - Se estiver offline ou houver erro, a fila permanece no dispositivo.
 - Quando a conexão volta, o app tenta sincronizar novamente.
-- Conflitos usam regra simples: **última alteração vence** por `updatedAt`.
-- Exclusões online usam `deleted_at` para soft delete.
+- Conflitos usam regra simples: **última alteração vence** por `updatedAt`; conflitos são registrados no console para auditoria técnica.
+- Exclusões online usam `deleted_at` para soft delete e são ocultadas localmente ao sincronizar.
 
 ## Importação Excel/CSV
 
@@ -129,6 +132,14 @@ A tela **Importar** aceita `.xlsx` e `.csv`, valida colunas, mostra prévia e ev
 - Backup criptografado usa Web Crypto quando disponível.
 - Em HTTP por IP local, alguns navegadores bloqueiam `crypto.subtle`; nesse caso use backup simples ou publique em HTTPS.
 - Restaurar backup nunca exige Supabase.
+
+## Como testar RLS
+
+1. Crie dois usuários diferentes no Supabase Auth.
+2. Entre com o usuário A e crie/migre um lançamento.
+3. Entre com o usuário B em outro navegador ou perfil.
+4. Confirme que o usuário B não consegue ver os dados do usuário A.
+5. No SQL Editor, evite usar chaves privilegiadas para simular o app; teste com sessões autenticadas e RLS ativo.
 
 ## Deploy Vercel
 

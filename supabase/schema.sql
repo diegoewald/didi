@@ -1,4 +1,4 @@
--- FinançasPro V1.6.1 — schema Supabase local-first com RLS obrigatório.
+-- FinançasPro V1.6.2 — schema Supabase local-first com RLS obrigatório.
 -- Execute este SQL no Supabase SQL Editor. Use somente a anon key no frontend; nunca use chave privilegiada no app.
 
 create extension if not exists pgcrypto;

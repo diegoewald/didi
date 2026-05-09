@@ -5,13 +5,10 @@ import { defaultSettings } from '../../constants/defaults';
 import { clearAllData, clearStore, deleteOne, getAll, putMany, putOne, seedDefaultsIfNeeded, type StoreName } from '../../lib/db/localDb';
 import { deleteById, filterNewTransactions, hasDuplicateBudget, upsertById } from '../../lib/crud/collections';
 import { enqueueSyncOperation } from '../../lib/sync/syncQueue';
-import { flushSyncQueue } from '../../lib/sync/syncService';
-import { getStoredSession, isSupabaseConfigured } from '../../lib/supabase/client';
 
 
 function queueSync<K extends SyncCollection>(collection: K, action: 'upsert' | 'delete', recordId: string, payload?: SyncEntityMap[K]): void {
   enqueueSyncOperation(collection, action, recordId, payload);
-  if (isSupabaseConfigured() && getStoredSession()) void flushSyncQueue().catch(() => undefined);
 }
 
 function readCachedSettings(): AppSettings {

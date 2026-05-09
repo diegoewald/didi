@@ -1,8 +1,14 @@
+import type { Transaction } from '../../types';
 import type { SyncCollection, SyncEntity, SyncSnapshot } from './syncTypes';
 
 function timestampOf(item: SyncEntity): string {
   const candidate = item as { updatedAt?: string; createdAt?: string; id?: string };
   return candidate.updatedAt ?? candidate.createdAt ?? '1970-01-01T00:00:00.000Z';
+}
+
+function transactionIdentity(transaction: Transaction): string {
+  if (transaction.externalId) return `external:${transaction.externalId.trim().toLocaleLowerCase('pt-BR')}`;
+  return `natural:${transaction.date}|${transaction.description.trim().toLocaleLowerCase('pt-BR')}|${transaction.value}`;
 }
 
 export function mergeByLatest<T extends { id?: string }>(local: T[], remote: T[]): T[] {
@@ -11,7 +17,10 @@ export function mergeByLatest<T extends { id?: string }>(local: T[], remote: T[]
   for (const item of remote) {
     if (!item.id) continue;
     const current = map.get(item.id);
-    if (!current || timestampOf(item as unknown as SyncEntity) >= timestampOf(current as unknown as SyncEntity)) map.set(item.id, item);
+    if (!current || timestampOf(item as unknown as SyncEntity) >= timestampOf(current as unknown as SyncEntity)) {
+      if (current && timestampOf(item as unknown as SyncEntity) !== timestampOf(current as unknown as SyncEntity)) console.info('Conflito resolvido por updatedAt mais recente:', item.id);
+      map.set(item.id, item);
+    }
   }
   return [...map.values()];
 }
@@ -30,6 +39,15 @@ export function dedupeByIdAndExternalId<T extends { id: string; externalId?: str
   return result;
 }
 
+export function dedupeTransactionsByIdentity(transactions: Transaction[]): Transaction[] {
+  const byIdentity = new Map<string, Transaction>();
+  for (const transaction of transactions) {
+    const key = transactionIdentity(transaction);
+    const current = byIdentity.get(key);
+    if (!current || timestampOf(transaction) >= timestampOf(current)) byIdentity.set(key, transaction);
+  }
+  return dedupeByIdAndExternalId([...byIdentity.values()]);
+}
 
 export function removeDeletedFromSnapshot(snapshot: SyncSnapshot, deleted: Record<SyncCollection, string[]>): SyncSnapshot {
   return {

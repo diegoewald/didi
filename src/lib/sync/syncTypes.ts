@@ -1,8 +1,8 @@
 import type { Account, AppSettings, Budget, Category, CreditCard, Goal, Transaction } from '../../types';
 
 export type SyncCollection = 'transactions' | 'categories' | 'accounts' | 'creditCards' | 'budgets' | 'goals' | 'settings';
-export type SyncStatus = 'local' | 'online' | 'syncing' | 'synced' | 'error' | 'offline';
-export type SyncAction = 'upsert' | 'delete';
+export type SyncStatus = 'local' | 'online' | 'syncing' | 'synced' | 'error' | 'offline' | 'migration_pending' | 'migration_done';
+export type SyncAction = 'create' | 'update' | 'upsert' | 'delete';
 
 export interface SyncEntityMap {
   transactions: Transaction;
