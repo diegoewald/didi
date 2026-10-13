@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - build/decibel-meter-apk
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
