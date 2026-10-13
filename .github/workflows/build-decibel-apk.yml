@@ -1,0 +1,65 @@
+name: Build Decibel Meter APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-decibel-apk.yml'
+      - 'decibel-apk/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore Android Studio project
+        run: |
+          cat decibel-apk/project.b64.part* | base64 --decode > /tmp/DecibelMeterPro_AndroidStudio.zip
+          mkdir -p /tmp/decibel-build
+          unzip -q /tmp/DecibelMeterPro_AndroidStudio.zip -d /tmp/decibel-build
+          test -f /tmp/decibel-build/DecibelMeterPro/settings.gradle
+
+      - name: Build installable debug APK
+        working-directory: /tmp/decibel-build/DecibelMeterPro
+        run: gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Prepare installer
+        run: |
+          mkdir -p /tmp/installer
+          cp /tmp/decibel-build/DecibelMeterPro/app/build/outputs/apk/debug/app-debug.apk /tmp/installer/Medidor_de_Decibeis_v1.0.apk
+          sha256sum /tmp/installer/Medidor_de_Decibeis_v1.0.apk
+
+      - name: Upload APK installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Medidor-de-Decibeis-v1.0-APK
+          path: /tmp/installer/Medidor_de_Decibeis_v1.0.apk
+          if-no-files-found: error
+          retention-days: 30
