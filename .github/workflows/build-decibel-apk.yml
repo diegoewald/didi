@@ -51,8 +51,14 @@ jobs:
 
       - name: Apply battery optimization patch
         run: |
+          echo "4596b0960f61d4daf47d8a98ed712c5448c45050bb03891e3f839f24384af4be  decibel-apk/v21patch.part00" | sha256sum -c -
+          echo "e11758fc777b54872e541f6507d5d955a76b9da642a476a74e427bef40e563d6  decibel-apk/v21patch.part01" | sha256sum -c -
+          echo "7459a9a377b5d5117cf85a4a0cab321c25989d06cbfd6c36d3d4f4fa324121ae  decibel-apk/v21patch.part02" | sha256sum -c -
+          echo "30e635c263cd1d51d3c79946270f631bde4f3d006e845558314bab954ccce555  decibel-apk/v21patch.part03" | sha256sum -c -
+          echo "e8fe7aaf2f582f82f9ce5c08bacaaee898d38f74d1711d8794c0d3b80de43259  decibel-apk/v21patch.part04" | sha256sum -c -
+          echo "abc4e2fd78773884339268969eb406475b74b3f249a4be6c543c50bd706b22b5  decibel-apk/v21patch.part05" | sha256sum -c -
+          echo "6b87a4b3d4e52cb235fea72fc4b47b46fa01855abfa650625dfedd2959d70d3f  decibel-apk/v21patch.part06" | sha256sum -c -
           cat decibel-apk/v21patch.part* > /tmp/v21patch.b64
-          test "$(wc -c < /tmp/v21patch.b64)" -eq 12056
           echo "1e118484738bf46a5e055839279cd66bde973f1fa5fe622db24ef851b2b77023  /tmp/v21patch.b64" | sha256sum -c -
           base64 --decode /tmp/v21patch.b64 | gzip -dc > /tmp/decibel-v21.patch
           echo "8d8119ab623e9e92591a00ad3fd8a75ab273ee18685ef7bfbd91033e159b3112  /tmp/decibel-v21.patch" | sha256sum -c -
