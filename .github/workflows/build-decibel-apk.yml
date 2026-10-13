@@ -21,13 +21,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android SDK packages
         run: |
@@ -42,6 +44,7 @@ jobs:
       - name: Restore Android Studio project
         run: |
           cat decibel-apk/project.b64.part* | base64 --decode > /tmp/DecibelMeterPro_AndroidStudio.zip
+          rm -rf /tmp/decibel-build
           mkdir -p /tmp/decibel-build
           unzip -q /tmp/DecibelMeterPro_AndroidStudio.zip -d /tmp/decibel-build
           test -f /tmp/decibel-build/DecibelMeterPro/settings.gradle
