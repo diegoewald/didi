@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-decibel-apk.yml'
-      - 'decibel-apk/v2project.b64.part*'
+      - 'decibel-apk/v21.patch.gz.b64'
   workflow_dispatch:
 
 permissions:
@@ -49,6 +49,13 @@ jobs:
           unzip -q /tmp/DecibelMeterPro_AndroidStudio_v2.zip -d /tmp/decibel-build
           test -f /tmp/decibel-build/DecibelMeterPro/settings.gradle
 
+      - name: Apply battery optimization patch
+        run: |
+          base64 --decode decibel-apk/v21.patch.gz.b64 | gzip -dc > /tmp/decibel-v21.patch
+          cd /tmp/decibel-build/DecibelMeterPro
+          patch -p2 < /tmp/decibel-v21.patch
+          grep -q "versionName '2.1.0'" app/build.gradle
+
       - name: Build installable debug APK
         working-directory: /tmp/decibel-build/DecibelMeterPro
         run: gradle --no-daemon --stacktrace assembleDebug
@@ -56,13 +63,13 @@ jobs:
       - name: Prepare installer
         run: |
           mkdir -p /tmp/installer
-          cp /tmp/decibel-build/DecibelMeterPro/app/build/outputs/apk/debug/app-debug.apk /tmp/installer/Decibel_Meter_Pro_v2.0.apk
-          sha256sum /tmp/installer/Decibel_Meter_Pro_v2.0.apk
+          cp /tmp/decibel-build/DecibelMeterPro/app/build/outputs/apk/debug/app-debug.apk /tmp/installer/Decibel_Meter_Pro_v2.1_ECO.apk
+          sha256sum /tmp/installer/Decibel_Meter_Pro_v2.1_ECO.apk
 
       - name: Upload APK installer
         uses: actions/upload-artifact@v4
         with:
-          name: Decibel-Meter-Pro-v2.0-APK
-          path: /tmp/installer/Decibel_Meter_Pro_v2.0.apk
+          name: Decibel-Meter-Pro-v2.1-ECO-APK
+          path: /tmp/installer/Decibel_Meter_Pro_v2.1_ECO.apk
           if-no-files-found: error
           retention-days: 30
