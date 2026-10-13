@@ -1,11 +1,11 @@
-name: Build Decibel Meter APK
+name: Build Decibel Meter Pro APK
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/build-decibel-apk.yml'
-      - 'decibel-apk/**'
+      - 'decibel-apk/v2project.b64.part*'
   workflow_dispatch:
 
 permissions:
@@ -43,10 +43,10 @@ jobs:
 
       - name: Restore Android Studio project
         run: |
-          cat decibel-apk/project.b64.part* | base64 --decode > /tmp/DecibelMeterPro_AndroidStudio.zip
+          cat decibel-apk/v2project.b64.part* | base64 --decode > /tmp/DecibelMeterPro_AndroidStudio_v2.zip
           rm -rf /tmp/decibel-build
           mkdir -p /tmp/decibel-build
-          unzip -q /tmp/DecibelMeterPro_AndroidStudio.zip -d /tmp/decibel-build
+          unzip -q /tmp/DecibelMeterPro_AndroidStudio_v2.zip -d /tmp/decibel-build
           test -f /tmp/decibel-build/DecibelMeterPro/settings.gradle
 
       - name: Build installable debug APK
@@ -56,13 +56,13 @@ jobs:
       - name: Prepare installer
         run: |
           mkdir -p /tmp/installer
-          cp /tmp/decibel-build/DecibelMeterPro/app/build/outputs/apk/debug/app-debug.apk /tmp/installer/Medidor_de_Decibeis_v1.0.apk
-          sha256sum /tmp/installer/Medidor_de_Decibeis_v1.0.apk
+          cp /tmp/decibel-build/DecibelMeterPro/app/build/outputs/apk/debug/app-debug.apk /tmp/installer/Decibel_Meter_Pro_v2.0.apk
+          sha256sum /tmp/installer/Decibel_Meter_Pro_v2.0.apk
 
       - name: Upload APK installer
         uses: actions/upload-artifact@v4
         with:
-          name: Medidor-de-Decibeis-v1.0-APK
-          path: /tmp/installer/Medidor_de_Decibeis_v1.0.apk
+          name: Decibel-Meter-Pro-v2.0-APK
+          path: /tmp/installer/Decibel_Meter_Pro_v2.0.apk
           if-no-files-found: error
           retention-days: 30
