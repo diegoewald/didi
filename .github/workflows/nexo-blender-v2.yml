@@ -1,0 +1,52 @@
+name: Build NEXO MK3 in Blender v2
+
+on:
+  push:
+    branches: ["nexo-mk3-blender"]
+    paths:
+      - ".github/workflows/nexo-blender-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch generator for Blender 5.2 API
+        run: |
+          sed -i 's/BLENDER_EEVEE_NEXT/BLENDER_EEVEE/g' nexo/build_nexo_mk3.py
+          sed -i "s/; scene.view_settings.look='AgX - Medium High Contrast'//g" nexo/build_nexo_mk3.py
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+
+      - name: Download Blender 5.2.2 LTS
+        run: |
+          curl -L --retry 4 --retry-delay 3 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+
+      - name: Build actual Blender character
+        run: |
+          mkdir -p output
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/build_nexo_mk3.py
+
+      - name: Verify output
+        run: |
+          test -s output/NEXO_MK3_RIGGED.blend
+          test -s output/preview_3q.png
+          test -s output/preview_front.png
+          test -s output/preview_side.png
+          find output -maxdepth 1 -type f -printf '%f %s bytes\n'
+
+      - name: Upload Blender artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO_MK3_Blender_v2
+          path: output/
+          if-no-files-found: error
+          retention-days: 30
