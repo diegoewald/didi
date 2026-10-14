@@ -1,0 +1,37 @@
+name: CAES V4 Chunk3 Only
+
+on:
+  push:
+    branches: ["nexo-mk4-caes-stage"]
+    paths:
+      - ".github/workflows/caes-v4-chunk3-only.yml"
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runtime with retry
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          for i in 1 2 3 4; do
+            sudo apt-get update -qq && sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri && break
+            sleep 7
+          done
+          curl -L --retry 5 --retry-delay 2 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+      - name: Render frames 357 to 534
+        env:
+          START_FRAME: 357
+          END_FRAME: 534
+        run: |
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/render_caes_motion_v4_fast.py
+          test "$(find output_caes_motion_v4/frames -name '*.jpg' | wc -l)" -eq 178
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caes-v4-chunk3-final
+          path: output_caes_motion_v4/frames/*.jpg
+          if-no-files-found: error
+          retention-days: 7
