@@ -1,0 +1,48 @@
+name: Build NEXO MK4 CAES Master V2
+
+on:
+  push:
+    branches: ["nexo-mk4-caes-stage"]
+    paths:
+      - "nexo/refine_nexo_mk4_caes_stage.py"
+      - ".github/workflows/nexo-mk4-caes-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+
+      - name: Download Blender
+        run: |
+          curl -L --retry 4 --retry-delay 2 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+
+      - name: Build and refine production scene
+        run: |
+          mkdir -p output_mk4_caes
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/refine_nexo_mk4_caes_stage.py
+
+      - name: Verify reviewed outputs
+        run: |
+          test -s output_mk4_caes/NEXO_MK4_CAES_MASTER_V2.blend
+          test -s output_mk4_caes/SHOT_03_COMPRESSOR_V2.png
+          test -s output_mk4_caes/SHOT_04_CAVERN_V2.png
+          test -s output_mk4_caes/SHOT_05_TURBINE_V2.png
+          test -s output_mk4_caes/REVIEW_V2.json
+          ls -lh output_mk4_caes/
+
+      - name: Upload reviewed Blender package
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO_MK4_CAES_MASTER_V2
+          path: output_mk4_caes/
+          if-no-files-found: error
+          retention-days: 30
