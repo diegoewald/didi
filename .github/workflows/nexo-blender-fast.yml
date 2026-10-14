@@ -1,0 +1,51 @@
+name: Build NEXO MK3 Blender Fast
+
+on:
+  push:
+    branches: ["nexo-mk3-blender"]
+    paths:
+      - ".github/workflows/nexo-blender-fast.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch for fast Blender 5.2 build
+        run: |
+          sed -i 's/BLENDER_EEVEE_NEXT/BLENDER_WORKBENCH/g' nexo/build_nexo_mk3.py
+          sed -i "s/; scene.view_settings.look='AgX - Medium High Contrast'//g" nexo/build_nexo_mk3.py
+          sed -i 's/resolution_x=1080/resolution_x=640/g' nexo/build_nexo_mk3.py
+          sed -i 's/resolution_y=1350/resolution_y=800/g' nexo/build_nexo_mk3.py
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+
+      - name: Download Blender
+        run: |
+          curl -L --retry 4 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+
+      - name: Build Blender file and previews
+        run: |
+          mkdir -p output
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/build_nexo_mk3.py
+
+      - name: Verify
+        run: |
+          test -s output/NEXO_MK3_RIGGED.blend
+          test -s output/preview_3q.png
+          ls -lh output/
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO_MK3_Blender_FAST
+          path: output/
+          if-no-files-found: error
+          retention-days: 30
