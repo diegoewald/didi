@@ -1,0 +1,53 @@
+name: Build NEXO MK3 in Blender
+
+on:
+  push:
+    branches: ["nexo-mk3-blender"]
+    paths:
+      - "nexo/**"
+      - ".github/workflows/nexo-blender.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Blender runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+
+      - name: Download Blender 5.2.2 LTS
+        run: |
+          curl -L --retry 4 --retry-delay 3 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+          ./blender-5.2.2-linux-x64/blender --version
+
+      - name: Build, rig and render NEXO MK3
+        run: |
+          mkdir -p output
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python nexo/build_nexo_mk3.py
+
+      - name: List generated files
+        if: always()
+        run: |
+          find output -maxdepth 2 -type f -printf '%p %s bytes\n' || true
+
+      - name: Upload NEXO MK3 Blender package
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NEXO_MK3_Blender
+          path: |
+            output/NEXO_MK3_RIGGED.blend
+            output/NEXO_MK3_RIGGED.glb
+            output/NEXO_MK3_INFO.txt
+            output/preview_3q.png
+            output/preview_front.png
+            output/preview_side.png
+          if-no-files-found: error
+          retention-days: 30
