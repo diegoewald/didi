@@ -15,6 +15,15 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Blender 5 compatibility patch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('nexo/produce_caes_motion_v3.py')
+          s=p.read_text()
+          s=s.replace("    if action:\n        for fc in action.fcurves:", "    if action and hasattr(action, 'fcurves'):\n        for fc in action.fcurves:")
+          p.write_text(s)
+          PY
       - name: Install Blender dependencies
         run: |
           sudo apt-get update -qq
