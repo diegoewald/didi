@@ -1,0 +1,64 @@
+name: CAES Motion V4 Fast True3D Render
+
+on:
+  push:
+    branches: ["nexo-mk4-caes-stage"]
+    paths:
+      - ".github/workflows/caes-motion-v4-fast-render.yml"
+  workflow_dispatch:
+
+jobs:
+  render:
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk:
+          - {id: "01", start: 1, end: 178}
+          - {id: "02", start: 179, end: 356}
+          - {id: "03", start: 357, end: 534}
+          - {id: "04", start: 535, end: 712}
+          - {id: "05", start: 713, end: 890}
+          - {id: "06", start: 891, end: 1068}
+          - {id: "07", start: 1069, end: 1246}
+          - {id: "08", start: 1247, end: 1418}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+          curl -L --retry 4 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+      - name: Render chunk
+        env:
+          START_FRAME: ${{ matrix.chunk.start }}
+          END_FRAME: ${{ matrix.chunk.end }}
+        run: |
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/render_caes_motion_v4_fast.py
+          test "$(find output_caes_motion_v4/frames -name '*.jpg' | wc -l)" -ge 170
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caes-v4-fast-${{ matrix.chunk.id }}
+          path: output_caes_motion_v4/frames/*.jpg
+          if-no-files-found: error
+          retention-days: 7
+  assemble:
+    needs: render
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: caes-v4-fast-*
+          path: frames
+          merge-multiple: true
+      - run: |
+          test "$(find frames -name '*.jpg' | wc -l)" -ge 1410
+          ffmpeg -y -framerate 24 -start_number 1 -i 'frames/frame_%04d.jpg' -vf 'scale=720:1280:flags=lanczos' -c:v libx264 -preset medium -crf 17 -pix_fmt yuv420p -movflags +faststart CAES_V4_FAST_SILENT.mp4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CAES_V4_FAST_SILENT
+          path: CAES_V4_FAST_SILENT.mp4
+          if-no-files-found: error
+          retention-days: 30
