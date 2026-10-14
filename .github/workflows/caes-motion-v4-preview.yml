@@ -1,0 +1,40 @@
+name: CAES Motion V4 Eevee Preview
+
+on:
+  push:
+    branches: ["nexo-mk4-caes-stage"]
+    paths:
+      - "nexo/produce_caes_motion_v4.py"
+      - ".github/workflows/caes-motion-v4-preview.yml"
+  workflow_dispatch:
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri
+      - name: Download Blender 5.2.2 LTS
+        run: |
+          curl -L --retry 4 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+      - name: Render Eevee vertical review frames
+        env:
+          CAES_V4_PREVIEW: "1"
+        run: |
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/produce_caes_motion_v4.py
+      - name: Verify
+        run: |
+          test -s output_caes_motion_v4/CAES_MOTION_V4_MASTER.blend
+          test "$(find output_caes_motion_v4 -name 'preview_*.jpg' | wc -l)" -ge 16
+          ls -lh output_caes_motion_v4/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CAES_MOTION_V4_EEVEE_PREVIEW
+          path: output_caes_motion_v4/
+          if-no-files-found: error
+          retention-days: 30
