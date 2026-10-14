@@ -22,7 +22,7 @@ jobs:
           - {id: "07", start: 1069, end: 1246}
           - {id: "08", start: 1247, end: 1418}
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: Install runtime
@@ -38,7 +38,7 @@ jobs:
           START_FRAME: ${{ matrix.chunk.start }}
           END_FRAME: ${{ matrix.chunk.end }}
         run: |
-          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/produce_caes_motion_v4.py
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/render_caes_motion_v4_chunk.py
           test "$(find output_caes_motion_v4/frames -name '*.jpg' | wc -l)" -ge 170
       - uses: actions/upload-artifact@v4
         with:
