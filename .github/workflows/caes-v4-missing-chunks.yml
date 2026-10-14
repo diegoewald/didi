@@ -1,0 +1,39 @@
+name: CAES V4 Recover Missing Chunks
+
+on:
+  push:
+    branches: ["nexo-mk4-caes-stage"]
+    paths:
+      - ".github/workflows/caes-v4-missing-chunks.yml"
+  workflow_dispatch:
+
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk:
+          - {id: "01", start: 1, end: 178}
+          - {id: "03", start: 357, end: 534}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install once with retry
+        run: |
+          for i in 1 2 3; do sudo apt-get update -qq && sudo apt-get install -y -qq xz-utils curl xvfb libxi6 libxrender1 libxfixes3 libxkbcommon0 libsm6 libxext6 libxxf86vm1 libgl1 libegl1 libgl1-mesa-dri && break || sleep 5; done
+          curl -L --retry 5 --retry-delay 2 -o blender.tar.xz https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf blender.tar.xz
+      - name: Render missing chunk
+        env:
+          START_FRAME: ${{ matrix.chunk.start }}
+          END_FRAME: ${{ matrix.chunk.end }}
+        run: |
+          xvfb-run -a ./blender-5.2.2-linux-x64/blender --background --factory-startup --python-exit-code 1 --python nexo/render_caes_motion_v4_fast.py
+          test "$(find output_caes_motion_v4/frames -name '*.jpg' | wc -l)" -ge 170
+      - uses: actions/upload-artifact@v4
+        with:
+          name: caes-v4-recover-${{ matrix.chunk.id }}
+          path: output_caes_motion_v4/frames/*.jpg
+          if-no-files-found: error
+          retention-days: 7
