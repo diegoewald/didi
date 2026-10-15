@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using LocalErp.Application.Abstractions.Time;
@@ -25,6 +26,7 @@ public partial class App : System.Windows.Application
             .Enrich.FromLogContext()
             .WriteTo.File(
                 Path.Combine(paths.LogsDirectory, "localerp-.log"),
+                formatProvider: CultureInfo.InvariantCulture,
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 30,
                 fileSizeLimitBytes: 10 * 1024 * 1024,
