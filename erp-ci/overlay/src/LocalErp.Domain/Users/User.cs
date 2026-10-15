@@ -22,11 +22,11 @@ public sealed class User : Entity
         IsActive = true;
     }
 
-    public string Username { get; private set; }
+    public string Username { get; private set; } = string.Empty;
 
-    public string NormalizedUsername { get; private set; }
+    public string NormalizedUsername { get; private set; } = string.Empty;
 
-    public string PasswordHash { get; private set; }
+    public string PasswordHash { get; private set; } = string.Empty;
 
     public bool IsActive { get; private set; }
 
