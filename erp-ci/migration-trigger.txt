@@ -1,1 +1,1 @@
-InitialCreate bootstrap migration validation trigger.
+Validate company application/persistence operations, safe development seed, and new tests.
