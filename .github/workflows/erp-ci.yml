@@ -112,6 +112,18 @@ jobs:
             --context ErpDbContext `
             --output-dir Migrations
 
+      - name: Upload generated migration
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-initial-migration
+          path: erp-work/src/LocalErp.Persistence/Migrations
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Build after migration generation
+        working-directory: erp-work
+        run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
+
       - name: Verify model has no pending changes
         working-directory: erp-work
         run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
@@ -127,11 +139,3 @@ jobs:
       - name: Reapply migration
         working-directory: erp-work
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
-
-      - name: Upload generated migration
-        uses: actions/upload-artifact@v7
-        with:
-          name: localerp-initial-migration
-          path: erp-work/src/LocalErp.Persistence/Migrations
-          if-no-files-found: error
-          retention-days: 7
