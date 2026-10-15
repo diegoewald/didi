@@ -1,1 +1,1 @@
-Validate company application/persistence operations, safe development seed, and new tests.
+Validate PasswordHasher<TUser> abstraction, 220000-iteration floor, malformed-hash handling, rehash detection, and all existing ERP tests.
