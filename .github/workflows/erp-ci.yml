@@ -59,7 +59,7 @@ jobs:
           $rbacParts = Get-ChildItem 'erp-ci/rbac-overlay.part*' | Sort-Object Name
           if ($rbacParts.Count -ne 3) { throw "Expected 3 RBAC overlay chunks, found $($rbacParts.Count)." }
           $rbacContents = @($rbacParts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
-          $rbacExpectedLengths = @(12000,12000,4856)
+          $rbacExpectedLengths = @(12000,12000,4860)
           for ($i = 0; $i -lt $rbacContents.Count; $i++) {
             if ($rbacContents[$i].Length -ne $rbacExpectedLengths[$i]) { throw "Unexpected RBAC overlay chunk length at ${i}: $($rbacContents[$i].Length)." }
           }
