@@ -6,7 +6,6 @@ on:
       - erp-local-ci
     paths:
       - 'erp-ci/**'
-      - 'ci-payload/**'
       - '.github/workflows/erp-ci.yml'
   workflow_dispatch:
 
@@ -78,6 +77,18 @@ jobs:
             $targetPath = Join-Path $workRoot $relativePath
             New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
             Copy-Item $_.FullName $targetPath -Force
+          }
+
+          if (Test-Path 'ci-payload/fix') {
+            Remove-Item 'erp-work/src/LocalErp.Domain/Security/RolePermission.cs' -Force -ErrorAction SilentlyContinue
+            Remove-Item 'erp-work/src/LocalErp.Persistence/Configurations/RolePermissionConfiguration.cs' -Force -ErrorAction SilentlyContinue
+            $fixRoot = (Resolve-Path 'ci-payload/fix').Path
+            Get-ChildItem $fixRoot -File -Recurse | ForEach-Object {
+              $relativePath = [IO.Path]::GetRelativePath($fixRoot, $_.FullName)
+              $targetPath = Join-Path $workRoot $relativePath
+              New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+              Copy-Item $_.FullName $targetPath -Force
+            }
           }
 
           if (-not (Test-Path 'erp-work/LocalErp.sln')) { throw 'ERP source reconstruction failed: LocalErp.sln was not found.' }
