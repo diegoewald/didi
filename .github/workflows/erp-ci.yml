@@ -61,7 +61,7 @@ jobs:
           $rbacContents = @($rbacParts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
           $rbacExpectedLengths = @(12000,12000,4856)
           for ($i = 0; $i -lt $rbacContents.Count; $i++) {
-            if ($rbacContents[$i].Length -ne $rbacExpectedLengths[$i]) { throw "Unexpected RBAC overlay chunk length at $i: $($rbacContents[$i].Length)." }
+            if ($rbacContents[$i].Length -ne $rbacExpectedLengths[$i]) { throw "Unexpected RBAC overlay chunk length at ${i}: $($rbacContents[$i].Length)." }
           }
           $rbacZip = Join-Path $env:RUNNER_TEMP 'rbac-overlay.zip'
           [IO.File]::WriteAllBytes($rbacZip, [Convert]::FromBase64String($rbacContents -join ''))
