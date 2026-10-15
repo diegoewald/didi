@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: Build, test and validate ERP on Windows
+    name: Build, generate RBAC migration and validate ERP
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -44,6 +44,7 @@ jobs:
           if ($actualHash -ne $expectedHash) { throw "ERP archive integrity check failed. Expected $expectedHash, got $actualHash." }
           New-Item -ItemType Directory -Force 'erp-work' | Out-Null
           Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
+
           if (Test-Path 'erp-ci/overlay') {
             $overlayRoot = (Resolve-Path 'erp-ci/overlay').Path
             $workRoot = (Resolve-Path 'erp-work').Path
@@ -54,16 +55,36 @@ jobs:
               Copy-Item $_.FullName $targetPath -Force
             }
           }
+
+          $rbacParts = Get-ChildItem 'erp-ci/rbac-overlay.part*' | Sort-Object Name
+          if ($rbacParts.Count -ne 3) { throw "Expected 3 RBAC overlay chunks, found $($rbacParts.Count)." }
+          $rbacContents = @($rbacParts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
+          $rbacExpectedLengths = @(12000,12000,4856)
+          for ($i = 0; $i -lt $rbacContents.Count; $i++) {
+            if ($rbacContents[$i].Length -ne $rbacExpectedLengths[$i]) { throw "Unexpected RBAC overlay chunk length at $i: $($rbacContents[$i].Length)." }
+          }
+          $rbacZip = Join-Path $env:RUNNER_TEMP 'rbac-overlay.zip'
+          [IO.File]::WriteAllBytes($rbacZip, [Convert]::FromBase64String($rbacContents -join ''))
+          $rbacHash = (Get-FileHash -Path $rbacZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedRbacHash = '61e707667d2cdebfd90530e0b22830d1511d79e460d50be302b7c4532dc40a9a'
+          if ($rbacHash -ne $expectedRbacHash) { throw "RBAC overlay integrity check failed. Expected $expectedRbacHash, got $rbacHash." }
+          $rbacRoot = Join-Path $env:RUNNER_TEMP 'rbac-overlay'
+          New-Item -ItemType Directory -Force $rbacRoot | Out-Null
+          Expand-Archive -Path $rbacZip -DestinationPath $rbacRoot -Force
+          $workRoot = (Resolve-Path 'erp-work').Path
+          Get-ChildItem $rbacRoot -File -Recurse | ForEach-Object {
+            $relativePath = [IO.Path]::GetRelativePath($rbacRoot, $_.FullName)
+            $targetPath = Join-Path $workRoot $relativePath
+            New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+            Copy-Item $_.FullName $targetPath -Force
+          }
+
           if (-not (Test-Path 'erp-work/LocalErp.sln')) { throw 'ERP source reconstruction failed: LocalErp.sln was not found.' }
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
-
-      - name: SDK information
-        working-directory: erp-work
-        run: dotnet --info
 
       - name: Restore local tools
         working-directory: erp-work
@@ -73,7 +94,15 @@ jobs:
         working-directory: erp-work
         run: dotnet restore LocalErp.sln
 
-      - name: Build Release
+      - name: Build RBAC model before migration
+        working-directory: erp-work
+        run: dotnet build LocalErp.sln --configuration Release --no-restore
+
+      - name: Generate AddRbacAuthorization migration
+        working-directory: erp-work
+        run: dotnet ef migrations add AddRbacAuthorization --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+
+      - name: Rebuild solution with generated migration
         working-directory: erp-work
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
@@ -97,4 +126,10 @@ jobs:
         working-directory: erp-work
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
 
-# validation-sync: local-users-cycle
+      - name: Upload generated migrations
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-rbac-migration
+          path: erp-work/src/LocalErp.Persistence/Migrations
+          if-no-files-found: error
+          retention-days: 7
