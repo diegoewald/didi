@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-test:
-    name: Build and test ERP on Windows
+    name: Build, test and validate ERP on Windows
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -97,3 +97,41 @@ jobs:
       - name: Run tests
         working-directory: erp-work
         run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Generate InitialCreate migration
+        working-directory: erp-work
+        shell: pwsh
+        run: |
+          if (Test-Path 'src/LocalErp.Persistence/Migrations') {
+            throw 'A Migrations directory already exists in the bootstrap source; refusing to generate InitialCreate twice.'
+          }
+
+          dotnet ef migrations add InitialCreate `
+            --project src/LocalErp.Persistence/LocalErp.Persistence.csproj `
+            --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj `
+            --context ErpDbContext `
+            --output-dir Migrations
+
+      - name: Verify model has no pending changes
+        working-directory: erp-work
+        run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Apply migration to disposable database
+        working-directory: erp-work
+        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Roll back migration to zero
+        working-directory: erp-work
+        run: dotnet ef database update 0 --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Reapply migration
+        working-directory: erp-work
+        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Upload generated migration
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-initial-migration
+          path: erp-work/src/LocalErp.Persistence/Migrations
+          if-no-files-found: error
+          retention-days: 7
