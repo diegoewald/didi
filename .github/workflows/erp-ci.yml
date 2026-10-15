@@ -1,6 +1,12 @@
 name: ERP Windows CI
 
 on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - 'erp-ci/**'
+      - '.github/workflows/erp-ci.yml'
   workflow_dispatch:
 
 permissions:
