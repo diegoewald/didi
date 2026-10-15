@@ -50,9 +50,11 @@ public partial class App : System.Windows.Application
                 services.AddSingleton(paths);
                 services.AddSingleton<IClock, SystemClock>();
                 services.AddSingleton<IPasswordHashService, MicrosoftPasswordHashService>();
+                services.AddSingleton<IUserSession, InMemoryUserSession>();
                 services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
                 services.AddTransient<CompanyService>();
                 services.AddTransient<UserService>();
+                services.AddTransient<AuthenticationService>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })
