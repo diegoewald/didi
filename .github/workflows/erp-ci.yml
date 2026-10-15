@@ -22,7 +22,7 @@ jobs:
       - name: Checkout CI branch
         uses: actions/checkout@v7
 
-      - name: Reconstruct ERP source
+      - name: Reconstruct and verify ERP source
         shell: pwsh
         run: |
           $parts = Get-ChildItem 'erp-ci/source.part*' | Sort-Object Name
@@ -30,9 +30,30 @@ jobs:
             throw "Expected 9 source chunks, found $($parts.Count)."
           }
 
-          $base64 = ($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() }) -join ''
+          $contents = @($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
+
+          # source.part03 lost one character while being transferred through the connector.
+          # Repair the transport copy only; the ERP source itself is unchanged.
+          if ($contents[3].Length -eq 11999) {
+            $contents[3] = $contents[3].Insert(8465, 'i')
+          }
+
+          $expectedLengths = @(12000, 12000, 12000, 12000, 12000, 12000, 12000, 12000, 1540)
+          for ($i = 0; $i -lt $contents.Count; $i++) {
+            if ($contents[$i].Length -ne $expectedLengths[$i]) {
+              throw "Unexpected length for source.part$($i.ToString('00')): $($contents[$i].Length)."
+            }
+          }
+
+          $base64 = $contents -join ''
           $zipPath = Join-Path $env:RUNNER_TEMP 'local-erp.zip'
           [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($base64))
+
+          $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedHash = '19f6a2d523b19e29bfa842b31e6a72a7b24a33194eda1aaf5771a60eaaf09001'
+          if ($actualHash -ne $expectedHash) {
+            throw "ERP archive integrity check failed. Expected $expectedHash, got $actualHash."
+          }
 
           New-Item -ItemType Directory -Force 'erp-work' | Out-Null
           Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
