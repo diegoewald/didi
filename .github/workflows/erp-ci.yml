@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: erp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
     name: Build, test and validate ERP on Windows
