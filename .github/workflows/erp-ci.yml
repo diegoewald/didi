@@ -1,6 +1,12 @@
 name: ERP Windows CI
 
 on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - 'erp-ci/**'
+      - '.github/workflows/erp-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +18,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: Build, test and validate ERP on Windows
+    name: Build, test and generate local user migration
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -55,10 +61,6 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: SDK information
-        working-directory: erp-work
-        run: dotnet --info
-
       - name: Restore local tools
         working-directory: erp-work
         run: dotnet tool restore
@@ -75,18 +77,18 @@ jobs:
         working-directory: erp-work
         run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
 
-      - name: Verify model has no pending changes
+      - name: Generate AddLocalUsers migration
         working-directory: erp-work
-        run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+        run: dotnet ef migrations add AddLocalUsers --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
 
-      - name: Apply migration to disposable database
+      - name: Build generated migration
         working-directory: erp-work
-        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+        run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
 
-      - name: Roll back migration to zero
-        working-directory: erp-work
-        run: dotnet ef database update 0 --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
-
-      - name: Reapply migration
-        working-directory: erp-work
-        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+      - name: Upload generated migrations
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-add-local-users-migration
+          path: erp-work/src/LocalErp.Persistence/Migrations
+          if-no-files-found: error
+          retention-days: 7
