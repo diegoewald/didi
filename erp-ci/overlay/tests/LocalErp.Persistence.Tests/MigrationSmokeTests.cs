@@ -10,9 +10,10 @@ namespace LocalErp.Persistence.Tests;
 public sealed class MigrationSmokeTests
 {
     private const string InitialCreateMigration = "20261015121025_InitialCreate";
+    private const string AddLocalUsersMigration = "20261015130329_AddLocalUsers";
 
     [TestMethod]
-    public void InitialCreateCanApplyRollbackAndReapply()
+    public void MigrationsCanApplyRollbackAndReapply()
     {
         var testDirectory = Path.Combine(Path.GetTempPath(), "LocalErp", "Tests", Guid.NewGuid().ToString("N"));
         var databasePath = Path.Combine(testDirectory, "migration-smoke.db");
@@ -27,16 +28,19 @@ public sealed class MigrationSmokeTests
             using (var context = new ErpDbContext(options))
             {
                 context.Database.Migrate();
-                CollectionAssert.Contains(context.Database.GetAppliedMigrations().ToList(), InitialCreateMigration);
-                AssertCompanyTableExists(context, expected: true);
+                AssertExpectedMigrationsApplied(context);
+                AssertTableExists(context, "Companies", expected: true);
+                AssertTableExists(context, "Users", expected: true);
 
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
-                AssertCompanyTableExists(context, expected: false);
+                AssertTableExists(context, "Companies", expected: false);
+                AssertTableExists(context, "Users", expected: false);
 
                 migrator.Migrate();
-                CollectionAssert.Contains(context.Database.GetAppliedMigrations().ToList(), InitialCreateMigration);
-                AssertCompanyTableExists(context, expected: true);
+                AssertExpectedMigrationsApplied(context);
+                AssertTableExists(context, "Companies", expected: true);
+                AssertTableExists(context, "Users", expected: true);
             }
         }
         finally
@@ -48,7 +52,14 @@ public sealed class MigrationSmokeTests
         }
     }
 
-    private static void AssertCompanyTableExists(ErpDbContext context, bool expected)
+    private static void AssertExpectedMigrationsApplied(ErpDbContext context)
+    {
+        var appliedMigrations = context.Database.GetAppliedMigrations().ToList();
+        CollectionAssert.Contains(appliedMigrations, InitialCreateMigration);
+        CollectionAssert.Contains(appliedMigrations, AddLocalUsersMigration);
+    }
+
+    private static void AssertTableExists(ErpDbContext context, string tableName, bool expected)
     {
         var connection = context.Database.GetDbConnection();
         var shouldClose = connection.State != ConnectionState.Open;
@@ -61,7 +72,12 @@ public sealed class MigrationSmokeTests
         try
         {
             using var command = connection.CreateCommand();
-            command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'Companies';";
+            command.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = $tableName;";
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = "$tableName";
+            parameter.Value = tableName;
+            command.Parameters.Add(parameter);
+
             var count = Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
             Assert.AreEqual(expected ? 1 : 0, count);
         }
