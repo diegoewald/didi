@@ -1,1 +1,1 @@
-Validate PasswordHasher<TUser> abstraction, 220000-iteration floor, malformed-hash handling, rehash detection, and all existing ERP tests.
+Validate RBAC roles, permissions, application authorization, relational integrity, generated migration, and all existing ERP tests after analyzer fixes.
