@@ -2,10 +2,12 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using LocalErp.Application.Abstractions.Time;
+using LocalErp.Application.Companies;
 using LocalErp.Desktop.ViewModels;
 using LocalErp.Infrastructure.Paths;
 using LocalErp.Infrastructure.Time;
 using LocalErp.Persistence;
+using LocalErp.Persistence.Development;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -20,6 +22,11 @@ public partial class App : System.Windows.Application
     {
         var paths = AppDataPaths.CreateDefault();
         paths.EnsureCreated();
+        var isDevelopment = string.Equals(
+            Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"),
+            Environments.Development,
+            StringComparison.OrdinalIgnoreCase);
+        var databaseFileName = isDevelopment ? "localerp-dev.db" : "localerp.db";
 
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Information()
@@ -39,7 +46,8 @@ public partial class App : System.Windows.Application
             {
                 services.AddSingleton(paths);
                 services.AddSingleton<IClock, SystemClock>();
-                services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, "localerp.db"));
+                services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
+                services.AddTransient<CompanyService>();
                 services.AddSingleton<MainWindowViewModel>();
                 services.AddSingleton<MainWindow>();
             })
@@ -58,6 +66,16 @@ public partial class App : System.Windows.Application
             var databaseConfigurator = _host.Services.GetRequiredService<SqliteDatabaseRuntimeConfigurator>();
             databaseConfigurator.ConfigureAsync().GetAwaiter().GetResult();
             Log.Information("SQLite runtime configured with WAL and foreign key enforcement");
+
+            var environment = _host.Services.GetRequiredService<IHostEnvironment>();
+            if (environment.IsDevelopment())
+            {
+                var seeder = _host.Services.GetRequiredService<DevelopmentDataSeeder>();
+                var insertedRecords = seeder.SeedAsync().GetAwaiter().GetResult();
+                Log.Information(
+                    "Development sample data verified; {InsertedRecords} records inserted",
+                    insertedRecords);
+            }
 
             var window = _host.Services.GetRequiredService<MainWindow>();
             window.Show();
