@@ -58,6 +58,17 @@ jobs:
           New-Item -ItemType Directory -Force 'erp-work' | Out-Null
           Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
 
+          if (Test-Path 'erp-ci/overlay') {
+            $overlayRoot = (Resolve-Path 'erp-ci/overlay').Path
+            $workRoot = (Resolve-Path 'erp-work').Path
+            Get-ChildItem $overlayRoot -File -Recurse | ForEach-Object {
+              $relativePath = [IO.Path]::GetRelativePath($overlayRoot, $_.FullName)
+              $targetPath = Join-Path $workRoot $relativePath
+              New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+              Copy-Item $_.FullName $targetPath -Force
+            }
+          }
+
           if (-not (Test-Path 'erp-work/LocalErp.sln')) {
             throw 'ERP source reconstruction failed: LocalErp.sln was not found.'
           }
