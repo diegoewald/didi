@@ -22,6 +22,7 @@ public static class PersistenceServiceCollectionExtensions
             options.UseSqlite(connectionString));
 
         services.AddTransient<ICompanyRepository, EfCompanyRepository>();
+        services.AddTransient<IUserRepository, EfUserRepository>();
         services.AddTransient<DevelopmentDataSeeder>();
 
         return services;
