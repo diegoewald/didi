@@ -21,7 +21,7 @@ public sealed class MigrationSmokeTests
         try
         {
             var options = new DbContextOptionsBuilder<ErpDbContext>()
-                .UseSqlite(SqliteConnectionStringFactory.Create(databasePath))
+                .UseSqlite($"{SqliteConnectionStringFactory.Create(databasePath)};Pooling=False")
                 .Options;
 
             using (var context = new ErpDbContext(options))
