@@ -96,3 +96,5 @@ jobs:
       - name: Reapply migrations
         working-directory: erp-work
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+# validation-sync: local-users-cycle
