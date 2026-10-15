@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: Build, test and generate local user migration
+    name: Build, generate and test local user migration
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -73,10 +73,6 @@ jobs:
         working-directory: erp-work
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
-      - name: Run tests
-        working-directory: erp-work
-        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
-
       - name: Generate AddLocalUsers migration
         working-directory: erp-work
         run: dotnet ef migrations add AddLocalUsers --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
@@ -84,6 +80,14 @@ jobs:
       - name: Build generated migration
         working-directory: erp-work
         run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
+
+      - name: Run tests against generated migration
+        working-directory: erp-work
+        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Verify generated model snapshot
+        working-directory: erp-work
+        run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
 
       - name: Upload generated migrations
         uses: actions/upload-artifact@v7
