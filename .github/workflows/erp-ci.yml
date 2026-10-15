@@ -26,38 +26,20 @@ jobs:
         shell: pwsh
         run: |
           $parts = Get-ChildItem 'erp-ci/source.part*' | Sort-Object Name
-          if ($parts.Count -ne 9) {
-            throw "Expected 9 source chunks, found $($parts.Count)."
-          }
-
+          if ($parts.Count -ne 9) { throw "Expected 9 source chunks, found $($parts.Count)." }
           $contents = @($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
-
-          # source.part03 lost one character while being transferred through the connector.
-          # Repair the transport copy only; the ERP source itself is unchanged.
-          if ($contents[3].Length -eq 11999) {
-            $contents[3] = $contents[3].Insert(8465, 'i')
-          }
-
-          $expectedLengths = @(12000, 12000, 12000, 12000, 12000, 12000, 12000, 12000, 1540)
+          if ($contents[3].Length -eq 11999) { $contents[3] = $contents[3].Insert(8465, 'i') }
+          $expectedLengths = @(12000,12000,12000,12000,12000,12000,12000,12000,1540)
           for ($i = 0; $i -lt $contents.Count; $i++) {
-            if ($contents[$i].Length -ne $expectedLengths[$i]) {
-              throw "Unexpected length for source.part$($i.ToString('00')): $($contents[$i].Length)."
-            }
+            if ($contents[$i].Length -ne $expectedLengths[$i]) { throw "Unexpected length for source.part$($i.ToString('00')): $($contents[$i].Length)." }
           }
-
-          $base64 = $contents -join ''
           $zipPath = Join-Path $env:RUNNER_TEMP 'local-erp.zip'
-          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($base64))
-
+          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($contents -join ''))
           $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
           $expectedHash = '19f6a2d523b19e29bfa842b31e6a72a7b24a33194eda1aaf5771a60eaaf09001'
-          if ($actualHash -ne $expectedHash) {
-            throw "ERP archive integrity check failed. Expected $expectedHash, got $actualHash."
-          }
-
+          if ($actualHash -ne $expectedHash) { throw "ERP archive integrity check failed. Expected $expectedHash, got $actualHash." }
           New-Item -ItemType Directory -Force 'erp-work' | Out-Null
           Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
-
           if (Test-Path 'erp-ci/overlay') {
             $overlayRoot = (Resolve-Path 'erp-ci/overlay').Path
             $workRoot = (Resolve-Path 'erp-work').Path
@@ -68,10 +50,7 @@ jobs:
               Copy-Item $_.FullName $targetPath -Force
             }
           }
-
-          if (-not (Test-Path 'erp-work/LocalErp.sln')) {
-            throw 'ERP source reconstruction failed: LocalErp.sln was not found.'
-          }
+          if (-not (Test-Path 'erp-work/LocalErp.sln')) { throw 'ERP source reconstruction failed: LocalErp.sln was not found.' }
 
       - name: Setup .NET 10 SDK
         uses: actions/setup-dotnet@v6
@@ -97,32 +76,6 @@ jobs:
       - name: Run tests
         working-directory: erp-work
         run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
-
-      - name: Generate InitialCreate migration
-        working-directory: erp-work
-        shell: pwsh
-        run: |
-          if (Test-Path 'src/LocalErp.Persistence/Migrations') {
-            throw 'A Migrations directory already exists in the bootstrap source; refusing to generate InitialCreate twice.'
-          }
-
-          dotnet ef migrations add InitialCreate `
-            --project src/LocalErp.Persistence/LocalErp.Persistence.csproj `
-            --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj `
-            --context ErpDbContext `
-            --output-dir Migrations
-
-      - name: Upload generated migration
-        uses: actions/upload-artifact@v7
-        with:
-          name: localerp-initial-migration
-          path: erp-work/src/LocalErp.Persistence/Migrations
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Build after migration generation
-        working-directory: erp-work
-        run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
 
       - name: Verify model has no pending changes
         working-directory: erp-work
