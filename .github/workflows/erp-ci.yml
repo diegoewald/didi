@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-test:
-    name: Build, generate RBAC migration and validate ERP
+    name: Build, test and validate RBAC baseline
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -91,6 +91,28 @@ jobs:
             }
           }
 
+          $finalParts = Get-ChildItem 'ci-payload/final-rbac.part*' | Sort-Object Name
+          if ($finalParts.Count -ne 2) { throw "Expected 2 final RBAC chunks, found $($finalParts.Count)." }
+          $finalContents = @($finalParts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
+          $finalExpectedLengths = @(5000,2104)
+          for ($i = 0; $i -lt $finalContents.Count; $i++) {
+            if ($finalContents[$i].Length -ne $finalExpectedLengths[$i]) { throw "Unexpected final RBAC chunk length at ${i}: $($finalContents[$i].Length)." }
+          }
+          $finalZip = Join-Path $env:RUNNER_TEMP 'final-rbac-overlay.zip'
+          [IO.File]::WriteAllBytes($finalZip, [Convert]::FromBase64String($finalContents -join ''))
+          $finalHash = (Get-FileHash -Path $finalZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedFinalHash = 'e776c799c2641e3df3b88cfb59abedc2690f088051100bf8647bbea6ce927046'
+          if ($finalHash -ne $expectedFinalHash) { throw "Final RBAC overlay integrity check failed. Expected $expectedFinalHash, got $finalHash." }
+          $finalRoot = Join-Path $env:RUNNER_TEMP 'final-rbac-overlay'
+          New-Item -ItemType Directory -Force $finalRoot | Out-Null
+          Expand-Archive -Path $finalZip -DestinationPath $finalRoot -Force
+          Get-ChildItem $finalRoot -File -Recurse | ForEach-Object {
+            $relativePath = [IO.Path]::GetRelativePath($finalRoot, $_.FullName)
+            $targetPath = Join-Path $workRoot $relativePath
+            New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+            Copy-Item $_.FullName $targetPath -Force
+          }
+
           if (-not (Test-Path 'erp-work/LocalErp.sln')) { throw 'ERP source reconstruction failed: LocalErp.sln was not found.' }
 
       - name: Setup .NET 10 SDK
@@ -106,15 +128,7 @@ jobs:
         working-directory: erp-work
         run: dotnet restore LocalErp.sln
 
-      - name: Build RBAC model before migration
-        working-directory: erp-work
-        run: dotnet build LocalErp.sln --configuration Release --no-restore
-
-      - name: Generate AddRbacAuthorization migration
-        working-directory: erp-work
-        run: dotnet ef migrations add AddRbacAuthorization --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
-
-      - name: Rebuild solution with generated migration
+      - name: Build Release
         working-directory: erp-work
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
@@ -137,11 +151,3 @@ jobs:
       - name: Reapply migrations
         working-directory: erp-work
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
-
-      - name: Upload generated migrations
-        uses: actions/upload-artifact@v7
-        with:
-          name: localerp-rbac-migration
-          path: erp-work/src/LocalErp.Persistence/Migrations
-          if-no-files-found: error
-          retention-days: 7
