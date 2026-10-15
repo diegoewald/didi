@@ -1,0 +1,67 @@
+name: ERP Windows CI
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - 'erp-ci/**'
+      - '.github/workflows/erp-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Build and test ERP on Windows
+    runs-on: windows-2025
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout CI branch
+        uses: actions/checkout@v7
+
+      - name: Reconstruct ERP source
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem 'erp-ci/source.part*' | Sort-Object Name
+          if ($parts.Count -ne 9) {
+            throw "Expected 9 source chunks, found $($parts.Count)."
+          }
+
+          $base64 = ($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() }) -join ''
+          $zipPath = Join-Path $env:RUNNER_TEMP 'local-erp.zip'
+          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($base64))
+
+          New-Item -ItemType Directory -Force 'erp-work' | Out-Null
+          Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
+
+          if (-not (Test-Path 'erp-work/LocalErp.sln')) {
+            throw 'ERP source reconstruction failed: LocalErp.sln was not found.'
+          }
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: SDK information
+        working-directory: erp-work
+        run: dotnet --info
+
+      - name: Restore local tools
+        working-directory: erp-work
+        run: dotnet tool restore
+
+      - name: Restore dependencies
+        working-directory: erp-work
+        run: dotnet restore LocalErp.sln
+
+      - name: Build Release
+        working-directory: erp-work
+        run: dotnet build LocalErp.sln --configuration Release --no-restore
+
+      - name: Run tests
+        working-directory: erp-work
+        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
