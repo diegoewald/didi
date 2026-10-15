@@ -1,12 +1,6 @@
 name: ERP Windows CI
 
 on:
-  push:
-    branches:
-      - erp-local-ci
-    paths:
-      - 'erp-ci/**'
-      - '.github/workflows/erp-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -96,5 +90,3 @@ jobs:
       - name: Reapply migration
         working-directory: erp-work
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
-
-# validation-sync: company-persistence-cycle
