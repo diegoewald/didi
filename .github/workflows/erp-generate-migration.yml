@@ -1,0 +1,73 @@
+name: ERP Generate Migration
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/erp-generate-migration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration:
+    name: Generate AddLocalUsers migration
+    runs-on: windows-2025
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout CI branch
+        uses: actions/checkout@v7
+
+      - name: Reconstruct ERP source
+        shell: pwsh
+        run: |
+          $parts = Get-ChildItem 'erp-ci/source.part*' | Sort-Object Name
+          $contents = @($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
+          if ($contents[3].Length -eq 11999) { $contents[3] = $contents[3].Insert(8465, 'i') }
+          $zipPath = Join-Path $env:RUNNER_TEMP 'local-erp.zip'
+          [IO.File]::WriteAllBytes($zipPath, [Convert]::FromBase64String($contents -join ''))
+          New-Item -ItemType Directory -Force 'erp-work' | Out-Null
+          Expand-Archive -Path $zipPath -DestinationPath 'erp-work' -Force
+          $overlayRoot = (Resolve-Path 'erp-ci/overlay').Path
+          $workRoot = (Resolve-Path 'erp-work').Path
+          Get-ChildItem $overlayRoot -File -Recurse | ForEach-Object {
+            $relativePath = [IO.Path]::GetRelativePath($overlayRoot, $_.FullName)
+            $targetPath = Join-Path $workRoot $relativePath
+            New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+            Copy-Item $_.FullName $targetPath -Force
+          }
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore tools and dependencies
+        working-directory: erp-work
+        shell: pwsh
+        run: |
+          dotnet tool restore
+          dotnet restore LocalErp.sln
+
+      - name: Build before migration
+        working-directory: erp-work
+        run: dotnet build LocalErp.sln --configuration Release --no-restore
+
+      - name: Generate AddLocalUsers
+        working-directory: erp-work
+        run: dotnet ef migrations add AddLocalUsers --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+
+      - name: Build generated migration
+        working-directory: erp-work
+        run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
+
+      - name: Upload migration
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-add-local-users-migration
+          path: erp-work/src/LocalErp.Persistence/Migrations
+          if-no-files-found: error
+          retention-days: 7
