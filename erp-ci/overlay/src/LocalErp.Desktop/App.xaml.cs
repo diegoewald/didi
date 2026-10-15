@@ -3,8 +3,10 @@ using System.IO;
 using System.Windows;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Companies;
+using LocalErp.Application.Security;
 using LocalErp.Desktop.ViewModels;
 using LocalErp.Infrastructure.Paths;
+using LocalErp.Infrastructure.Security;
 using LocalErp.Infrastructure.Time;
 using LocalErp.Persistence;
 using LocalErp.Persistence.Development;
@@ -46,6 +48,7 @@ public partial class App : System.Windows.Application
             {
                 services.AddSingleton(paths);
                 services.AddSingleton<IClock, SystemClock>();
+                services.AddSingleton<IPasswordHashService, MicrosoftPasswordHashService>();
                 services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
                 services.AddTransient<CompanyService>();
                 services.AddSingleton<MainWindowViewModel>();
