@@ -7,9 +7,13 @@ namespace LocalErp.Desktop.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
-    public MainWindowViewModel(IUserSession session)
+    public MainWindowViewModel(
+        IUserSession session,
+        UsersAdministrationViewModel usersAdministration)
     {
         ArgumentNullException.ThrowIfNull(session);
+        UsersAdministration = usersAdministration
+            ?? throw new ArgumentNullException(nameof(usersAdministration));
 
         NavigationItems =
         [
@@ -30,6 +34,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
+    public UsersAdministrationViewModel UsersAdministration { get; }
+
     public string VersionLabel { get; }
 
     public string CurrentUsername { get; }
@@ -37,10 +43,23 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private string currentSection;
 
+    [ObservableProperty]
+    private bool isAdministrationSelected;
+
     [RelayCommand]
-    private void Navigate(NavigationItem item)
+    private async Task NavigateAsync(NavigationItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
+
         CurrentSection = item.Title;
+        IsAdministrationSelected = string.Equals(
+            item.Title,
+            "Administração",
+            StringComparison.Ordinal);
+
+        if (IsAdministrationSelected)
+        {
+            await UsersAdministration.LoadAsync();
+        }
     }
 }

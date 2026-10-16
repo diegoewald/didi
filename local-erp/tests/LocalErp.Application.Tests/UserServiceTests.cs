@@ -1,6 +1,7 @@
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
+using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -66,6 +67,36 @@ public sealed class UserServiceTests
         Assert.AreEqual("active", result[0].Username);
     }
 
+    [TestMethod]
+    public async Task ListAsyncIncludesInactiveUsersWhenRequested()
+    {
+        var repository = new InMemoryUserRepository();
+        repository.Users.Add(new User("active", "hash"));
+        var inactive = new User("inactive", "hash");
+        inactive.Deactivate();
+        repository.Users.Add(inactive);
+        var service = new UserService(repository, new RecordingPasswordHashService(), new AllowAllAuthorizationService());
+
+        var result = await service.ListAsync(includeInactive: true);
+
+        Assert.AreEqual(2, result.Count);
+        Assert.IsTrue(result.Any(user => user.Username == "active" && user.IsActive));
+        Assert.IsTrue(result.Any(user => user.Username == "inactive" && !user.IsActive));
+    }
+
+    [TestMethod]
+    public async Task ListAsyncDemandsUsersReadPermission()
+    {
+        var repository = new InMemoryUserRepository();
+        repository.Users.Add(new User("active", "hash"));
+        var authorization = new RecordingAuthorizationService();
+        var service = new UserService(repository, new RecordingPasswordHashService(), authorization);
+
+        await service.ListAsync(includeInactive: true);
+
+        Assert.AreEqual(PermissionCatalog.UsersRead, authorization.LastDemandedPermission);
+    }
+
     private sealed class RecordingPasswordHashService : IPasswordHashService
     {
         public string? LastPassword { get; private set; }
@@ -81,6 +112,28 @@ public sealed class UserServiceTests
             return passwordHash == $"hashed::{providedPassword}"
                 ? PasswordVerificationStatus.Success
                 : PasswordVerificationStatus.Failed;
+        }
+    }
+
+    private sealed class RecordingAuthorizationService : IAuthorizationService
+    {
+        public string? LastDemandedPermission { get; private set; }
+
+        public Task<bool> IsAllowedAsync(
+            string permissionCode,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(true);
+        }
+
+        public Task DemandAsync(
+            string permissionCode,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            LastDemandedPermission = permissionCode;
+            return Task.CompletedTask;
         }
     }
 

@@ -65,6 +65,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<RoleService>();
                 services.AddTransient<AdministratorBootstrapWindow>();
                 services.AddTransient<LoginWindow>();
+                services.AddTransient<UsersAdministrationViewModel>();
                 services.AddTransient<MainWindowViewModel>();
                 services.AddTransient<MainWindow>();
             })
