@@ -33,5 +33,10 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(user => user.IsActive)
             .IsRequired();
+
+        builder.Property(user => user.FailedSignInCount)
+            .IsRequired();
+
+        builder.Property(user => user.SignInBlockedUntilUtc);
     }
 }

@@ -53,6 +53,7 @@ public partial class App : System.Windows.Application
                 services.AddSingleton(paths);
                 services.AddSingleton<IClock, SystemClock>();
                 services.AddSingleton<IPasswordHashService, MicrosoftPasswordHashService>();
+                services.AddSingleton<IAuthenticationTimingProtector, PasswordHashTimingProtector>();
                 services.AddSingleton<IUserSession, InMemoryUserSession>();
                 services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
                 services.AddTransient<CompanyService>();

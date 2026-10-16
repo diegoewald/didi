@@ -30,6 +30,10 @@ public sealed class User : Entity
 
     public bool IsActive { get; private set; }
 
+    public int FailedSignInCount { get; private set; }
+
+    public DateTime? SignInBlockedUntilUtc { get; private set; }
+
     public void Rename(string username)
     {
         SetUsername(username);
@@ -48,6 +52,33 @@ public sealed class User : Entity
     public void Deactivate()
     {
         IsActive = false;
+    }
+
+    public bool IsSignInBlocked(DateTime utcNow)
+    {
+        EnsureUtc(utcNow, nameof(utcNow));
+        return SignInBlockedUntilUtc is DateTime blockedUntil && blockedUntil > utcNow;
+    }
+
+    public void RecordFailedSignIn(DateTime utcNow, TimeSpan blockDuration)
+    {
+        EnsureUtc(utcNow, nameof(utcNow));
+
+        if (blockDuration < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(blockDuration), blockDuration, "Block duration cannot be negative.");
+        }
+
+        FailedSignInCount = checked(FailedSignInCount + 1);
+        SignInBlockedUntilUtc = blockDuration > TimeSpan.Zero
+            ? utcNow.Add(blockDuration)
+            : null;
+    }
+
+    public void ResetSignInFailures()
+    {
+        FailedSignInCount = 0;
+        SignInBlockedUntilUtc = null;
     }
 
     public static string NormalizeUsername(string username)
@@ -87,5 +118,13 @@ public sealed class User : Entity
         }
 
         PasswordHash = normalized;
+    }
+
+    private static void EnsureUtc(DateTime value, string parameterName)
+    {
+        if (value.Kind != DateTimeKind.Utc)
+        {
+            throw new ArgumentException("The timestamp must use UTC.", parameterName);
+        }
     }
 }
