@@ -35,13 +35,13 @@ dotnet tool restore
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. O pipeline executa restore, build Release, build da ferramenta `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline de autenticação, auditoria e benchmark — 2026-10-16
+## Baseline atual — 2026-10-16
 
 - Domain: 19/19.
-- Application: 33/33.
+- Application: 35/35.
 - Persistence: 24/24.
 - Infrastructure: 6/6.
-- Total automatizado: 82/82.
+- Total automatizado: 84/84.
 - Build Release: 0 warnings / 0 errors.
 - Build da ferramenta de benchmark: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
@@ -54,7 +54,8 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Auditoria: invariantes de `SecurityAuditEvent`, códigos inválidos, UTC obrigatório, persistência EF, bootstrap e eventos da `AuthenticationService` cobertos.
 - Migration smoke: `SecurityAuditEvents` e sua migration fazem parte do ciclo apply/rollback/reapply validado.
 - Startup routing: bootstrap, login e acesso ao shell cobertos na camada Application.
-- Desktop WPF: XAML/code-behind compilados no Windows CI.
+- Administração de usuários Parte A: `ListAsync(includeInactive: true)` coberto e teste explícito garante demanda de `users.read`.
+- Desktop WPF: XAML/code-behind, navegação assíncrona e nova tela de listagem compilados no Windows CI.
 
 ## Benchmark Windows CI
 
@@ -77,6 +78,8 @@ O CI hospedado não substitui teste visual/interativo. Executar smoke manual em 
 - credencial inválida;
 - comportamento durante throttling/lockout;
 - logout e retorno ao login;
+- abertura da Administração e renderização da lista de usuários;
+- estados loading/erro/vazio da administração quando aplicáveis;
 - fechamento voluntário das janelas;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.
 

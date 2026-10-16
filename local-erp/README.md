@@ -5,11 +5,11 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: autenticação local endurecida / auditoria de segurança integrada
+- Fase: baseline básico de segurança fechado / administração de usuários em andamento
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 82/82 testes passando
+- CI Windows: build Release com 0 warnings / 0 errors e 84/84 testes passando
 - Migrations: 5 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
@@ -23,9 +23,16 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 7. usuário inexistente, inativo ou bloqueado executa dummy password verification para reduzir diferença de timing;
 8. eventos críticos de autenticação são registrados em `SecurityAuditEvents` sem senha, hash, token ou username digitado de conta inexistente;
 9. logout limpa a sessão e tenta registrar o evento de auditoria sem manter a sessão caso essa gravação falhe;
-10. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
+10. o `MainWindow` nunca é aberto quando não existe sessão autenticada;
+11. a área Administração possui listagem real de usuários ativos e inativos e a Application exige `users.read` para fornecer os dados.
 
 Senhas são tratadas por `PasswordBox`, não entram em ViewModels e não são persistidas na sessão, em logs ou na trilha de auditoria.
+
+## Administração de usuários
+
+A Parte A está concluída: o shell abre uma tela WPF própria de administração, carrega usuários por `UserService.ListAsync(includeInactive: true)` e apresenta estados de carregamento, erro, lista vazia e tabela somente leitura. A UI não substitui autorização; `UserService` continua exigindo `users.read` na camada Application.
+
+Próximas partes planejadas: criação de usuário, ativação/desativação, reset administrativo de senha, associação de roles e auditoria das operações administrativas.
 
 ## Política de tentativas de login
 

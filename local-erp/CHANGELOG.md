@@ -28,7 +28,10 @@ O projeto segue versionamento semântico.
 - migration `20261016135247_AddSecurityAuditTrail` com `SecurityAuditEvents`, FK opcional e índices de consulta;
 - testes de domínio, aplicação e persistência para a trilha de auditoria;
 - ferramenta `LocalErp.PasswordHashBenchmark` usando o serviço real de hashing do ERP;
-- script `scripts/benchmark-password-hashing.ps1` para benchmark reproduzível em Windows.
+- script `scripts/benchmark-password-hashing.ps1` para benchmark reproduzível em Windows;
+- tela WPF de administração com listagem de usuários ativos e inativos;
+- estados de carregamento, erro e lista vazia para a listagem de usuários;
+- testes explícitos para `includeInactive` e exigência de `users.read` em `UserService.ListAsync`.
 
 ### Changed
 
@@ -43,7 +46,8 @@ O projeto segue versionamento semântico.
 - falha de senha persiste contador e audit event na mesma transação;
 - login bem-sucedido persiste reset de falhas, rehash opcional e audit event na mesma transação;
 - bootstrap persiste administrador, RBAC e audit event na mesma transação;
-- logout limpa a sessão mesmo quando a gravação do evento de auditoria falha.
+- logout limpa a sessão mesmo quando a gravação do evento de auditoria falha;
+- navegação do shell carrega assincronamente a área Administração sem mover autorização para a UI.
 
 ### Validation
 
@@ -51,13 +55,14 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - build de `LocalErp.PasswordHashBenchmark`: 0 warnings / 0 errors;
-- suíte automatizada: 82/82;
-- Domain 19/19, Application 33/33, Persistence 24/24, Infrastructure 6/6;
+- suíte automatizada: 84/84;
+- Domain 19/19, Application 35/35, Persistence 24/24, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 5 migrations: apply -> rollback 0 -> reapply passando;
 - migration smoke inclui `SecurityAuditEvents` e a migration `20261016135247_AddSecurityAuditTrail`;
 - bootstrap SQLite: rollback e concorrência validados;
 - auditoria de autenticação: invariantes, códigos, timestamps UTC, persistência e eventos cobertos;
+- administração de usuários Parte A: build WPF e regras de listagem/autorização validados no CI;
 - benchmark Windows CI com `IterationCount = 220000`: hash mediana 145.155 ms; verify success mediana 138.080 ms; verify failure mediana 141.959 ms;
 - smoke visual/interativo do fluxo WPF permanece obrigatório antes de release;
 - benchmark em hardware Windows representativo do ambiente final permanece recomendado antes de produção.
@@ -109,3 +114,11 @@ O projeto segue versionamento semântico.
 - ferramenta de benchmark integrada ao repositório e compilada pelo CI;
 - benchmark executado em Windows Server 2025 com o serviço real do ERP;
 - baseline automatizado elevado para 82/82 testes e 5 migrations validadas.
+
+## Marco de administração de usuários — Parte A — 2026-10-16
+
+- a área Administração ganhou tela própria de usuários;
+- a listagem inclui usuários ativos e inativos;
+- `UserService.ListAsync` continua exigindo `users.read` na Application;
+- a UI apresenta carregamento, erro e lista vazia sem usar code-behind para regra de negócio;
+- dois testes de Application elevaram a suíte para 84 testes.

@@ -55,11 +55,20 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [ ] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [ ] estados loading/empty/error;
+- [-] estados loading/empty/error: implementados na administração de usuários, ainda não padronizados para o shell inteiro;
 - [ ] componentes de tabela/filtro após existir uso real;
-- [ ] smoke visual/interativo do fluxo de autenticação em Windows.
+- [ ] smoke visual/interativo do fluxo de autenticação e administração em Windows.
 
-## Fase 5 — Cadastros-base
+## Fase 5 — Administração de usuários
+
+- [x] Parte A — listagem de usuários ativos e inativos protegida por `users.read`;
+- [ ] Parte B — criar usuário;
+- [ ] Parte C — ativar/desativar usuário;
+- [ ] Parte D — reset administrativo de senha;
+- [ ] Parte E — associar roles;
+- [ ] Parte F — auditar operações administrativas.
+
+## Fase 6 — Cadastros-base
 
 - [-] empresa/filial: serviço e persistência básicos existem; UI operacional pendente;
 - [ ] fornecedores;
@@ -67,14 +76,14 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
-## Fase 6 — Primeiro módulo operacional
+## Fase 7 — Primeiro módulo operacional
 
 - [ ] compras: fluxo mínimo a definir com regras de negócio reais.
 
 ## Fases posteriores
 
 - [ ] relatórios;
-- [ ] administração completa de usuários/roles/permissões;
+- [ ] administração de roles/permissões;
 - [ ] auditoria administrativa e consulta/retenção operacional da trilha;
 - [ ] backup/restauração;
 - [ ] atualização com migration bundle e recuperação segura;
@@ -85,8 +94,12 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 ## Marco de auditoria e benchmark — 2026-10-16
 
-A autenticação local agora possui trilha de auditoria persistida em `SecurityAuditEvents`, cobrindo bootstrap, login, falhas, bloqueio/throttling e logout sem armazenar senha, hash, token ou username digitado de conta inexistente. A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada no ciclo apply -> rollback 0 -> reapply.
+A autenticação local possui trilha de auditoria persistida em `SecurityAuditEvents`, cobrindo bootstrap, login, falhas, bloqueio/throttling e logout sem armazenar senha, hash, token ou username digitado de conta inexistente. A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada no ciclo apply -> rollback 0 -> reapply.
 
-A ferramenta `LocalErp.PasswordHashBenchmark` também está integrada e foi executada em Windows CI com o serviço real do ERP. O baseline técnico de segurança pode avançar para revisão final sem marcar como concluído o benchmark em hardware representativo, que continua pendente antes de release.
+A ferramenta `LocalErp.PasswordHashBenchmark` também está integrada e foi executada em Windows CI com o serviço real do ERP. O baseline básico de segurança foi revisado sem defeito bloqueante. O benchmark em hardware representativo, o smoke visual WPF, a política de retenção e o comportamento desejado para falhas standalone de auditoria continuam como dívidas explícitas de pré-release/governança.
 
-Depois dessa revisão, a próxima frente funcional recomendada é administração de usuários em partes pequenas, seguida por cadastros-base. O smoke visual/interativo do WPF e a definição futura de retenção dos eventos de auditoria permanecem como dívida explícita.
+## Marco de administração de usuários — Parte A — 2026-10-16
+
+A área Administração agora possui tela WPF real de listagem, incluindo usuários ativos e inativos. O carregamento é feito por `UserService`, que mantém a autorização `users.read` na Application. A UI contém estados de carregamento, erro e lista vazia, sem introduzir regra de autorização no code-behind.
+
+Próxima prioridade: Parte B — criação de usuário, reutilizando `UserService.CreateAsync` e exigindo `users.manage`, com senha tratada diretamente por `PasswordBox` e sem trafegar por ViewModel.

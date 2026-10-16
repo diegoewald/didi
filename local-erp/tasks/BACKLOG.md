@@ -1,11 +1,25 @@
 # Backlog
 
-## P0 — Próxima execução
+## P0 — Pré-release / validação de ambiente
 
 - [ ] executar smoke visual/interativo do WPF em Windows real;
 - [ ] executar benchmark do password hashing em hardware Windows representativo do ambiente alvo.
 
-## P1 — Segurança e administração
+## P1 — Administração de usuários
+
+- [x] Parte A — listagem real de usuários ativos e inativos;
+- [x] manter `users.read` como autorização da listagem na Application;
+- [x] estados loading/erro/vazio da listagem;
+- [ ] Parte B — criar usuário com `users.manage`;
+- [ ] Parte C — ativar/desativar usuário;
+- [ ] Parte D — reset administrativo de senha;
+- [ ] Parte E — associar roles;
+- [ ] Parte F — auditar operações administrativas;
+- [ ] UI de administração de roles/permissões;
+- [ ] troca de senha pelo próprio usuário;
+- [ ] tela/consulta administrativa da trilha de auditoria quando houver necessidade operacional.
+
+## P1 — Segurança e governança pendente
 
 - [x] password hashing;
 - [x] usuários locais;
@@ -25,11 +39,7 @@
 - [x] revisão de segurança final do slice de auditoria/benchmark;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
 - [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
-- [ ] UI de administração de usuários;
-- [ ] UI de roles/permissões;
-- [ ] troca de senha pelo próprio usuário;
 - [ ] recuperação/reset administrativo de senha com política segura;
-- [ ] tela/consulta administrativa da trilha de auditoria quando houver necessidade operacional;
 - [ ] auditar futuras operações administrativas críticas.
 
 ## P1 — Persistência
@@ -55,12 +65,10 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline básico de segurança fechado — 2026-10-16
+## Baseline atual — 2026-10-16
 
-A revisão do slice de auditoria confirmou atomicidade nos fluxos que alteram estado, ausência de credenciais/payload arbitrário no modelo de auditoria, preservação da sessão encerrada mesmo quando a auditoria de logout falha e schema/migration coerentes. Não foi encontrado defeito bloqueante para iniciar administração de usuários.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A Parte A da administração de usuários foi integrada com listagem protegida por `users.read` e sem mover autorização para o WPF.
 
-A trilha de autenticação e o benchmark reproduzível estão integrados. Baseline atual: 82/82 testes, 5 migrations, build Release sem warnings/erros e ciclo de migrations apply -> rollback 0 -> reapply validado.
+Baseline automatizado: 84/84 testes, 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
 
-O benchmark já foi executado em Windows CI, mas isso não fecha a validação de hardware final. Antes de release, executar o mesmo benchmark numa máquina representativa e manter o smoke visual/interativo do WPF como obrigatório.
-
-Próxima frente funcional: administração de usuários em partes pequenas, começando pela listagem real protegida por `users.read`. Depois, criação, ativação/desativação, reset administrativo de senha, associação de roles e auditoria das operações administrativas.
+Próxima tarefa funcional fechada: Parte B — criar usuário. A implementação deve reutilizar `UserService.CreateAsync`, manter `users.manage` na Application, ler senha diretamente de `PasswordBox`, não colocar senha em ViewModel/log/sessão e não introduzir nova migration sem mudança real de modelo.
