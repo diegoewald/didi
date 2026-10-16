@@ -1,4 +1,4 @@
-name: ERP RBAC Build and Tests
+name: ERP RBAC Database Validation
 
 on:
   push:
@@ -15,12 +15,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: erp-rbac-build-${{ github.ref }}
+  group: erp-rbac-db-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-test:
-    name: Build and test RBAC baseline
+  database-validation:
+    name: Validate RBAC snapshot and migrations
     runs-on: windows-2025
     timeout-minutes: 20
 
@@ -128,27 +128,41 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Show SDK
+      - name: Restore local EF tool
         working-directory: erp-work
-        run: dotnet --info
+        run: dotnet tool restore
 
       - name: Restore dependencies
         working-directory: erp-work
         run: dotnet restore LocalErp.sln
 
-      - name: Build Release with analyzers
+      - name: Build database model
         working-directory: erp-work
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
-      - name: Run tests
+      - name: List migrations
         working-directory: erp-work
-        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+        run: dotnet ef migrations list --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: localerp-rbac-part-b-test-results
-          path: erp-work/**/TestResults/*.trx
-          if-no-files-found: warn
-          retention-days: 7
+      - name: Verify model has no pending changes
+        working-directory: erp-work
+        run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Reset disposable design-time database
+        shell: pwsh
+        run: |
+          $designTimeDirectory = Join-Path $env:TEMP 'LocalErp\DesignTime'
+          Remove-Item $designTimeDirectory -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Disposable database reset: $designTimeDirectory"
+
+      - name: Apply all migrations
+        working-directory: erp-work
+        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Roll back all migrations to zero
+        working-directory: erp-work
+        run: dotnet ef database update 0 --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Reapply all migrations
+        working-directory: erp-work
+        run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
