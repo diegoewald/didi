@@ -6,10 +6,7 @@ public static class AuthenticationThrottlePolicy
 
     public static TimeSpan GetBlockDurationAfterFailure(int failedSignInCount)
     {
-        if (failedSignInCount <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(failedSignInCount));
-        }
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(failedSignInCount);
 
         return failedSignInCount switch
         {
