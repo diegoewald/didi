@@ -1,13 +1,16 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using LocalErp.Application.Metadata;
+using LocalErp.Application.Security;
 
 namespace LocalErp.Desktop.ViewModels;
 
 public partial class MainWindowViewModel : ObservableObject
 {
-    public MainWindowViewModel()
+    public MainWindowViewModel(IUserSession session)
     {
+        ArgumentNullException.ThrowIfNull(session);
+
         NavigationItems =
         [
             new("Visão geral", "\uE80F"),
@@ -22,11 +25,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         currentSection = NavigationItems[0].Title;
         VersionLabel = $"Versão {ApplicationMetadata.Version}";
+        CurrentUsername = session.CurrentUser?.Username ?? "Usuário";
     }
 
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
 
     public string VersionLabel { get; }
+
+    public string CurrentUsername { get; }
 
     [ObservableProperty]
     private string currentSection;
