@@ -43,6 +43,9 @@ jobs:
       - name: Build Release
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
+      - name: Build password hash benchmark tool
+        run: dotnet build tools/LocalErp.PasswordHashBenchmark/LocalErp.PasswordHashBenchmark.csproj --configuration Release
+
       - name: Run tests
         run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
 
