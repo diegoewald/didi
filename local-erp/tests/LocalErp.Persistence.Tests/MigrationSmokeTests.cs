@@ -13,6 +13,7 @@ public sealed class MigrationSmokeTests
     private const string AddLocalUsersMigration = "20261015130329_AddLocalUsers";
     private const string AddRbacAuthorizationMigration = "20261015141238_AddRbacAuthorization";
     private const string AddAuthenticationThrottlingMigration = "20261016131952_AddAuthenticationThrottling";
+    private const string AddSecurityAuditTrailMigration = "20261016135247_AddSecurityAuditTrail";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -36,12 +37,14 @@ public sealed class MigrationSmokeTests
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
                 AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
+                AssertTableExists(context, "SecurityAuditEvents", expected: true);
 
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
                 AssertTableExists(context, "Companies", expected: false);
                 AssertTableExists(context, "Users", expected: false);
                 AssertRbacTablesExist(context, expected: false);
+                AssertTableExists(context, "SecurityAuditEvents", expected: false);
 
                 migrator.Migrate();
                 AssertExpectedMigrationsApplied(context);
@@ -50,6 +53,7 @@ public sealed class MigrationSmokeTests
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
                 AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
+                AssertTableExists(context, "SecurityAuditEvents", expected: true);
             }
         }
         finally
@@ -68,6 +72,7 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddLocalUsersMigration);
         CollectionAssert.Contains(appliedMigrations, AddRbacAuthorizationMigration);
         CollectionAssert.Contains(appliedMigrations, AddAuthenticationThrottlingMigration);
+        CollectionAssert.Contains(appliedMigrations, AddSecurityAuditTrailMigration);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)

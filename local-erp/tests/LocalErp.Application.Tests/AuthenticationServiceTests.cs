@@ -2,6 +2,7 @@ using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
+using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -22,7 +23,8 @@ public sealed class AuthenticationServiceTests
         var session = new RecordingUserSession();
         var attempts = new InMemoryAuthenticationAttemptStore(repository);
         var timing = new RecordingTimingProtector();
-        var service = CreateService(repository, hashService, attempts, timing, session);
+        var audit = new RecordingSecurityAuditStore();
+        var service = CreateService(repository, hashService, attempts, timing, session, audit);
 
         var result = await service.SignInAsync("  diego  ", "correct-password");
 
@@ -65,12 +67,14 @@ public sealed class AuthenticationServiceTests
         var hashService = new StubPasswordHashService(PasswordVerificationStatus.Success);
         var timing = new RecordingTimingProtector();
         var session = new RecordingUserSession();
+        var audit = new RecordingSecurityAuditStore();
         var service = CreateService(
             repository,
             hashService,
             new InMemoryAuthenticationAttemptStore(repository),
             timing,
-            session);
+            session,
+            audit);
 
         var result = await service.SignInAsync("unknown", "any-password");
 
@@ -78,6 +82,11 @@ public sealed class AuthenticationServiceTests
         Assert.AreEqual(0, hashService.VerifyCalls);
         Assert.AreEqual(1, timing.Calls);
         Assert.IsFalse(session.IsAuthenticated);
+        var auditEvent = AssertAuditEvent(
+            audit,
+            SecurityAuditCodes.AuthenticationSignInFailed,
+            SecurityAuditDetailCodes.UnknownAccount);
+        Assert.IsNull(auditEvent.UserId);
     }
 
     [TestMethod]
@@ -89,18 +98,25 @@ public sealed class AuthenticationServiceTests
         repository.Users.Add(user);
         var hashService = new StubPasswordHashService(PasswordVerificationStatus.Success);
         var timing = new RecordingTimingProtector();
+        var audit = new RecordingSecurityAuditStore();
         var service = CreateService(
             repository,
             hashService,
             new InMemoryAuthenticationAttemptStore(repository),
             timing,
-            new RecordingUserSession());
+            new RecordingUserSession(),
+            audit);
 
         var result = await service.SignInAsync("Diego", "correct-password");
 
         Assert.IsFalse(result.Succeeded);
         Assert.AreEqual(0, hashService.VerifyCalls);
         Assert.AreEqual(1, timing.Calls);
+        var auditEvent = AssertAuditEvent(
+            audit,
+            SecurityAuditCodes.AuthenticationSignInFailed,
+            SecurityAuditDetailCodes.InactiveAccount);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
     }
 
     [TestMethod]
@@ -112,18 +128,25 @@ public sealed class AuthenticationServiceTests
         repository.Users.Add(user);
         var hashService = new StubPasswordHashService(PasswordVerificationStatus.Success);
         var timing = new RecordingTimingProtector();
+        var audit = new RecordingSecurityAuditStore();
         var service = CreateService(
             repository,
             hashService,
             new InMemoryAuthenticationAttemptStore(repository),
             timing,
-            new RecordingUserSession());
+            new RecordingUserSession(),
+            audit);
 
         var result = await service.SignInAsync("Diego", "correct-password");
 
         Assert.IsFalse(result.Succeeded);
         Assert.AreEqual(0, hashService.VerifyCalls);
         Assert.AreEqual(1, timing.Calls);
+        var auditEvent = AssertAuditEvent(
+            audit,
+            SecurityAuditCodes.AuthenticationSignInBlocked,
+            SecurityAuditDetailCodes.TemporarilyBlocked);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
     }
 
     [TestMethod]
@@ -182,19 +205,24 @@ public sealed class AuthenticationServiceTests
         var repository = new InMemoryUserRepository();
         repository.Users.Add(new User("Diego", "stored-hash"));
         var session = new RecordingUserSession();
+        var audit = new RecordingSecurityAuditStore();
         var service = CreateService(
             repository,
             new StubPasswordHashService(PasswordVerificationStatus.Success),
             new InMemoryAuthenticationAttemptStore(repository),
             new RecordingTimingProtector(),
-            session);
+            session,
+            audit);
 
         Assert.IsTrue((await service.SignInAsync("Diego", "correct-password")).Succeeded);
+        audit.Events.Clear();
 
-        service.SignOut();
+        await service.SignOutAsync();
 
         Assert.IsFalse(session.IsAuthenticated);
         Assert.IsNull(session.CurrentUser);
+        var auditEvent = AssertAuditEvent(audit, SecurityAuditCodes.AuthenticationSignOut, detailCode: null);
+        Assert.AreEqual(repository.Users.Single().Id, auditEvent.UserId);
     }
 
     [TestMethod]
@@ -213,15 +241,30 @@ public sealed class AuthenticationServiceTests
         IPasswordHashService hashService,
         IAuthenticationAttemptStore attemptStore,
         IAuthenticationTimingProtector timingProtector,
-        IUserSession session)
+        IUserSession session,
+        RecordingSecurityAuditStore? auditStore = null)
     {
         return new AuthenticationService(
             repository,
             hashService,
             attemptStore,
             timingProtector,
+            auditStore ?? new RecordingSecurityAuditStore(),
             session,
             new FixedClock(UtcNow));
+    }
+
+    private static SecurityAuditEvent AssertAuditEvent(
+        RecordingSecurityAuditStore auditStore,
+        string eventCode,
+        string? detailCode)
+    {
+        Assert.AreEqual(1, auditStore.Events.Count);
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(eventCode, auditEvent.EventCode);
+        Assert.AreEqual(detailCode, auditEvent.DetailCode);
+        Assert.AreEqual(UtcNow, auditEvent.OccurredAtUtc);
+        return auditEvent;
     }
 
     private sealed class FixedClock(DateTime utcNow) : IClock
@@ -270,6 +313,20 @@ public sealed class AuthenticationServiceTests
 
         public void SignIn(UserResult user) => CurrentUser = user;
         public void SignOut() => CurrentUser = null;
+    }
+
+    private sealed class RecordingSecurityAuditStore : ISecurityAuditStore
+    {
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public Task AppendAsync(
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Events.Add(auditEvent);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryAuthenticationAttemptStore(InMemoryUserRepository repository)

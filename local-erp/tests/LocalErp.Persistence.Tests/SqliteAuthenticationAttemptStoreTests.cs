@@ -1,4 +1,5 @@
 using LocalErp.Application.Security;
+using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using LocalErp.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,11 @@ public sealed class SqliteAuthenticationAttemptStoreTests
         var persisted = await verification.Users.SingleAsync();
         Assert.AreEqual(3, persisted.FailedSignInCount);
         Assert.AreEqual(UtcNow.AddSeconds(2), persisted.SignInBlockedUntilUtc);
+        var auditEvents = await verification.SecurityAuditEvents.OrderBy(item => item.EventCode).ToListAsync();
+        Assert.AreEqual(4, auditEvents.Count);
+        Assert.AreEqual(3, auditEvents.Count(item => item.EventCode == SecurityAuditCodes.AuthenticationSignInFailed));
+        var throttle = auditEvents.Single(item => item.EventCode == SecurityAuditCodes.AuthenticationThrottleApplied);
+        Assert.AreEqual(SecurityAuditDetailCodes.ProgressiveDelay, throttle.DetailCode);
     }
 
     [TestMethod]
@@ -46,6 +52,30 @@ public sealed class SqliteAuthenticationAttemptStoreTests
         var persisted = await verification.Users.SingleAsync();
         Assert.AreEqual(4, persisted.FailedSignInCount);
         Assert.AreEqual(UtcNow.AddSeconds(13), persisted.SignInBlockedUntilUtc);
+        Assert.AreEqual(6, await verification.SecurityAuditEvents.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task RecordFailedAttemptAsyncAuditsFifteenMinuteLockoutAtThreshold()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var user = new User("diego", "hash");
+        user.RecordFailedSignIn(UtcNow.AddMinutes(-1), TimeSpan.Zero);
+        user.RecordFailedSignIn(UtcNow.AddMinutes(-1), TimeSpan.Zero);
+        user.RecordFailedSignIn(UtcNow.AddMinutes(-1), TimeSpan.Zero);
+        user.RecordFailedSignIn(UtcNow.AddMinutes(-1), TimeSpan.Zero);
+        await database.InsertUserAsync(user);
+        var store = new SqliteAuthenticationAttemptStore(database);
+
+        await store.RecordFailedAttemptAsync(user.Id, UtcNow);
+
+        await using var verification = database.CreateDbContext();
+        var persisted = await verification.Users.SingleAsync();
+        Assert.AreEqual(AuthenticationThrottlePolicy.LockoutThreshold, persisted.FailedSignInCount);
+        Assert.AreEqual(UtcNow.AddMinutes(15), persisted.SignInBlockedUntilUtc);
+        var throttle = await verification.SecurityAuditEvents
+            .SingleAsync(item => item.EventCode == SecurityAuditCodes.AuthenticationThrottleApplied);
+        Assert.AreEqual(SecurityAuditDetailCodes.TemporaryLockout, throttle.DetailCode);
     }
 
     [TestMethod]
@@ -70,6 +100,10 @@ public sealed class SqliteAuthenticationAttemptStoreTests
         Assert.AreEqual("new-hash", persisted.PasswordHash);
         Assert.AreEqual(0, persisted.FailedSignInCount);
         Assert.IsNull(persisted.SignInBlockedUntilUtc);
+        Assert.AreEqual(3, await verification.SecurityAuditEvents.CountAsync());
+        var success = await verification.SecurityAuditEvents
+            .SingleAsync(item => item.EventCode == SecurityAuditCodes.AuthenticationSignInSucceeded);
+        Assert.AreEqual(user.Id, success.UserId);
     }
 
     [TestMethod]

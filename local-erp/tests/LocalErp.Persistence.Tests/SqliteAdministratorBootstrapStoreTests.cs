@@ -1,3 +1,4 @@
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using LocalErp.Persistence.Repositories;
@@ -9,11 +10,13 @@ namespace LocalErp.Persistence.Tests;
 [TestClass]
 public sealed class SqliteAdministratorBootstrapStoreTests
 {
+    private static readonly DateTime UtcNow = new(2026, 10, 16, 14, 0, 0, DateTimeKind.Utc);
+
     [TestMethod]
     public async Task TryBootstrapAsyncPersistsCompleteAdministratorGraph()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var store = new SqliteAdministratorBootstrapStore(database);
+        var store = new SqliteAdministratorBootstrapStore(database, new FixedClock(UtcNow));
         var user = new User("admin", "hash");
         var role = new Role("Administrator");
 
@@ -32,6 +35,10 @@ public sealed class SqliteAdministratorBootstrapStoreTests
         Assert.AreEqual(1, await context.Roles.CountAsync());
         Assert.AreEqual(1, await context.UserRoles.CountAsync());
         Assert.AreEqual(PermissionCatalog.All.Count, await context.RolePermissions.CountAsync());
+        var auditEvent = await context.SecurityAuditEvents.SingleAsync();
+        Assert.AreEqual(SecurityAuditCodes.AdministratorBootstrapSucceeded, auditEvent.EventCode);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
+        Assert.AreEqual(UtcNow, auditEvent.OccurredAtUtc);
 
         var assignment = await context.UserRoles.SingleAsync();
         Assert.AreEqual(user.Id, assignment.UserId);
@@ -48,7 +55,7 @@ public sealed class SqliteAdministratorBootstrapStoreTests
             await context.SaveChangesAsync();
         }
 
-        var store = new SqliteAdministratorBootstrapStore(database);
+        var store = new SqliteAdministratorBootstrapStore(database, new FixedClock(UtcNow));
         var committed = await store.TryBootstrapAsync(
             new User("admin", "hash"),
             new Role("Administrator"),
@@ -61,6 +68,7 @@ public sealed class SqliteAdministratorBootstrapStoreTests
         Assert.AreEqual(0, await verification.Roles.CountAsync());
         Assert.AreEqual(0, await verification.UserRoles.CountAsync());
         Assert.AreEqual(0, await verification.RolePermissions.CountAsync());
+        Assert.AreEqual(0, await verification.SecurityAuditEvents.CountAsync());
     }
 
     [TestMethod]
@@ -73,7 +81,7 @@ public sealed class SqliteAdministratorBootstrapStoreTests
             await context.SaveChangesAsync();
         }
 
-        var store = new SqliteAdministratorBootstrapStore(database);
+        var store = new SqliteAdministratorBootstrapStore(database, new FixedClock(UtcNow));
 
         await Assert.ThrowsExactlyAsync<DbUpdateException>(
             () => store.TryBootstrapAsync(
@@ -86,14 +94,15 @@ public sealed class SqliteAdministratorBootstrapStoreTests
         Assert.AreEqual(1, await verification.Roles.CountAsync());
         Assert.AreEqual(0, await verification.UserRoles.CountAsync());
         Assert.AreEqual(0, await verification.RolePermissions.CountAsync());
+        Assert.AreEqual(0, await verification.SecurityAuditEvents.CountAsync());
     }
 
     [TestMethod]
     public async Task ConcurrentBootstrapAttemptsCommitExactlyOneAdministrator()
     {
         await using var database = await TestDatabase.CreateAsync();
-        var firstStore = new SqliteAdministratorBootstrapStore(database);
-        var secondStore = new SqliteAdministratorBootstrapStore(database);
+        var firstStore = new SqliteAdministratorBootstrapStore(database, new FixedClock(UtcNow));
+        var secondStore = new SqliteAdministratorBootstrapStore(database, new FixedClock(UtcNow));
 
         var firstAttempt = Task.Run(() => firstStore.TryBootstrapAsync(
             new User("admin-one", "hash-one"),
@@ -115,6 +124,12 @@ public sealed class SqliteAdministratorBootstrapStoreTests
         Assert.AreEqual(1, await verification.Roles.CountAsync());
         Assert.AreEqual(1, await verification.UserRoles.CountAsync());
         Assert.AreEqual(PermissionCatalog.All.Count, await verification.RolePermissions.CountAsync());
+        Assert.AreEqual(1, await verification.SecurityAuditEvents.CountAsync());
+    }
+
+    private sealed class FixedClock(DateTime utcNow) : IClock
+    {
+        public DateTime UtcNow { get; } = utcNow;
     }
 
     private sealed class TestDatabase : IDbContextFactory<ErpDbContext>, IAsyncDisposable
