@@ -135,7 +135,7 @@
           </StackPanel>
         </ScrollViewer>
 
-        <views:AdministrationUsersView DataContext="{Binding UsersAdministration}">
+        <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
           <views:AdministrationUsersView.Style>
             <Style TargetType="{x:Type views:AdministrationUsersView}">
               <Setter Property="Visibility" Value="Collapsed" />

@@ -20,49 +20,22 @@
           <ColumnDefinition Width="*" />
           <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
-
         <StackPanel>
-          <TextBlock Text="Administração de usuários"
-                     FontSize="28"
-                     FontWeight="SemiBold"
-                     Foreground="{StaticResource Brush.Text}" />
+          <TextBlock Text="Administração de usuários" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
           <TextBlock Text="Crie usuários e consulte contas ativas ou inativas. Permissões continuam sendo validadas na camada de aplicação."
-                     Foreground="{StaticResource Brush.Muted}"
-                     Margin="0,7,0,0"
-                     FontSize="14"
-                     TextWrapping="Wrap" />
+                     Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,0" FontSize="14" TextWrapping="Wrap" />
         </StackPanel>
-
-        <Button Grid.Column="1"
-                Content="Atualizar"
-                Command="{Binding LoadCommand}"
-                Padding="14,7"
-                MinWidth="90"
-                VerticalAlignment="Top"
-                Background="{StaticResource Brush.Surface}"
-                BorderBrush="{StaticResource Brush.Border}"
-                BorderThickness="1"
-                Foreground="{StaticResource Brush.Text}"
-                Cursor="Hand" />
+        <Button Grid.Column="1" Content="Atualizar" Command="{Binding LoadCommand}" Padding="14,7" MinWidth="90"
+                VerticalAlignment="Top" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+                BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
       </Grid>
 
-      <Border Grid.Row="1"
-              Margin="0,0,0,18"
-              Padding="16"
-              Background="{StaticResource Brush.Surface}"
-              BorderBrush="{StaticResource Brush.Border}"
-              BorderThickness="1"
-              CornerRadius="6">
+      <Border Grid.Row="1" Margin="0,0,0,18" Padding="16" Background="{StaticResource Brush.Surface}"
+              BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6">
         <StackPanel>
-          <TextBlock Text="Novo usuário"
-                     FontSize="17"
-                     FontWeight="SemiBold"
-                     Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="A senha é lida diretamente dos campos protegidos e não é mantida no ViewModel, sessão ou logs."
-                     Margin="0,4,0,14"
-                     Foreground="{StaticResource Brush.Muted}"
-                     TextWrapping="Wrap" />
-
+          <TextBlock Text="Novo usuário" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
+          <TextBlock Text="A senha é lida diretamente dos campos protegidos, enviada somente à camada de aplicação e limpa após a tentativa."
+                     Margin="0,4,0,14" Foreground="{StaticResource Brush.Muted}" TextWrapping="Wrap" />
           <Grid>
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="230" />
@@ -70,152 +43,66 @@
               <ColumnDefinition Width="210" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-
             <StackPanel Grid.Column="0" Margin="0,0,12,0">
               <TextBlock Text="Usuário" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
-              <TextBox x:Name="CreateUsernameTextBox"
-                       MaxLength="100"
-                       MinHeight="32"
-                       Padding="8,5" />
+              <TextBox x:Name="CreateUsernameTextBox" MaxLength="100" MinHeight="32" Padding="8,5" />
             </StackPanel>
-
             <StackPanel Grid.Column="1" Margin="0,0,12,0">
               <TextBlock Text="Senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
-              <PasswordBox x:Name="CreatePasswordInput"
-                           MaxLength="128"
-                           MinHeight="32"
-                           Padding="8,5" />
+              <PasswordBox x:Name="CreatePasswordInput" MaxLength="128" MinHeight="32" Padding="8,5" />
             </StackPanel>
-
             <StackPanel Grid.Column="2" Margin="0,0,12,0">
               <TextBlock Text="Confirmar senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
-              <PasswordBox x:Name="ConfirmPasswordInput"
-                           MaxLength="128"
-                           MinHeight="32"
-                           Padding="8,5"
+              <PasswordBox x:Name="ConfirmPasswordInput" MaxLength="128" MinHeight="32" Padding="8,5"
                            KeyDown="ConfirmPasswordInput_KeyDown" />
             </StackPanel>
-
-            <Button x:Name="CreateUserButton"
-                    Grid.Column="3"
-                    Content="Criar usuário"
-                    Click="CreateUser_Click"
-                    IsEnabled="{Binding CanCreateUser}"
-                    MinWidth="116"
-                    MinHeight="32"
-                    Padding="14,6"
-                    Margin="0,22,0,0"
-                    VerticalAlignment="Top"
-                    Cursor="Hand" />
+            <Button x:Name="CreateUserButton" Grid.Column="3" Content="Criar usuário" Click="CreateUser_Click"
+                    MinWidth="116" MinHeight="32" Padding="14,6" Margin="0,22,0,0" VerticalAlignment="Top" Cursor="Hand" />
           </Grid>
-
-          <TextBlock Text="{Binding PasswordPolicyHint}"
-                     Margin="0,8,0,0"
-                     Foreground="{StaticResource Brush.Muted}" />
-
-          <Border Margin="0,12,0,0"
-                  Padding="12,9"
-                  Background="#FFF4F2"
-                  BorderBrush="#E7C6C0"
-                  BorderThickness="1"
-                  CornerRadius="5"
-                  Visibility="{Binding HasCreateError, Converter={StaticResource BoolToVisibilityConverter}}">
-            <TextBlock Text="{Binding CreateErrorMessage}"
-                       TextWrapping="Wrap"
-                       Foreground="{StaticResource Brush.Text}" />
+          <TextBlock x:Name="PasswordPolicyText" Margin="0,8,0,0" Foreground="{StaticResource Brush.Muted}" />
+          <Border x:Name="CreateErrorPanel" Margin="0,12,0,0" Padding="12,9" Background="#FFF4F2"
+                  BorderBrush="#E7C6C0" BorderThickness="1" CornerRadius="5" Visibility="Collapsed">
+            <TextBlock x:Name="CreateErrorText" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
           </Border>
-
-          <Border Margin="0,12,0,0"
-                  Padding="12,9"
-                  Background="#E9F6EF"
-                  BorderBrush="#BFDCCB"
-                  BorderThickness="1"
-                  CornerRadius="5"
-                  Visibility="{Binding HasCreateSuccess, Converter={StaticResource BoolToVisibilityConverter}}">
-            <TextBlock Text="{Binding CreateSuccessMessage}"
-                       TextWrapping="Wrap"
-                       Foreground="{StaticResource Brush.Text}" />
+          <Border x:Name="CreateSuccessPanel" Margin="0,12,0,0" Padding="12,9" Background="#E9F6EF"
+                  BorderBrush="#BFDCCB" BorderThickness="1" CornerRadius="5" Visibility="Collapsed">
+            <TextBlock x:Name="CreateSuccessText" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
           </Border>
         </StackPanel>
       </Border>
 
-      <Border Grid.Row="2"
-              Margin="0,0,0,12"
-              Padding="14,11"
-              Background="#EEF5FC"
-              BorderBrush="#C8DDF4"
-              BorderThickness="1"
-              CornerRadius="5"
-              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
+      <Border Grid.Row="2" Margin="0,0,0,12" Padding="14,11" Background="#EEF5FC" BorderBrush="#C8DDF4"
+              BorderThickness="1" CornerRadius="5" Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibilityConverter}}">
         <TextBlock Text="Carregando usuários..." Foreground="{StaticResource Brush.Text}" />
       </Border>
-
-      <Border Grid.Row="3"
-              Margin="0,0,0,12"
-              Padding="14,11"
-              Background="#FFF4F2"
-              BorderBrush="#E7C6C0"
-              BorderThickness="1"
-              CornerRadius="5"
-              Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
-        <TextBlock Text="{Binding ErrorMessage}"
-                   TextWrapping="Wrap"
-                   Foreground="{StaticResource Brush.Text}" />
+      <Border Grid.Row="3" Margin="0,0,0,12" Padding="14,11" Background="#FFF4F2" BorderBrush="#E7C6C0"
+              BorderThickness="1" CornerRadius="5" Visibility="{Binding HasError, Converter={StaticResource BoolToVisibilityConverter}}">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
       </Border>
 
       <Grid Grid.Row="4">
-        <Border Padding="28"
-                Background="{StaticResource Brush.Surface}"
-                BorderBrush="{StaticResource Brush.Border}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Border Padding="28" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+                BorderThickness="1" CornerRadius="6" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
           <StackPanel HorizontalAlignment="Center">
-            <TextBlock Text="Nenhum usuário encontrado"
-                       FontSize="16"
-                       FontWeight="SemiBold"
-                       HorizontalAlignment="Center"
+            <TextBlock Text="Nenhum usuário encontrado" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center"
                        Foreground="{StaticResource Brush.Text}" />
-            <TextBlock Text="Use o formulário acima para cadastrar o primeiro usuário desta lista."
-                       Margin="0,6,0,0"
-                       HorizontalAlignment="Center"
-                       Foreground="{StaticResource Brush.Muted}" />
+            <TextBlock Text="Use o formulário acima para cadastrar o primeiro usuário desta lista." Margin="0,6,0,0"
+                       HorizontalAlignment="Center" Foreground="{StaticResource Brush.Muted}" />
           </StackPanel>
         </Border>
-
-        <Border Background="{StaticResource Brush.Surface}"
-                BorderBrush="{StaticResource Brush.Border}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Visibility="{Binding HasUsers, Converter={StaticResource BoolToVisibilityConverter}}">
-          <DataGrid ItemsSource="{Binding Users}"
-                    AutoGenerateColumns="False"
-                    IsReadOnly="True"
-                    CanUserAddRows="False"
-                    CanUserDeleteRows="False"
-                    CanUserResizeRows="False"
-                    HeadersVisibility="Column"
-                    GridLinesVisibility="Horizontal"
-                    BorderThickness="0"
-                    RowHeaderWidth="0"
-                    MinHeight="220"
-                    MaxHeight="520"
-                    SelectionMode="Single"
-                    Background="Transparent"
-                    AlternatingRowBackground="#F8FAFC"
-                    HorizontalGridLinesBrush="{StaticResource Brush.Border}"
+        <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
+                CornerRadius="6" Visibility="{Binding HasUsers, Converter={StaticResource BoolToVisibilityConverter}}">
+          <DataGrid ItemsSource="{Binding Users}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                    CanUserDeleteRows="False" CanUserResizeRows="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                    BorderThickness="0" RowHeaderWidth="0" MinHeight="220" MaxHeight="520" SelectionMode="Single"
+                    Background="Transparent" AlternatingRowBackground="#F8FAFC" HorizontalGridLinesBrush="{StaticResource Brush.Border}"
                     VerticalGridLinesBrush="Transparent">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Usuário"
-                                  Binding="{Binding Username}"
-                                  Width="*"
-                                  MinWidth="260" />
+              <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="260" />
               <DataGridTemplateColumn Header="Status" Width="150">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <Border Padding="9,3"
-                            CornerRadius="10"
-                            HorizontalAlignment="Left">
+                    <Border Padding="9,3" CornerRadius="10" HorizontalAlignment="Left">
                       <Border.Style>
                         <Style TargetType="Border">
                           <Setter Property="Background" Value="#E9F6EF" />
@@ -226,9 +113,7 @@
                           </Style.Triggers>
                         </Style>
                       </Border.Style>
-                      <TextBlock Text="{Binding Status}"
-                                 FontWeight="SemiBold"
-                                 Foreground="{StaticResource Brush.Text}" />
+                      <TextBlock Text="{Binding Status}" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
                     </Border>
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>

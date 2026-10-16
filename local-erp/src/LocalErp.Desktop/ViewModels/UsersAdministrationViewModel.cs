@@ -14,20 +14,11 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
 
     public ObservableCollection<UserListItemViewModel> Users { get; } = [];
 
-    public string PasswordPolicyHint { get; } =
-        $"Use entre {PasswordPolicy.MinimumLength} e {PasswordPolicy.MaximumLength} caracteres.";
-
     public bool HasUsers => Users.Count > 0;
 
     public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
 
     public bool IsEmpty => HasLoaded && !IsLoading && !HasError && Users.Count == 0;
-
-    public bool HasCreateError => !string.IsNullOrWhiteSpace(CreateErrorMessage);
-
-    public bool HasCreateSuccess => !string.IsNullOrWhiteSpace(CreateSuccessMessage);
-
-    public bool CanCreateUser => !IsCreating;
 
     [ObservableProperty]
     private bool isLoading;
@@ -37,15 +28,6 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
 
     [ObservableProperty]
     private string? errorMessage;
-
-    [ObservableProperty]
-    private bool isCreating;
-
-    [ObservableProperty]
-    private string? createErrorMessage;
-
-    [ObservableProperty]
-    private string? createSuccessMessage;
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -87,74 +69,10 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
         }
     }
 
-    public async Task<bool> CreateUserAsync(
-        string username,
-        string password,
-        string passwordConfirmation)
+    public void ApplyCreatedUser(UserResult user)
     {
-        if (IsCreating)
-        {
-            return false;
-        }
+        ArgumentNullException.ThrowIfNull(user);
 
-        CreateErrorMessage = null;
-        CreateSuccessMessage = null;
-
-        if (!string.Equals(password, passwordConfirmation, StringComparison.Ordinal))
-        {
-            CreateErrorMessage = "As senhas informadas não coincidem.";
-            return false;
-        }
-
-        IsCreating = true;
-
-        try
-        {
-            var created = await _userService.CreateAsync(username, password);
-            AddOrReplaceUser(created);
-            CreateSuccessMessage = $"Usuário '{created.Username}' criado com sucesso.";
-            return true;
-        }
-        catch (AccessDeniedException)
-        {
-            CreateErrorMessage = "Você não tem permissão para criar usuários.";
-        }
-        catch (InvalidOperationException)
-        {
-            CreateErrorMessage = "Já existe um usuário com esse nome.";
-        }
-        catch (ArgumentException)
-        {
-            CreateErrorMessage = "Verifique o nome de usuário e a política da senha.";
-        }
-        catch (Exception exception)
-        {
-            CreateErrorMessage = "Não foi possível criar o usuário. Consulte os logs para detalhes técnicos.";
-            Log.Error(exception, "Failed to create user from administration screen");
-        }
-        finally
-        {
-            IsCreating = false;
-            NotifyCreateState();
-        }
-
-        return false;
-    }
-
-    partial void OnIsLoadingChanged(bool value) => NotifyDerivedState();
-
-    partial void OnHasLoadedChanged(bool value) => NotifyDerivedState();
-
-    partial void OnErrorMessageChanged(string? value) => NotifyDerivedState();
-
-    partial void OnIsCreatingChanged(bool value) => NotifyCreateState();
-
-    partial void OnCreateErrorMessageChanged(string? value) => NotifyCreateState();
-
-    partial void OnCreateSuccessMessageChanged(string? value) => NotifyCreateState();
-
-    private void AddOrReplaceUser(UserResult user)
-    {
         var item = UserListItemViewModel.FromResult(user);
         var existing = Users.FirstOrDefault(candidate => candidate.Id == item.Id);
         if (existing is not null)
@@ -174,18 +92,17 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
         NotifyDerivedState();
     }
 
+    partial void OnIsLoadingChanged(bool value) => NotifyDerivedState();
+
+    partial void OnHasLoadedChanged(bool value) => NotifyDerivedState();
+
+    partial void OnErrorMessageChanged(string? value) => NotifyDerivedState();
+
     private void NotifyDerivedState()
     {
         OnPropertyChanged(nameof(HasUsers));
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(IsEmpty));
-    }
-
-    private void NotifyCreateState()
-    {
-        OnPropertyChanged(nameof(HasCreateError));
-        OnPropertyChanged(nameof(HasCreateSuccess));
-        OnPropertyChanged(nameof(CanCreateUser));
     }
 }
 

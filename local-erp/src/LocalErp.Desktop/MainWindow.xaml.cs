@@ -1,5 +1,6 @@
 using System.Windows;
 using LocalErp.Application.Security;
+using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
 using Serilog;
 
@@ -11,12 +12,15 @@ public partial class MainWindow : Window
 
     public MainWindow(
         MainWindowViewModel viewModel,
-        AuthenticationService authenticationService)
+        AuthenticationService authenticationService,
+        UserService userService)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+        ArgumentNullException.ThrowIfNull(userService);
 
         InitializeComponent();
+        AdministrationUsersPanel.Configure(userService);
         DataContext = viewModel;
     }
 
