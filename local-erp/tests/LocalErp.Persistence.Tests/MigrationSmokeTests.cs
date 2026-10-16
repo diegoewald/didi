@@ -12,6 +12,7 @@ public sealed class MigrationSmokeTests
     private const string InitialCreateMigration = "20261015121025_InitialCreate";
     private const string AddLocalUsersMigration = "20261015130329_AddLocalUsers";
     private const string AddRbacAuthorizationMigration = "20261015141238_AddRbacAuthorization";
+    private const string AddAuthenticationThrottlingMigration = "20261016131952_AddAuthenticationThrottling";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -33,6 +34,8 @@ public sealed class MigrationSmokeTests
                 AssertTableExists(context, "Companies", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
+                AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
+                AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
 
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
@@ -45,6 +48,8 @@ public sealed class MigrationSmokeTests
                 AssertTableExists(context, "Companies", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
+                AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
+                AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
             }
         }
         finally
@@ -62,6 +67,7 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, InitialCreateMigration);
         CollectionAssert.Contains(appliedMigrations, AddLocalUsersMigration);
         CollectionAssert.Contains(appliedMigrations, AddRbacAuthorizationMigration);
+        CollectionAssert.Contains(appliedMigrations, AddAuthenticationThrottlingMigration);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)
@@ -92,6 +98,46 @@ public sealed class MigrationSmokeTests
 
             var count = Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
             Assert.AreEqual(expected ? 1 : 0, count);
+        }
+        finally
+        {
+            if (shouldClose)
+            {
+                connection.Close();
+            }
+        }
+    }
+
+    private static void AssertColumnExists(
+        ErpDbContext context,
+        string tableName,
+        string columnName,
+        bool expected)
+    {
+        var connection = context.Database.GetDbConnection();
+        var shouldClose = connection.State != ConnectionState.Open;
+
+        if (shouldClose)
+        {
+            connection.Open();
+        }
+
+        try
+        {
+            using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+            using var reader = command.ExecuteReader();
+            var found = false;
+            while (reader.Read())
+            {
+                if (string.Equals(reader.GetString(1), columnName, StringComparison.Ordinal))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            Assert.AreEqual(expected, found);
         }
         finally
         {

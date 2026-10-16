@@ -95,6 +95,9 @@ namespace LocalErp.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FailedSignInCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("INTEGER");
 
@@ -106,6 +109,9 @@ namespace LocalErp.Persistence.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("SignInBlockedUntilUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Username")
