@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: autenticação local endurecida / preparação de auditoria
+- Fase: autenticação local endurecida / auditoria de segurança integrada
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 76/76 testes passando
-- Migrations: 4 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 82/82 testes passando
+- Migrations: 5 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
 
@@ -21,10 +21,11 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 5. instalações já configuradas abrem a tela de login;
 6. falhas de autenticação são limitadas por conta com throttling/lockout persistente;
 7. usuário inexistente, inativo ou bloqueado executa dummy password verification para reduzir diferença de timing;
-8. logout encerra a sessão e retorna ao login;
-9. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
+8. eventos críticos de autenticação são registrados em `SecurityAuditEvents` sem senha, hash, token ou username digitado de conta inexistente;
+9. logout limpa a sessão e tenta registrar o evento de auditoria sem manter a sessão caso essa gravação falhe;
+10. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
 
-Senhas são tratadas por `PasswordBox`, não entram em ViewModels e não são persistidas na sessão ou em logs.
+Senhas são tratadas por `PasswordBox`, não entram em ViewModels e não são persistidas na sessão, em logs ou na trilha de auditoria.
 
 ## Política de tentativas de login
 
@@ -58,6 +59,8 @@ tests/
   LocalErp.Application.Tests/
   LocalErp.Infrastructure.Tests/
   LocalErp.Persistence.Tests/
+tools/
+  LocalErp.PasswordHashBenchmark/
 docs/
   adr/
 tasks/
@@ -78,6 +81,7 @@ scripts/
 ./scripts/test.ps1
 ./scripts/run.ps1
 ./scripts/new-migration.ps1 NomeDaMigration
+./scripts/benchmark-password-hashing.ps1
 ```
 
 Ou diretamente:
@@ -119,4 +123,8 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-16
 
-A fundação atual inclui usuários locais, hashing de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente e mitigação de timing por dummy password verification. Os próximos itens de segurança são trilha de auditoria e benchmark do hashing; smoke visual/interativo do WPF continua obrigatório antes de release.
+A fundação atual inclui usuários locais, hashing de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification e trilha de auditoria de autenticação persistida por EF Core/SQLite.
+
+A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
+
+Antes de release de produção ainda é recomendado executar o mesmo benchmark em hardware Windows representativo do ambiente alvo. O smoke visual/interativo do fluxo WPF em Windows real também continua obrigatório. A política de retenção/limpeza de `SecurityAuditEvents` ainda deve ser definida antes de crescimento significativo da base de auditoria.

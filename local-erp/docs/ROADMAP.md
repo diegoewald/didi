@@ -46,8 +46,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] testes de regressão do baseline de autenticação;
 - [x] lockout/throttling persistente por conta;
 - [x] hardening de timing para usuário inexistente/inativo/bloqueado;
-- [ ] benchmark do custo de hash em hardware Windows representativo;
-- [ ] trilha de auditoria de segurança.
+- [x] trilha de auditoria de autenticação;
+- [x] ferramenta reproduzível de benchmark de password hashing e baseline Windows CI;
+- [ ] benchmark do custo de hash em hardware Windows representativo do ambiente final.
 
 ## Fase 4 — Shell da aplicação
 
@@ -74,7 +75,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 - [ ] relatórios;
 - [ ] administração completa de usuários/roles/permissões;
-- [ ] auditoria completa;
+- [ ] auditoria administrativa e consulta/retenção operacional da trilha;
 - [ ] backup/restauração;
 - [ ] atualização com migration bundle e recuperação segura;
 - [ ] instalador;
@@ -82,6 +83,10 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [ ] preparação multiusuário;
 - [ ] release 1.0.
 
-## Hardening de autenticação — 2026-10-16
+## Marco de auditoria e benchmark — 2026-10-16
 
-O fluxo local agora possui throttling/lockout persistente e mitigação do retorno antecipado por timing. A próxima prioridade de segurança é trilha de auditoria de autenticação e benchmark do custo do hashing em hardware representativo; o smoke visual/interativo do WPF continua obrigatório antes de release.
+A autenticação local agora possui trilha de auditoria persistida em `SecurityAuditEvents`, cobrindo bootstrap, login, falhas, bloqueio/throttling e logout sem armazenar senha, hash, token ou username digitado de conta inexistente. A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada no ciclo apply -> rollback 0 -> reapply.
+
+A ferramenta `LocalErp.PasswordHashBenchmark` também está integrada e foi executada em Windows CI com o serviço real do ERP. O baseline técnico de segurança pode avançar para revisão final sem marcar como concluído o benchmark em hardware representativo, que continua pendente antes de release.
+
+Depois dessa revisão, a próxima frente funcional recomendada é administração de usuários em partes pequenas, seguida por cadastros-base. O smoke visual/interativo do WPF e a definição futura de retenção dos eventos de auditoria permanecem como dívida explícita.

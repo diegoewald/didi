@@ -13,7 +13,17 @@
 
 ## Password hashing
 
-A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`. O custo precisa continuar sendo benchmarkado em hardware Windows representativo antes de release de produção. Argon2id permanece como alternativa futura caso uma biblioteca .NET madura, mantida e compatível com o projeto seja adotada.
+A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`, com `IterationCount = 220000`.
+
+Existe uma ferramenta reproduzível de benchmark em `tools/LocalErp.PasswordHashBenchmark` e o script `scripts/benchmark-password-hashing.ps1`. O benchmark usa o serviço real do ERP e mede hash, verify válido e verify inválido.
+
+Medição de referência feita em GitHub Actions / Windows Server 2025, .NET 10.0.13, AMD64, 4 CPUs, 20 amostras após 2 warmups:
+
+- Hash: mediana 145.155 ms, média 151.692 ms, P95 185.939 ms;
+- Verify Success: mediana 138.080 ms, média 146.769 ms, P95 166.364 ms;
+- Verify Failure: mediana 141.959 ms, média 146.600 ms, P95 167.560 ms.
+
+Essa medição valida o tooling e fornece baseline Windows, mas não substitui benchmark em hardware representativo do ambiente final. Não reduzir o work factor apenas com base no runner hospedado. Argon2id permanece como alternativa futura caso uma biblioteca .NET madura, mantida e compatível com o projeto seja adotada.
 
 Nunca criar algoritmo de hash próprio.
 
@@ -73,9 +83,47 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 - DTOs de resultado não expõem hash de senha;
 - a UI pode ocultar/desabilitar comandos, mas a Application continua sendo a autoridade de autorização.
 
-## Auditoria
+## Auditoria de autenticação
 
-Registrar ações críticas sem armazenar senha, token ou payload sensível integral. A trilha de auditoria de autenticação ainda é item pendente do próximo ciclo de segurança.
+A trilha de auditoria de autenticação está implementada por `SecurityAuditEvent` e `ISecurityAuditStore`, com persistência EF Core em `SecurityAuditEvents`.
+
+Eventos atuais:
+
+- `authentication.sign_in.succeeded`;
+- `authentication.sign_in.failed`;
+- `authentication.sign_in.blocked`;
+- `authentication.throttle.applied`;
+- `authentication.sign_out`;
+- `authentication.bootstrap.succeeded`.
+
+Detail codes atuais:
+
+- `unknown_account`;
+- `inactive_account`;
+- `invalid_password`;
+- `progressive_delay`;
+- `temporary_lockout`;
+- `temporarily_blocked`.
+
+Regras de privacidade:
+
+- não persistir senha;
+- não persistir hash;
+- não persistir token;
+- não persistir payload arbitrário;
+- não persistir o username digitado quando a conta não existe;
+- `UserId` é opcional e só referencia usuário conhecido.
+
+Atomicidade relevante:
+
+- senha incorreta: atualização do contador e audit event são gravados na mesma transação SQLite;
+- login correto: reset de falhas, rehash opcional e audit event são gravados na mesma transação;
+- bootstrap: usuário, role, grants, vínculo e audit event são gravados na mesma transação;
+- logout: a sessão é limpa antes da tentativa de auditoria; falha na auditoria é logada, mas não restaura nem mantém a sessão.
+
+A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, FK opcional para `Users` com `SET NULL` e índices por data, evento e usuário/data.
+
+Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
 ## Dependências
 
@@ -95,9 +143,12 @@ Antes de atualizar/adicionar dependências:
 - RBAC e autorização deny-by-default ativos;
 - throttling/lockout persistente por conta concluído;
 - mitigação de timing por dummy password verification concluída;
-- migration `20261016131952_AddAuthenticationThrottling` gerada pelo EF Core e validada;
+- trilha de auditoria de autenticação concluída;
+- migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
+- benchmark reproduzível do hashing concluído no Windows CI;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 76/76;
+- suíte automatizada: 82/82;
 - `has-pending-model-changes`: sem mudanças pendentes;
-- quatro migrations: apply -> rollback 0 -> reapply validado;
-- pendentes antes de release: benchmark do hashing, trilha de auditoria e smoke visual/manual do WPF em Windows interativo.
+- cinco migrations: apply -> rollback 0 -> reapply validado;
+- pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
+- pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`.

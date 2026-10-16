@@ -22,7 +22,13 @@ O projeto segue versionamento semântico.
 - identificação do usuário autenticado no shell principal;
 - throttling/lockout persistente por conta com bloqueio progressivo;
 - dummy password verification para usuário inexistente, inativo ou temporariamente bloqueado;
-- migration `20261016131952_AddAuthenticationThrottling` gerada pelo EF Core.
+- migration `20261016131952_AddAuthenticationThrottling` gerada pelo EF Core;
+- entidade `SecurityAuditEvent`, abstração `ISecurityAuditStore` e persistência EF Core da trilha de auditoria;
+- eventos de auditoria para bootstrap, sucesso/falha/bloqueio de login, throttling e logout;
+- migration `20261016135247_AddSecurityAuditTrail` com `SecurityAuditEvents`, FK opcional e índices de consulta;
+- testes de domínio, aplicação e persistência para a trilha de auditoria;
+- ferramenta `LocalErp.PasswordHashBenchmark` usando o serviço real de hashing do ERP;
+- script `scripts/benchmark-password-hashing.ps1` para benchmark reproduzível em Windows.
 
 ### Changed
 
@@ -33,20 +39,28 @@ O projeto segue versionamento semântico.
 - startup do desktop agora roteia explicitamente entre bootstrap, login e shell principal;
 - janelas de autenticação não armazenam senha em ViewModel, sessão ou log;
 - rehash e reset de falhas de login são concluídos no mesmo fluxo transacional que revalida o estado da conta;
-- tentativas feitas durante bloqueio ativo não estendem o bloqueio.
+- tentativas feitas durante bloqueio ativo não estendem o bloqueio;
+- falha de senha persiste contador e audit event na mesma transação;
+- login bem-sucedido persiste reset de falhas, rehash opcional e audit event na mesma transação;
+- bootstrap persiste administrador, RBAC e audit event na mesma transação;
+- logout limpa a sessão mesmo quando a gravação do evento de auditoria falha.
 
 ### Validation
 
 - Windows Server 2025;
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
-- suíte automatizada: 76/76;
-- Domain 15/15, Application 33/33, Persistence 22/22, Infrastructure 6/6;
+- build de `LocalErp.PasswordHashBenchmark`: 0 warnings / 0 errors;
+- suíte automatizada: 82/82;
+- Domain 19/19, Application 33/33, Persistence 24/24, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 4 migrations: apply -> rollback 0 -> reapply passando;
-- migration smoke confirma as colunas `FailedSignInCount` e `SignInBlockedUntilUtc`;
+- 5 migrations: apply -> rollback 0 -> reapply passando;
+- migration smoke inclui `SecurityAuditEvents` e a migration `20261016135247_AddSecurityAuditTrail`;
 - bootstrap SQLite: rollback e concorrência validados;
-- smoke visual/interativo do fluxo WPF permanece obrigatório antes de release.
+- auditoria de autenticação: invariantes, códigos, timestamps UTC, persistência e eventos cobertos;
+- benchmark Windows CI com `IterationCount = 220000`: hash mediana 145.155 ms; verify success mediana 138.080 ms; verify failure mediana 141.959 ms;
+- smoke visual/interativo do fluxo WPF permanece obrigatório antes de release;
+- benchmark em hardware Windows representativo do ambiente final permanece recomendado antes de produção.
 
 ## [0.1.0] - 2026-10-15
 
@@ -85,3 +99,13 @@ O projeto segue versionamento semântico.
 - sucesso limpa contador/bloqueio;
 - contas ausentes, inativas e bloqueadas executam dummy password verification para reduzir diferenças de timing;
 - estado de throttling e rehash são revalidados transacionalmente antes de concluir o login.
+
+## Marco de auditoria e benchmark — 2026-10-16
+
+- `SecurityAuditEvents` integrado ao modelo e à migration `20261016135247_AddSecurityAuditTrail`;
+- eventos de autenticação gravados sem senha, hash, token ou username digitado de conta inexistente;
+- atomicidade de auditoria coberta nos fluxos de falha, sucesso e bootstrap;
+- logout permanece efetivo mesmo se a persistência da auditoria falhar;
+- ferramenta de benchmark integrada ao repositório e compilada pelo CI;
+- benchmark executado em Windows Server 2025 com o serviço real do ERP;
+- baseline automatizado elevado para 82/82 testes e 5 migrations validadas.
