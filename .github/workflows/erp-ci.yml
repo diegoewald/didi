@@ -1,11 +1,13 @@
-name: ERP Transport Verification
+name: ERP RBAC Build and Tests
 
 on:
   push:
     branches:
       - erp-local-ci
     paths:
+      - 'erp-ci/**'
       - 'erp-transport/**'
+      - 'ci-payload/fix/**'
       - '.github/workflows/erp-ci.yml'
   workflow_dispatch:
 
@@ -13,23 +15,56 @@ permissions:
   contents: read
 
 concurrency:
-  group: erp-transport-${{ github.ref }}
+  group: erp-rbac-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify-transport:
-    name: Verify RBAC payload transport
+  build-test:
+    name: Build and test RBAC baseline
     runs-on: windows-2025
-    timeout-minutes: 5
+    timeout-minutes: 20
 
     steps:
       - name: Checkout CI branch
         uses: actions/checkout@v7
 
-      - name: Reconstruct RBAC payload and verify SHA-256
+      - name: Reconstruct verified ERP source
         shell: pwsh
         run: |
-          $partNames = @(
+          $parts = Get-ChildItem 'erp-ci/source.part*' | Sort-Object Name
+          if ($parts.Count -ne 9) { throw "Expected 9 source chunks, found $($parts.Count)." }
+          $contents = @($parts | ForEach-Object { (Get-Content $_.FullName -Raw).Trim() })
+          if ($contents[3].Length -eq 11999) { $contents[3] = $contents[3].Insert(8465, 'i') }
+          $expectedLengths = @(12000,12000,12000,12000,12000,12000,12000,12000,1540)
+          for ($i = 0; $i -lt $contents.Count; $i++) {
+            if ($contents[$i].Length -ne $expectedLengths[$i]) {
+              throw "Unexpected length for source.part$($i.ToString('00')): $($contents[$i].Length)."
+            }
+          }
+
+          $baseZip = Join-Path $env:RUNNER_TEMP 'local-erp.zip'
+          [IO.File]::WriteAllBytes($baseZip, [Convert]::FromBase64String($contents -join ''))
+          $baseHash = (Get-FileHash -Path $baseZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedBaseHash = '19f6a2d523b19e29bfa842b31e6a72a7b24a33194eda1aaf5771a60eaaf09001'
+          if ($baseHash -ne $expectedBaseHash) {
+            throw "ERP base integrity check failed. Expected $expectedBaseHash, got $baseHash."
+          }
+
+          New-Item -ItemType Directory -Force 'erp-work' | Out-Null
+          Expand-Archive -Path $baseZip -DestinationPath 'erp-work' -Force
+          $workRoot = (Resolve-Path 'erp-work').Path
+
+          if (Test-Path 'erp-ci/overlay') {
+            $overlayRoot = (Resolve-Path 'erp-ci/overlay').Path
+            Get-ChildItem $overlayRoot -File -Recurse | ForEach-Object {
+              $relativePath = [IO.Path]::GetRelativePath($overlayRoot, $_.FullName)
+              $targetPath = Join-Path $workRoot $relativePath
+              New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+              Copy-Item $_.FullName $targetPath -Force
+            }
+          }
+
+          $rbacPartNames = @(
             'part00.bin',
             'part01.bin',
             'part02.bin',
@@ -39,14 +74,13 @@ jobs:
             'part05a.bin',
             'part05b.bin'
           )
-
-          $root = 'erp-transport/rbac-v1'
-          $zipPath = Join-Path $env:RUNNER_TEMP 'rbac-overlay.zip'
-          $stream = [IO.File]::Open($zipPath, [IO.FileMode]::Create, [IO.FileAccess]::Write)
+          $rbacRoot = 'erp-transport/rbac-v1'
+          $rbacZip = Join-Path $env:RUNNER_TEMP 'rbac-overlay.zip'
+          $stream = [IO.File]::Open($rbacZip, [IO.FileMode]::Create, [IO.FileAccess]::Write)
           try {
-            foreach ($name in $partNames) {
-              $path = Join-Path $root $name
-              if (-not (Test-Path $path)) { throw "Missing transport part: $name" }
+            foreach ($name in $rbacPartNames) {
+              $path = Join-Path $rbacRoot $name
+              if (-not (Test-Path $path)) { throw "Missing RBAC transport part: $name" }
               $bytes = [IO.File]::ReadAllBytes($path)
               $stream.Write($bytes, 0, $bytes.Length)
             }
@@ -55,30 +89,66 @@ jobs:
             $stream.Dispose()
           }
 
-          $length = (Get-Item $zipPath).Length
-          if ($length -ne 21642) { throw "Unexpected payload length: $length" }
-
-          $actualHash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
-          $expectedHash = '61e707667d2cdebfd90530e0b22830d1511d79e460d50be302b7c4532dc40a9a'
-          if ($actualHash -ne $expectedHash) {
-            throw "RBAC payload SHA-256 mismatch. Expected $expectedHash, got $actualHash."
+          $rbacLength = (Get-Item $rbacZip).Length
+          if ($rbacLength -ne 21642) { throw "Unexpected RBAC payload length: $rbacLength" }
+          $rbacHash = (Get-FileHash -Path $rbacZip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $expectedRbacHash = '61e707667d2cdebfd90530e0b22830d1511d79e460d50be302b7c4532dc40a9a'
+          if ($rbacHash -ne $expectedRbacHash) {
+            throw "RBAC payload integrity check failed. Expected $expectedRbacHash, got $rbacHash."
           }
 
-          $extractRoot = Join-Path $env:RUNNER_TEMP 'rbac-overlay'
-          Expand-Archive -Path $zipPath -DestinationPath $extractRoot -Force
-          $files = Get-ChildItem $extractRoot -File -Recurse
-          if ($files.Count -ne 28) { throw "Expected 28 RBAC files, found $($files.Count)." }
+          $rbacExtract = Join-Path $env:RUNNER_TEMP 'rbac-overlay'
+          Expand-Archive -Path $rbacZip -DestinationPath $rbacExtract -Force
+          Get-ChildItem $rbacExtract -File -Recurse | ForEach-Object {
+            $relativePath = [IO.Path]::GetRelativePath($rbacExtract, $_.FullName)
+            $targetPath = Join-Path $workRoot $relativePath
+            New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+            Copy-Item $_.FullName $targetPath -Force
+          }
 
-          $required = @(
-            'src/LocalErp.Domain/Security/Role.cs',
-            'src/LocalErp.Application/Security/AuthorizationService.cs',
-            'src/LocalErp.Persistence/Repositories/EfRoleRepository.cs',
-            'tests/LocalErp.Persistence.Tests/EfRoleAuthorizationTests.cs'
-          )
-          foreach ($relativePath in $required) {
-            if (-not (Test-Path (Join-Path $extractRoot $relativePath))) {
-              throw "Expected file missing after reconstruction: $relativePath"
+          if (Test-Path 'ci-payload/fix') {
+            Remove-Item 'erp-work/src/LocalErp.Domain/Security/RolePermission.cs' -Force -ErrorAction SilentlyContinue
+            Remove-Item 'erp-work/src/LocalErp.Persistence/Configurations/RolePermissionConfiguration.cs' -Force -ErrorAction SilentlyContinue
+            $fixRoot = (Resolve-Path 'ci-payload/fix').Path
+            Get-ChildItem $fixRoot -File -Recurse | ForEach-Object {
+              $relativePath = [IO.Path]::GetRelativePath($fixRoot, $_.FullName)
+              $targetPath = Join-Path $workRoot $relativePath
+              New-Item -ItemType Directory -Force (Split-Path $targetPath) | Out-Null
+              Copy-Item $_.FullName $targetPath -Force
             }
           }
 
-          Write-Host "RBAC transport verified: $length bytes, SHA-256 $actualHash, $($files.Count) files."
+          if (-not (Test-Path 'erp-work/LocalErp.sln')) {
+            throw 'ERP reconstruction failed: LocalErp.sln was not found.'
+          }
+          Write-Host "ERP source reconstructed with verified RBAC payload."
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Show SDK
+        working-directory: erp-work
+        run: dotnet --info
+
+      - name: Restore dependencies
+        working-directory: erp-work
+        run: dotnet restore LocalErp.sln
+
+      - name: Build Release with analyzers
+        working-directory: erp-work
+        run: dotnet build LocalErp.sln --configuration Release --no-restore
+
+      - name: Run tests
+        working-directory: erp-work
+        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-rbac-part-b-test-results
+          path: erp-work/**/TestResults/*.trx
+          if-no-files-found: warn
+          retention-days: 7
