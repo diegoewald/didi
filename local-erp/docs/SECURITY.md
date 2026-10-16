@@ -11,9 +11,11 @@
 - princípio do menor privilégio;
 - ações administrativas auditáveis.
 
-## Password hashing
+## Password hashing e política de senha
 
 A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`, com `IterationCount = 220000`.
+
+`PasswordPolicy` centraliza a política atualmente aplicada ao bootstrap, criação administrativa de usuário e troca administrativa de senha: mínimo de 15 e máximo de 128 caracteres. A validação ocorre na Application antes do hashing, para que a segurança não dependa da UI.
 
 Existe uma ferramenta reproduzível de benchmark em `tools/LocalErp.PasswordHashBenchmark` e o script `scripts/benchmark-password-hashing.ps1`. O benchmark usa o serviço real do ERP e mede hash, verify válido e verify inválido.
 
@@ -31,7 +33,7 @@ Nunca criar algoritmo de hash próprio.
 
 Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Manager. Segredos não devem ficar em `appsettings.json` versionado.
 
-## Autenticação local
+## Autenticação local e tratamento de senha na UI
 
 - usernames são normalizados e únicos;
 - senha nunca é armazenada em texto puro;
@@ -39,7 +41,9 @@ Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Man
 - login retorna falha genérica para credencial inválida, conta inexistente, inativa ou temporariamente bloqueada;
 - o shell principal só abre com sessão autenticada;
 - logout limpa a sessão e retorna ao fluxo de login;
-- senhas da UI são lidas diretamente de `PasswordBox`, não entram em ViewModels e são limpas após uso.
+- senhas da UI são lidas diretamente de `PasswordBox` e limpas após uso;
+- no fluxo administrativo de criação, a senha segue diretamente da View para `UserService.CreateAsync` e não passa pelo ViewModel;
+- senha, hash e confirmação de senha não são registrados em logs, sessão ou trilha de auditoria.
 
 ## Throttling e lockout
 
@@ -81,7 +85,9 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 - nomes normalizados de roles são únicos;
 - associações user-role e role-permission possuem integridade referencial;
 - DTOs de resultado não expõem hash de senha;
-- a UI pode ocultar/desabilitar comandos, mas a Application continua sendo a autoridade de autorização.
+- a UI pode ocultar/desabilitar comandos, mas a Application continua sendo a autoridade de autorização;
+- listagem administrativa de usuários exige `users.read`;
+- criação e demais mutações administrativas existentes em `UserService` exigem `users.manage`.
 
 ## Auditoria de autenticação
 
@@ -125,6 +131,8 @@ A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, F
 
 Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
+Operações administrativas ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico durante as primeiras telas.
+
 ## Revisão final do slice de auditoria — 2026-10-16
 
 A revisão direta do código, migration e testes confirmou:
@@ -140,7 +148,27 @@ A revisão direta do código, migration e testes confirmou:
 
 Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robustez: os eventos standalone de conta inexistente, inativa ou já bloqueada são gravados por `ISecurityAuditStore.AppendAsync`; se essa persistência falhar, a exceção atualmente propaga. Isso permanece fail-closed e não cria bypass, mas acopla disponibilidade/UX desses caminhos ao armazenamento de auditoria. Avaliar tratamento best-effort ou política explícita antes de release, sem enfraquecer auditoria das operações que alteram estado.
 
-Com essas dívidas registradas, o baseline básico de segurança está suficientemente fechado para iniciar administração de usuários sem exigir que smoke visual, benchmark no hardware alvo, retenção e administração completa sejam falsamente marcados como concluídos.
+## Baseline validado — 2026-10-16
+
+- bootstrap seguro do primeiro administrador concluído;
+- telas reais de configuração inicial e login concluídas;
+- logout com retorno ao login concluído;
+- RBAC e autorização deny-by-default ativos;
+- throttling/lockout persistente por conta concluído;
+- mitigação de timing por dummy password verification concluída;
+- trilha de auditoria de autenticação concluída;
+- administração de usuários Partes A e B concluídas: listagem e criação;
+- política de senha central aplicada a bootstrap, criação e troca administrativa;
+- migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
+- benchmark reproduzível do hashing concluído no Windows CI;
+- build Release Windows: 0 warnings / 0 errors;
+- suíte automatizada: 87/87;
+- `has-pending-model-changes`: sem mudanças pendentes;
+- cinco migrations: apply -> rollback 0 -> reapply validado;
+- pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
+- pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
+- pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado;
+- pendente funcional: auditoria das operações administrativas na Parte F.
 
 ## Dependências
 
@@ -151,23 +179,3 @@ Antes de atualizar/adicionar dependências:
 - manutenção;
 - licença;
 - breaking changes.
-
-## Baseline validado — 2026-10-16
-
-- bootstrap seguro do primeiro administrador concluído;
-- telas reais de configuração inicial e login concluídas;
-- logout com retorno ao login concluído;
-- RBAC e autorização deny-by-default ativos;
-- throttling/lockout persistente por conta concluído;
-- mitigação de timing por dummy password verification concluída;
-- trilha de auditoria de autenticação concluída;
-- migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
-- benchmark reproduzível do hashing concluído no Windows CI;
-- build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 82/82;
-- `has-pending-model-changes`: sem mudanças pendentes;
-- cinco migrations: apply -> rollback 0 -> reapply validado;
-- revisão final do slice de auditoria: concluída sem defeito bloqueante;
-- pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
-- pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
-- pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado.

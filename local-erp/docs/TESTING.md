@@ -38,10 +38,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 ## Baseline atual — 2026-10-16
 
 - Domain: 19/19.
-- Application: 35/35.
+- Application: 38/38.
 - Persistence: 24/24.
 - Infrastructure: 6/6.
-- Total automatizado: 84/84.
+- Total automatizado: 87/87.
 - Build Release: 0 warnings / 0 errors.
 - Build da ferramenta de benchmark: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
@@ -54,8 +54,11 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Auditoria: invariantes de `SecurityAuditEvent`, códigos inválidos, UTC obrigatório, persistência EF, bootstrap e eventos da `AuthenticationService` cobertos.
 - Migration smoke: `SecurityAuditEvents` e sua migration fazem parte do ciclo apply/rollback/reapply validado.
 - Startup routing: bootstrap, login e acesso ao shell cobertos na camada Application.
-- Administração de usuários Parte A: `ListAsync(includeInactive: true)` coberto e teste explícito garante demanda de `users.read`.
-- Desktop WPF: XAML/code-behind, navegação assíncrona e nova tela de listagem compilados no Windows CI.
+- Administração Parte A: `ListAsync(includeInactive: true)` coberto e teste explícito garante demanda de `users.read`.
+- Administração Parte B: criação exige `users.manage`; senha curta é rejeitada antes do hash; troca administrativa também rejeita senha abaixo da política; duplicidade normalizada continua coberta.
+- Desktop WPF: XAML/code-behind, navegação e formulário de criação compilados no Windows CI; senha da criação não passa pelo ViewModel.
+
+Durante a Parte B houve uma falha intermediária de build por `CA1822` em uma propriedade de texto usada por binding. A correção preservou o analyzer ativo e o build subsequente voltou a 0 warnings / 0 errors; nenhuma regra foi desabilitada para obter CI verde.
 
 ## Benchmark Windows CI
 
@@ -79,6 +82,9 @@ O CI hospedado não substitui teste visual/interativo. Executar smoke manual em 
 - comportamento durante throttling/lockout;
 - logout e retorno ao login;
 - abertura da Administração e renderização da lista de usuários;
+- criação de usuário válido e atualização imediata da tabela;
+- senha divergente, senha abaixo da política, usuário duplicado e acesso sem `users.manage`;
+- limpeza dos dois `PasswordBox` após tentativa;
 - estados loading/erro/vazio da administração quando aplicáveis;
 - fechamento voluntário das janelas;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.

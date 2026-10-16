@@ -47,6 +47,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] lockout/throttling persistente por conta;
 - [x] hardening de timing para usuário inexistente/inativo/bloqueado;
 - [x] trilha de auditoria de autenticação;
+- [x] política de senha central aplicada ao bootstrap, criação e troca administrativa;
 - [x] ferramenta reproduzível de benchmark de password hashing e baseline Windows CI;
 - [ ] benchmark do custo de hash em hardware Windows representativo do ambiente final.
 
@@ -62,7 +63,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fase 5 — Administração de usuários
 
 - [x] Parte A — listagem de usuários ativos e inativos protegida por `users.read`;
-- [ ] Parte B — criar usuário;
+- [x] Parte B — criar usuário protegido por `users.manage`, com senha fora do ViewModel;
 - [ ] Parte C — ativar/desativar usuário;
 - [ ] Parte D — reset administrativo de senha;
 - [ ] Parte E — associar roles;
@@ -100,6 +101,12 @@ A ferramenta `LocalErp.PasswordHashBenchmark` também está integrada e foi exec
 
 ## Marco de administração de usuários — Parte A — 2026-10-16
 
-A área Administração agora possui tela WPF real de listagem, incluindo usuários ativos e inativos. O carregamento é feito por `UserService`, que mantém a autorização `users.read` na Application. A UI contém estados de carregamento, erro e lista vazia, sem introduzir regra de autorização no code-behind.
+A área Administração possui tela WPF real de listagem, incluindo usuários ativos e inativos. O carregamento é feito por `UserService`, que mantém a autorização `users.read` na Application. A UI contém estados de carregamento, erro e lista vazia, sem introduzir regra de autorização no code-behind.
 
-Próxima prioridade: Parte B — criação de usuário, reutilizando `UserService.CreateAsync` e exigindo `users.manage`, com senha tratada diretamente por `PasswordBox` e sem trafegar por ViewModel.
+## Marco de administração de usuários — Parte B — 2026-10-16
+
+A mesma área permite criar contas com confirmação de senha. `UserService.CreateAsync` exige `users.manage`, rejeita duplicidade normalizada, valida a política de 15–128 caracteres e só então faz o hashing. `ChangePasswordAsync` usa a mesma política central.
+
+A senha é capturada e limpa em `PasswordBox`, segue diretamente da View para a camada Application e não passa pelo ViewModel. O resultado seguro da criação é o único dado encaminhado ao ViewModel para atualizar a tabela. Nenhuma migration nova foi necessária e o baseline subiu para 87/87 testes.
+
+Próxima prioridade: Parte C — ativar/desativar usuário. Antes de expor o comando, revisar salvaguardas contra auto-inativação e perda acidental de acesso administrativo dentro das regras suportadas pelo modelo atual.

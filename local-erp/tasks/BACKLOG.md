@@ -10,7 +10,9 @@
 - [x] Parte A — listagem real de usuários ativos e inativos;
 - [x] manter `users.read` como autorização da listagem na Application;
 - [x] estados loading/erro/vazio da listagem;
-- [ ] Parte B — criar usuário com `users.manage`;
+- [x] Parte B — criar usuário com `users.manage`;
+- [x] aplicar `PasswordPolicy` de 15–128 caracteres em criação e troca administrativa de senha;
+- [x] manter senha fora de propriedades/métodos do ViewModel: `PasswordBox` envia diretamente para `UserService` e é limpo após a tentativa;
 - [ ] Parte C — ativar/desativar usuário;
 - [ ] Parte D — reset administrativo de senha;
 - [ ] Parte E — associar roles;
@@ -67,8 +69,10 @@
 
 ## Baseline atual — 2026-10-16
 
-O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A Parte A da administração de usuários foi integrada com listagem protegida por `users.read` e sem mover autorização para o WPF.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação protegida por `users.manage`, sempre na camada Application.
 
-Baseline automatizado: 84/84 testes, 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A Parte B usa `PasswordBox` diretamente na View para manter a senha fora do estado e dos métodos do ViewModel. A senha é enviada somente para `UserService.CreateAsync`, que aplica `PasswordPolicy`, faz hashing e rejeita duplicidade; os campos protegidos são limpos após a tentativa. `ChangePasswordAsync` também passou a usar a mesma política central de 15–128 caracteres.
 
-Próxima tarefa funcional fechada: Parte B — criar usuário. A implementação deve reutilizar `UserService.CreateAsync`, manter `users.manage` na Application, ler senha diretamente de `PasswordBox`, não colocar senha em ViewModel/log/sessão e não introduzir nova migration sem mudança real de modelo.
+Baseline automatizado: 87/87 testes (Domain 19, Application 38, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional fechada: Parte C — ativar/desativar usuário. Antes de expor a ação na UI, revisar salvaguardas contra auto-inativação e perda acidental de acesso administrativo, sem inventar regra de negócio não suportada pelo modelo atual.

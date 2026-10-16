@@ -31,7 +31,9 @@ O projeto segue versionamento semântico.
 - script `scripts/benchmark-password-hashing.ps1` para benchmark reproduzível em Windows;
 - tela WPF de administração com listagem de usuários ativos e inativos;
 - estados de carregamento, erro e lista vazia para a listagem de usuários;
-- testes explícitos para `includeInactive` e exigência de `users.read` em `UserService.ListAsync`.
+- testes explícitos para `includeInactive` e exigência de `users.read` em `UserService.ListAsync`;
+- formulário WPF de criação de usuário com confirmação por `PasswordBox` e feedback de sucesso/erro;
+- testes explícitos para `users.manage` na criação e rejeição de senha abaixo da política em criação e troca administrativa.
 
 ### Changed
 
@@ -47,7 +49,9 @@ O projeto segue versionamento semântico.
 - login bem-sucedido persiste reset de falhas, rehash opcional e audit event na mesma transação;
 - bootstrap persiste administrador, RBAC e audit event na mesma transação;
 - logout limpa a sessão mesmo quando a gravação do evento de auditoria falha;
-- navegação do shell carrega assincronamente a área Administração sem mover autorização para a UI.
+- navegação do shell carrega assincronamente a área Administração sem mover autorização para a UI;
+- `UserService.CreateAsync` e `ChangePasswordAsync` passaram a aplicar a mesma `PasswordPolicy` de 15–128 caracteres usada pelo bootstrap;
+- a criação administrativa mantém a senha fora do ViewModel: a View lê `PasswordBox`, chama diretamente `UserService` e limpa os campos após a tentativa.
 
 ### Validation
 
@@ -55,14 +59,15 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - build de `LocalErp.PasswordHashBenchmark`: 0 warnings / 0 errors;
-- suíte automatizada: 84/84;
-- Domain 19/19, Application 35/35, Persistence 24/24, Infrastructure 6/6;
+- suíte automatizada: 87/87;
+- Domain 19/19, Application 38/38, Persistence 24/24, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 5 migrations: apply -> rollback 0 -> reapply passando;
 - migration smoke inclui `SecurityAuditEvents` e a migration `20261016135247_AddSecurityAuditTrail`;
 - bootstrap SQLite: rollback e concorrência validados;
 - auditoria de autenticação: invariantes, códigos, timestamps UTC, persistência e eventos cobertos;
 - administração de usuários Parte A: build WPF e regras de listagem/autorização validados no CI;
+- administração de usuários Parte B: criação protegida por `users.manage`, política de senha e fluxo WPF sem senha no ViewModel validados no CI;
 - benchmark Windows CI com `IterationCount = 220000`: hash mediana 145.155 ms; verify success mediana 138.080 ms; verify failure mediana 141.959 ms;
 - smoke visual/interativo do fluxo WPF permanece obrigatório antes de release;
 - benchmark em hardware Windows representativo do ambiente final permanece recomendado antes de produção.
@@ -122,3 +127,12 @@ O projeto segue versionamento semântico.
 - `UserService.ListAsync` continua exigindo `users.read` na Application;
 - a UI apresenta carregamento, erro e lista vazia sem usar code-behind para regra de negócio;
 - dois testes de Application elevaram a suíte para 84 testes.
+
+## Marco de administração de usuários — Parte B — 2026-10-16
+
+- a tela Administração permite criar usuário com confirmação de senha;
+- `UserService.CreateAsync` mantém `users.manage` como autorização na Application;
+- criação e troca administrativa de senha usam `PasswordPolicy` de 15–128 caracteres;
+- senhas ficam fora do ViewModel e são limpas dos `PasswordBox` após cada tentativa;
+- três testes adicionais de Application elevaram a suíte para 87 testes;
+- nenhuma migration nova foi necessária.
