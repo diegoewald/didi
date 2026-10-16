@@ -1,0 +1,53 @@
+# Build
+**/bin/
+**/obj/
+artifacts/
+publish/
+TestResults/
+coverage/
+
+# Visual Studio / Rider / VS Code
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vscode/
+
+# Runtime data - never version real user data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+logs/
+backups/
+attachments/
+
+# Packages / tools
+.nuget/
+packages/
+.tools/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Secrets and local overrides
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.Production.json
+secrets.json
+
+# Installer/update outputs
+Releases/
+*.nupkg
+*.msix
+*.msixbundle
+*.msi
+*.exe
+!src/**/bin/.gitkeep

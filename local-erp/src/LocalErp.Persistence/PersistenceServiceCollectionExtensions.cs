@@ -1,0 +1,32 @@
+using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Persistence.Development;
+using LocalErp.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace LocalErp.Persistence;
+
+public static class PersistenceServiceCollectionExtensions
+{
+    public static IServiceCollection AddLocalErpPersistence(
+        this IServiceCollection services,
+        string databasePath)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var connectionString = SqliteConnectionStringFactory.Create(databasePath);
+
+        services.AddSingleton(new SqliteDatabaseRuntimeConfigurator(connectionString));
+
+        services.AddDbContextFactory<ErpDbContext>(options =>
+            options.UseSqlite(connectionString));
+
+        services.AddTransient<ICompanyRepository, EfCompanyRepository>();
+        services.AddTransient<IUserRepository, EfUserRepository>();
+        services.AddTransient<IRoleRepository, EfRoleRepository>();
+        services.AddTransient<IAuthorizationRepository, EfAuthorizationRepository>();
+        services.AddTransient<DevelopmentDataSeeder>();
+
+        return services;
+    }
+}

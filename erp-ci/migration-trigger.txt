@@ -1,1 +1,0 @@
-Validate RBAC roles, permissions, application authorization, relational integrity, generated migration, and all existing ERP tests after analyzer fixes.
