@@ -3,10 +3,10 @@
 ## Estratégia
 
 - Domain: invariantes e value objects;
-- Application: regras de caso de uso e autorização;
-- Persistence: mappings, constraints, migrations e queries críticas;
+- Application: casos de uso, autenticação, bootstrap e autorização;
+- Persistence: mappings, constraints, migrations, concorrência e queries críticas;
 - Infrastructure: filesystem, paths e serviços técnicos;
-- Desktop: testes focados em ViewModels/commands; UI automation somente em fluxos que justifiquem o custo.
+- Desktop: compilação WPF obrigatória em CI; testes focados em ViewModels/commands quando houver lógica relevante; UI automation somente quando justificar o custo.
 
 ## Regra de bugfix
 
@@ -24,30 +24,39 @@
 
 O script executa restore/build/test em Release.
 
-Ferramentas locais do repositório podem ser restauradas com:
+Ferramentas locais:
 
 ```powershell
 dotnet tool restore
 ```
 
-## Ambientes de validação
+## Validação Windows
 
-`EnableWindowsTargeting=true` permite usar o SDK em Linux/macOS para restore/build de validação do projeto WPF. Isso não substitui o Windows: smoke test, empacotamento e release final devem ser executados no Windows.
+O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. O pipeline executa restore, build Release, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Estado desta sessão
+## Baseline de autenticação — 2026-10-16
 
-A suíte recebeu testes adicionais de domínio e mapping, mas continua não executada porque o ambiente disponível não possui o .NET SDK. A tentativa de obter o SDK pelo ambiente também foi bloqueada por indisponibilidade de rede no terminal. O backlog mantém restore/build/test como prioridade máxima assim que um SDK estiver disponível.
+- Domain: 13/13.
+- Application: 30/30.
+- Persistence: 18/18.
+- Infrastructure: 6/6.
+- Total automatizado: 67/67.
+- Build Release: 0 warnings / 0 errors.
+- EF Core: sem mudanças pendentes no modelo.
+- Migrations: apply -> rollback 0 -> reapply passou.
+- Persistência do bootstrap: criação completa, rejeição após usuário existente, rollback em falha e concorrência 1 sucesso/1 rejeição cobertos.
+- Startup routing: bootstrap, login e acesso ao shell cobertos na camada Application.
+- Desktop WPF: XAML/code-behind compilados no Windows CI.
 
-## RBAC validated baseline (2026-10-16)
+## Pendente antes de release
 
-Windows Server 2025 with .NET SDK 10.0.402:
+O CI hospedado não substitui teste visual/interativo. Executar smoke manual em Windows verificando:
 
-- Domain: 13/13 tests passed.
-- Application: 20/20 tests passed.
-- Persistence: 14/14 tests passed.
-- Infrastructure: 6/6 tests passed.
-- Total: 53/53 tests passed.
-- Release build: 0 warnings / 0 errors.
-- EF Core 10.0.13: `has-pending-model-changes` passed.
-- Database migration cycle: apply all -> rollback to 0 -> reapply all passed.
-
+- primeira abertura sem usuários;
+- criação do administrador;
+- entrada automática após bootstrap;
+- fechamento/reabertura e login;
+- credencial inválida;
+- logout e retorno ao login;
+- fechamento voluntário das janelas;
+- foco, Enter, escalonamento/DPI e aparência em tema Windows real.

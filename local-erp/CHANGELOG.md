@@ -10,16 +10,36 @@ O projeto segue versionamento semântico.
 
 - primeiro modelo de domínio `Company` e configuração EF Core associada;
 - ADR-0005 para persistência exata de valores monetários no SQLite;
-- inicialização SQLite que habilita/valida WAL e foreign keys;
+- inicialização SQLite com WAL e foreign keys;
 - tooling local reproduzível do `dotnet-ef` e design-time factory;
-- ADR-0006 definindo migration bundle no fluxo de instalação/atualização.
+- ADR-0006 definindo migration bundle no fluxo de instalação/atualização;
+- usuários locais, autenticação e sessão em memória;
+- roles, permissões, FKs e autorização deny-by-default;
+- bootstrap atômico e concorrente-seguro do primeiro administrador;
+- tela WPF de configuração inicial sem credencial padrão;
+- tela WPF de login com mensagem genérica para credencial inválida;
+- logout com limpeza de sessão e retorno ao login;
+- identificação do usuário autenticado no shell principal.
 
 ### Changed
 
 - removido `Cache=Shared` da conexão SQLite para preparar uso correto de WAL;
 - baseline do SDK atualizado para .NET 10 SDK 10.0.402;
 - habilitado cross-targeting para validação de build WPF fora do Windows, mantendo release final em Windows;
-- migrations de produção deixam de ser responsabilidade do startup normal da aplicação e passam para o fluxo versionado de atualização.
+- migrations de produção deixam de ser responsabilidade do startup normal e passam para o fluxo versionado de atualização;
+- startup do desktop agora roteia explicitamente entre bootstrap, login e shell principal;
+- janelas de autenticação não armazenam senha em ViewModel, sessão ou log.
+
+### Validation
+
+- Windows Server 2025;
+- .NET SDK 10.0.402 / runtime 10.0.13;
+- Release build: 0 warnings / 0 errors;
+- suíte automatizada: 67/67 antes do fechamento visual do Desktop;
+- EF Core 10.0.13: sem mudanças pendentes no modelo;
+- migrations: apply -> rollback 0 -> reapply passando;
+- bootstrap SQLite: rollback e concorrência validados;
+- smoke visual/interativo do fluxo WPF permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
 
@@ -29,23 +49,24 @@ O projeto segue versionamento semântico.
 - arquitetura em camadas para Domain, Application, Infrastructure, Persistence e Desktop;
 - shell WPF inicial;
 - estratégia de diretórios locais separados dos binários;
-- EF Core 10 + SQLite preparado para a fase de persistência;
-- logging local com Serilog e retenção configurada;
+- EF Core 10 + SQLite;
+- logging local com Serilog;
 - testes iniciais com MSTest;
 - documentação de arquitetura, segurança, banco, instalação, atualização, backup e UX;
 - ADRs iniciais e backlog central.
 
-### Validation
+## Marco RBAC — 2026-10-16
 
-- build: não executado nesta sessão; ambiente disponível não possui .NET SDK;
-- testes: não executados nesta sessão pelo mesmo motivo.
+- usuários locais e password hashing;
+- roles, permissions e associações persistidas;
+- autorização deny-by-default;
+- migration `AddRbacAuthorization` validada;
+- CI Windows permanente estabelecido.
 
-## RBAC baseline validated — 2026-10-16
+## Marco de autenticação utilizável — 2026-10-16
 
-- Local users, password hashing, in-memory session and role-based authorization are implemented.
-- Roles map to permissions through `RolePermissions`; users map to roles through `UserRoles`.
-- Authorization is deny-by-default for protected application operations.
-- EF Core migration `AddRbacAuthorization` is validated against the current model.
-- Windows CI baseline: Release build with 0 warnings / 0 errors and 53/53 tests passing.
-- Migration validation: no pending model changes, apply -> rollback to 0 -> reapply passing.
-
+- primeiro acesso cria administrador de forma atômica;
+- bootstrap não pode ser executado depois que existe usuário;
+- login real bloqueia acesso sem sessão;
+- logout retorna ao login;
+- fluxo completo compilado e validado pelo CI Windows.

@@ -5,11 +5,24 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: persistência inicial
+- Fase: autenticação local concluída / hardening de segurança
 - UI: WPF em .NET 10 LTS
-- Persistência inicial: SQLite via EF Core 10
+- Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- Build/testes: **pendentes enquanto o ambiente atual não possuir .NET 10 SDK**; smoke test/release continuam obrigatoriamente no Windows
+- CI Windows: build Release com 0 warnings / 0 errors e 67/67 testes passando
+- Migrations: snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+
+## Fluxo de acesso atual
+
+1. instalação/banco sem usuários abre a configuração inicial;
+2. o primeiro administrador é criado atomicamente, sem credencial padrão;
+3. o administrador recebe o papel `Administrator` e todas as permissões registradas;
+4. após o bootstrap, a sessão autenticada libera o shell principal;
+5. instalações já configuradas abrem a tela de login;
+6. logout encerra a sessão e retorna ao login;
+7. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
+
+Senhas são tratadas por `PasswordBox`, não entram em ViewModels e não são persistidas na sessão ou em logs.
 
 ## Objetivos de engenharia
 
@@ -31,6 +44,7 @@ src/
   LocalErp.Desktop/
 tests/
   LocalErp.Domain.Tests/
+  LocalErp.Application.Tests/
   LocalErp.Infrastructure.Tests/
   LocalErp.Persistence.Tests/
 docs/
@@ -44,7 +58,7 @@ scripts/
 - Windows 10/11 x64 para execução e release final
 - .NET 10 SDK (LTS), baseline atual `10.0.402`
 - PowerShell 7 recomendado
-- Visual Studio 2022/2026 compatível com .NET 10, ou Rider compatível
+- Visual Studio compatível com .NET 10, ou Rider compatível
 
 ## Comandos
 
@@ -52,7 +66,7 @@ scripts/
 ./scripts/build.ps1
 ./scripts/test.ps1
 ./scripts/run.ps1
-./scripts/new-migration.ps1 InitialCreate
+./scripts/new-migration.ps1 NomeDaMigration
 ```
 
 Ou diretamente:
@@ -66,7 +80,7 @@ dotnet run --project src/LocalErp.Desktop/LocalErp.Desktop.csproj
 
 ## Dados locais
 
-Os binários da aplicação não devem compartilhar diretório com dados do usuário. O shell inicial usa, por padrão:
+Os binários da aplicação não devem compartilhar diretório com dados do usuário. O shell usa, por padrão:
 
 ```text
 %LocalAppData%\LocalErp\
@@ -89,11 +103,9 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 - [Atualização](docs/UPDATE-STRATEGY.md)
 - [Backup e restauração](docs/BACKUP-RESTORE.md)
 - [Diretrizes de UX](docs/UX-GUIDELINES.md)
-- [Pesquisa técnica inicial](docs/RESEARCH-2026-10-15.md)
 - [Especificação mestre](docs/PROJECT-BRIEF.md)
 - [Protocolo do agente](SKILL.md)
 
-## RBAC milestone (2026-10-16)
+## Segurança — baseline de 2026-10-16
 
-The current security foundation includes local users, password hashing, authenticated in-memory session, roles, permissions and deny-by-default authorization. The validated Windows CI baseline is 53/53 tests with the full EF Core migration cycle passing.
-
+A fundação atual inclui usuários locais, hashing de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, tela de login e logout. O próximo slice de segurança é lockout/throttling, hardening de timing e trilha de auditoria.

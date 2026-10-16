@@ -17,39 +17,50 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] criar shell desktop mínimo;
 - [x] separar diretórios de dados do diretório de aplicação;
 - [x] configurar logging local;
-- [-] executar restore/build/test em Windows com .NET 10 SDK;
-- [ ] corrigir qualquer warning/erro real encontrado na primeira compilação;
-- [ ] adicionar CI depois que o repositório remoto for definido.
+- [x] executar restore/build/test em Windows com .NET 10 SDK;
+- [x] fechar baseline sem warnings/erros;
+- [x] manter CI Windows permanente.
 
 ## Fase 2 — Persistência
 
-- [x] modelar primeira entidade técnica/de negócio útil (`Company`);
-- [-] criar `DbContext` modelado e migration inicial; modelo concluído, migration aguarda SDK;
-- [x] aplicar e validar WAL/foreign keys na inicialização SQLite;
-- [x] definir política de `decimal`/valores monetários em ADR;
-- [ ] testar migrations e integridade referencial;
-- [ ] criar seed de desenvolvimento.
+- [x] modelar primeira entidade útil (`Company`);
+- [x] criar `DbContext` e migrations iniciais;
+- [x] aplicar e validar WAL/foreign keys;
+- [x] definir política de valores monetários;
+- [x] testar migrations e integridade referencial;
+- [x] criar seed de desenvolvimento idempotente.
 
 ## Fase 3 — Autenticação e autorização
 
-- [ ] selecionar/validar implementação de password hashing;
-- [ ] usuários locais;
-- [ ] roles/grupos/permissões;
-- [ ] autorização na Application;
-- [ ] sessão local;
-- [ ] testes de segurança e regressão.
+- [x] abstração e implementação de password hashing;
+- [x] usuários locais normalizados e únicos;
+- [x] autenticação local;
+- [x] sessão local em memória;
+- [x] roles e permissões;
+- [x] persistência user-role e role-permission;
+- [x] autorização deny-by-default na Application;
+- [x] bootstrap seguro e atômico do primeiro administrador;
+- [x] fluxo de startup bootstrap/login/main;
+- [x] telas WPF de primeiro acesso e login;
+- [x] logout com retorno ao login;
+- [x] testes de regressão do baseline de autenticação;
+- [ ] benchmark do custo de hash em hardware Windows representativo;
+- [ ] lockout/throttling;
+- [ ] hardening de timing para usuário inexistente/inativo;
+- [ ] trilha de auditoria de segurança.
 
 ## Fase 4 — Shell da aplicação
 
-- [ ] navegação real por módulos;
-- [ ] tratamento global de erro;
+- [-] navegação real por módulos;
+- [ ] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
 - [ ] estados loading/empty/error;
-- [ ] componentes de tabela/filtro após existir uso real.
+- [ ] componentes de tabela/filtro após existir uso real;
+- [ ] smoke visual/interativo do fluxo de autenticação em Windows.
 
 ## Fase 5 — Cadastros-base
 
-- [ ] empresa/filial;
+- [-] empresa/filial: serviço e persistência básicos existem; UI operacional pendente;
 - [ ] fornecedores;
 - [ ] produtos/materiais;
 - [ ] unidades/categorias;
@@ -62,7 +73,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fases posteriores
 
 - [ ] relatórios;
-- [ ] administração;
+- [ ] administração completa de usuários/roles/permissões;
 - [ ] auditoria completa;
 - [ ] backup/restauração;
 - [ ] atualização com migration bundle e recuperação segura;
@@ -71,16 +82,6 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [ ] preparação multiusuário;
 - [ ] release 1.0.
 
-## Security / RBAC status — 2026-10-16
+## Marco de autenticação — 2026-10-16
 
-- [x] Password hashing abstraction and implementation.
-- [x] Local users with normalized unique usernames.
-- [x] Authentication service and in-memory user session.
-- [x] Roles and permissions.
-- [x] User-role and role-permission persistence.
-- [x] Deny-by-default authorization service.
-- [x] `AddRbacAuthorization` migration validated.
-- [ ] Secure first-administrator bootstrap.
-- [ ] Login lockout / throttling policy.
-- [ ] Security audit trail.
-
+O fluxo local agora é utilizável de ponta a ponta: banco novo exige criação do primeiro administrador; banco configurado exige login; apenas sessão válida abre o shell; logout limpa a sessão e retorna ao login. O próximo slice obrigatório é hardening de autenticação e auditoria antes de ampliar superfícies administrativas.

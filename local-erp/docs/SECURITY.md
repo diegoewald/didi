@@ -13,35 +13,49 @@
 
 ## Password hashing
 
-Preferência: Argon2id conforme recomendação atual da OWASP, após validação de biblioteca .NET mantida, licença e parâmetros.
+A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`. O custo precisa continuar sendo benchmarkado em hardware Windows representativo antes de release de produção. Argon2id permanece como alternativa futura caso uma biblioteca .NET madura, mantida e compatível com o projeto seja adotada.
 
-Fallback: `PasswordHasher<TUser>` da Microsoft. Não criar algoritmo próprio.
-
-A escolha final será registrada em ADR no início da Fase 3.
+Nunca criar algoritmo de hash próprio.
 
 ## Segredos locais
 
-Quando houver necessidade de segredo local (por exemplo, pepper ou credencial de integração), avaliar Windows DPAPI/Credential Manager. Segredos não devem ficar em `appsettings.json` versionado.
+Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Manager. Segredos não devem ficar em `appsettings.json` versionado.
 
-## Permissões
+## Autenticação local
 
-O modelo futuro deve suportar permissões por operação, por exemplo:
+- usernames são normalizados e únicos;
+- senha nunca é armazenada em texto puro;
+- sessão guarda somente projeção segura do usuário;
+- login retorna falha genérica para credencial inválida;
+- o shell principal só abre com sessão autenticada;
+- logout limpa a sessão e retorna ao fluxo de login;
+- senhas da UI são lidas diretamente de `PasswordBox`, não entram em ViewModels e são limpas após uso.
 
-```text
-suppliers.read
-suppliers.create
-suppliers.update
-suppliers.delete
-purchase_orders.approve
-reports.export
-admin.users.manage
-```
+Ainda pendentes: lockout/throttling, mitigação explícita de diferença de timing entre usuário inexistente e existente, benchmark do custo de hash e eventos de auditoria de segurança.
 
-A UI pode ocultar/desabilitar comandos, mas a Application deve negar a operação independentemente da UI.
+## Bootstrap do primeiro administrador
+
+- não existe usuário ou senha padrão;
+- bootstrap só é permitido quando não existe nenhum usuário;
+- a operação usa uma única transação SQLite não adiada para adquirir o lock de escrita antes da checagem;
+- cria usuário, role `Administrator`, grants e vínculo usuário-role de forma atômica;
+- concorrência entre duas inicializações resulta em exatamente um commit;
+- falhas de persistência revertem o grafo inteiro;
+- após configuração inicial, o caminho especial deixa de existir e o login normal é obrigatório.
+
+## RBAC
+
+- permissões são atribuídas a roles;
+- usuários recebem uma ou mais roles;
+- operações protegidas usam deny-by-default;
+- nomes normalizados de roles são únicos;
+- associações user-role e role-permission possuem integridade referencial;
+- DTOs de resultado não expõem hash de senha;
+- a UI pode ocultar/desabilitar comandos, mas a Application continua sendo a autoridade de autorização.
 
 ## Auditoria
 
-Registrar ações críticas sem armazenar senha, token ou payload sensível integral.
+Registrar ações críticas sem armazenar senha, token ou payload sensível integral. A trilha de auditoria ainda é item pendente do próximo ciclo de segurança.
 
 ## Dependências
 
@@ -53,14 +67,13 @@ Antes de atualizar/adicionar dependências:
 - licença;
 - breaking changes.
 
-## RBAC authorization baseline (2026-10-16)
+## Baseline validado — 2026-10-16
 
-- permissions are assigned to roles;
-- users receive one or more roles;
-- protected application operations deny access by default unless the current user has the required permission;
-- normalized role names are unique;
-- user-role and role-permission associations are protected by relational foreign keys;
-- password hashes are not exposed in application result DTOs.
-
-Secure first-administrator bootstrap, lockout policy and security audit trail remain follow-up work and must not be bypassed by special-case authorization shortcuts.
-
+- bootstrap seguro do primeiro administrador concluído;
+- tela real de configuração inicial concluída;
+- tela real de login concluída;
+- logout com retorno ao login concluído;
+- RBAC e autorização deny-by-default ativos;
+- build Release Windows: 0 warnings / 0 errors;
+- suíte automatizada: 67/67 antes da camada visual, com compilação WPF validada no mesmo CI;
+- smoke visual/manual do WPF ainda deve ser feito em máquina Windows interativa antes de release.
