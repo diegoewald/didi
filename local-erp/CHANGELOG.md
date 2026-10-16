@@ -19,7 +19,10 @@ O projeto segue versionamento semântico.
 - tela WPF de configuração inicial sem credencial padrão;
 - tela WPF de login com mensagem genérica para credencial inválida;
 - logout com limpeza de sessão e retorno ao login;
-- identificação do usuário autenticado no shell principal.
+- identificação do usuário autenticado no shell principal;
+- throttling/lockout persistente por conta com bloqueio progressivo;
+- dummy password verification para usuário inexistente, inativo ou temporariamente bloqueado;
+- migration `20261016131952_AddAuthenticationThrottling` gerada pelo EF Core.
 
 ### Changed
 
@@ -28,16 +31,20 @@ O projeto segue versionamento semântico.
 - habilitado cross-targeting para validação de build WPF fora do Windows, mantendo release final em Windows;
 - migrations de produção deixam de ser responsabilidade do startup normal e passam para o fluxo versionado de atualização;
 - startup do desktop agora roteia explicitamente entre bootstrap, login e shell principal;
-- janelas de autenticação não armazenam senha em ViewModel, sessão ou log.
+- janelas de autenticação não armazenam senha em ViewModel, sessão ou log;
+- rehash e reset de falhas de login são concluídos no mesmo fluxo transacional que revalida o estado da conta;
+- tentativas feitas durante bloqueio ativo não estendem o bloqueio.
 
 ### Validation
 
 - Windows Server 2025;
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
-- suíte automatizada: 67/67 antes do fechamento visual do Desktop;
+- suíte automatizada: 76/76;
+- Domain 15/15, Application 33/33, Persistence 22/22, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- migrations: apply -> rollback 0 -> reapply passando;
+- 4 migrations: apply -> rollback 0 -> reapply passando;
+- migration smoke confirma as colunas `FailedSignInCount` e `SignInBlockedUntilUtc`;
 - bootstrap SQLite: rollback e concorrência validados;
 - smoke visual/interativo do fluxo WPF permanece obrigatório antes de release.
 
@@ -70,3 +77,11 @@ O projeto segue versionamento semântico.
 - login real bloqueia acesso sem sessão;
 - logout retorna ao login;
 - fluxo completo compilado e validado pelo CI Windows.
+
+## Marco de hardening de autenticação — 2026-10-16
+
+- falhas de login são contadas por conta e persistidas;
+- 3ª falha aplica 2 s, 4ª aplica 10 s e 5ª+ aplica 15 min de bloqueio;
+- sucesso limpa contador/bloqueio;
+- contas ausentes, inativas e bloqueadas executam dummy password verification para reduzir diferenças de timing;
+- estado de throttling e rehash são revalidados transacionalmente antes de concluir o login.

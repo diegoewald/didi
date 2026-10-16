@@ -44,9 +44,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] telas WPF de primeiro acesso e login;
 - [x] logout com retorno ao login;
 - [x] testes de regressão do baseline de autenticação;
+- [x] lockout/throttling persistente por conta;
+- [x] hardening de timing para usuário inexistente/inativo/bloqueado;
 - [ ] benchmark do custo de hash em hardware Windows representativo;
-- [ ] lockout/throttling;
-- [ ] hardening de timing para usuário inexistente/inativo;
 - [ ] trilha de auditoria de segurança.
 
 ## Fase 4 — Shell da aplicação
@@ -82,6 +82,6 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [ ] preparação multiusuário;
 - [ ] release 1.0.
 
-## Marco de autenticação — 2026-10-16
+## Hardening de autenticação — 2026-10-16
 
-O fluxo local agora é utilizável de ponta a ponta: banco novo exige criação do primeiro administrador; banco configurado exige login; apenas sessão válida abre o shell; logout limpa a sessão e retorna ao login. O próximo slice obrigatório é hardening de autenticação e auditoria antes de ampliar superfícies administrativas.
+O fluxo local agora possui throttling/lockout persistente e mitigação do retorno antecipado por timing. A próxima prioridade de segurança é trilha de auditoria de autenticação e benchmark do custo do hashing em hardware representativo; o smoke visual/interativo do WPF continua obrigatório antes de release.

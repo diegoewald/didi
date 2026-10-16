@@ -26,12 +26,32 @@ Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Man
 - usernames são normalizados e únicos;
 - senha nunca é armazenada em texto puro;
 - sessão guarda somente projeção segura do usuário;
-- login retorna falha genérica para credencial inválida;
+- login retorna falha genérica para credencial inválida, conta inexistente, inativa ou temporariamente bloqueada;
 - o shell principal só abre com sessão autenticada;
 - logout limpa a sessão e retorna ao fluxo de login;
 - senhas da UI são lidas diretamente de `PasswordBox`, não entram em ViewModels e são limpas após uso.
 
-Ainda pendentes: lockout/throttling, mitigação explícita de diferença de timing entre usuário inexistente e existente, benchmark do custo de hash e eventos de auditoria de segurança.
+## Throttling e lockout
+
+O estado de falhas é persistido por conta em `Users`, usando `FailedSignInCount` e `SignInBlockedUntilUtc`.
+
+Política atual:
+
+- 1ª e 2ª falhas: sem bloqueio temporal;
+- 3ª falha: bloqueio de 2 segundos;
+- 4ª falha: bloqueio de 10 segundos;
+- 5ª falha e seguintes: bloqueio de 15 minutos;
+- autenticação bem-sucedida zera contador e bloqueio;
+- tentativas durante um bloqueio ativo não aumentam o contador nem prolongam o bloqueio;
+- atualização do contador, rehash eventual e reset de sucesso usam transação SQLite não adiada para evitar corrida entre tentativas concorrentes.
+
+A política é deliberadamente vinculada à conta. O bloqueio progressivo curto reduz brute force sem transformar cada tentativa durante um lockout em extensão indefinida, o que diminuiria resistência a negação de serviço direcionada.
+
+## Mitigação de diferença de timing
+
+Caminhos de usuário inexistente, usuário inativo e conta temporariamente bloqueada executam uma verificação de senha dummy usando o mesmo `IPasswordHashService` e o mesmo work factor da aplicação. Isso remove o retorno antecipado antes do cálculo caro do hash e reduz o oracle de timing mais óbvio entre esses estados e uma senha inválida para conta existente.
+
+Essa técnica é uma mitigação, não uma promessa de tempo de execução matematicamente constante de ponta a ponta: consultas ao banco, escalonamento do sistema operacional e outras fontes de variação ainda existem. O contrato público continua sendo uma única falha genérica.
 
 ## Bootstrap do primeiro administrador
 
@@ -55,7 +75,7 @@ Ainda pendentes: lockout/throttling, mitigação explícita de diferença de tim
 
 ## Auditoria
 
-Registrar ações críticas sem armazenar senha, token ou payload sensível integral. A trilha de auditoria ainda é item pendente do próximo ciclo de segurança.
+Registrar ações críticas sem armazenar senha, token ou payload sensível integral. A trilha de auditoria de autenticação ainda é item pendente do próximo ciclo de segurança.
 
 ## Dependências
 
@@ -70,10 +90,14 @@ Antes de atualizar/adicionar dependências:
 ## Baseline validado — 2026-10-16
 
 - bootstrap seguro do primeiro administrador concluído;
-- tela real de configuração inicial concluída;
-- tela real de login concluída;
+- telas reais de configuração inicial e login concluídas;
 - logout com retorno ao login concluído;
 - RBAC e autorização deny-by-default ativos;
+- throttling/lockout persistente por conta concluído;
+- mitigação de timing por dummy password verification concluída;
+- migration `20261016131952_AddAuthenticationThrottling` gerada pelo EF Core e validada;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 67/67 antes da camada visual, com compilação WPF validada no mesmo CI;
-- smoke visual/manual do WPF ainda deve ser feito em máquina Windows interativa antes de release.
+- suíte automatizada: 76/76;
+- `has-pending-model-changes`: sem mudanças pendentes;
+- quatro migrations: apply -> rollback 0 -> reapply validado;
+- pendentes antes de release: benchmark do hashing, trilha de auditoria e smoke visual/manual do WPF em Windows interativo.

@@ -34,17 +34,20 @@ dotnet tool restore
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. O pipeline executa restore, build Release, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline de autenticação — 2026-10-16
+## Baseline de autenticação endurecida — 2026-10-16
 
-- Domain: 13/13.
-- Application: 30/30.
-- Persistence: 18/18.
+- Domain: 15/15.
+- Application: 33/33.
+- Persistence: 22/22.
 - Infrastructure: 6/6.
-- Total automatizado: 67/67.
+- Total automatizado: 76/76.
 - Build Release: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
-- Migrations: apply -> rollback 0 -> reapply passou.
+- Migrations: 4 migrations; apply -> rollback 0 -> reapply passou.
+- Migration de hardening: `20261016131952_AddAuthenticationThrottling`.
 - Persistência do bootstrap: criação completa, rejeição após usuário existente, rollback em falha e concorrência 1 sucesso/1 rejeição cobertos.
+- Throttling: persistência do contador, bloqueio progressivo, expiração e reset em sucesso cobertos.
+- Timing: caminhos de usuário ausente, inativo e bloqueado são testados para exigir dummy password verification.
 - Startup routing: bootstrap, login e acesso ao shell cobertos na camada Application.
 - Desktop WPF: XAML/code-behind compilados no Windows CI.
 
@@ -57,6 +60,9 @@ O CI hospedado não substitui teste visual/interativo. Executar smoke manual em 
 - entrada automática após bootstrap;
 - fechamento/reabertura e login;
 - credencial inválida;
+- comportamento durante throttling/lockout;
 - logout e retorno ao login;
 - fechamento voluntário das janelas;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.
+
+Também permanecem pendentes benchmark do hashing em hardware representativo e testes da futura trilha de auditoria.

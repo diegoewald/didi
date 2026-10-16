@@ -3,8 +3,6 @@
 ## P0 — Próxima execução
 
 - [ ] executar smoke visual/interativo do WPF em Windows real;
-- [ ] implementar lockout/throttling por conta;
-- [ ] reduzir diferença de timing entre usuário inexistente/inativo e senha inválida;
 - [ ] registrar eventos de auditoria de autenticação sem credenciais;
 - [ ] benchmarkar custo do password hashing em hardware Windows representativo.
 
@@ -19,6 +17,8 @@
 - [x] tela de configuração inicial;
 - [x] tela de login;
 - [x] logout retornando ao login;
+- [x] lockout/throttling persistente por conta;
+- [x] mitigação de diferença de timing com dummy password verification;
 - [ ] UI de administração de usuários;
 - [ ] UI de roles/permissões;
 - [ ] troca de senha pelo próprio usuário;
@@ -34,7 +34,8 @@
 - [x] testes de migration up/down e constraints;
 - [x] seed de desenvolvimento seguro;
 - [x] RBAC com FKs reais;
-- [x] bootstrap atômico com teste de concorrência.
+- [x] bootstrap atômico com teste de concorrência;
+- [x] estado de throttling persistido com migration e transação SQLite não adiada.
 
 ## P2 — Engenharia
 
@@ -45,8 +46,8 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Marco de autenticação fechado — 2026-10-16
+## Hardening de autenticação fechado — 2026-10-16
 
-Baseline funcional: primeiro acesso -> administrador -> sessão -> shell -> logout -> login.
+Baseline: primeiro acesso -> administrador -> sessão -> shell -> logout -> login, agora com throttling/lockout persistente e dummy password verification nos caminhos que antes retornavam cedo.
 
-Próxima prioridade de segurança: lockout/throttling + hardening de timing + auditoria. Depois disso, avançar para administração de usuários e cadastros-base sem ampliar dívida de segurança.
+Próxima prioridade de segurança: auditoria de autenticação + benchmark do hashing. Depois disso, avançar para administração de usuários e cadastros-base sem ampliar dívida de segurança.

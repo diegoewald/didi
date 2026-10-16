@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: autenticação local concluída / hardening de segurança
+- Fase: autenticação local endurecida / preparação de auditoria
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 67/67 testes passando
-- Migrations: snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 76/76 testes passando
+- Migrations: 4 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
 
@@ -19,10 +19,21 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 3. o administrador recebe o papel `Administrator` e todas as permissões registradas;
 4. após o bootstrap, a sessão autenticada libera o shell principal;
 5. instalações já configuradas abrem a tela de login;
-6. logout encerra a sessão e retorna ao login;
-7. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
+6. falhas de autenticação são limitadas por conta com throttling/lockout persistente;
+7. usuário inexistente, inativo ou bloqueado executa dummy password verification para reduzir diferença de timing;
+8. logout encerra a sessão e retorna ao login;
+9. o `MainWindow` nunca é aberto quando não existe sessão autenticada.
 
 Senhas são tratadas por `PasswordBox`, não entram em ViewModels e não são persistidas na sessão ou em logs.
+
+## Política de tentativas de login
+
+- 1ª e 2ª falhas: sem bloqueio temporal;
+- 3ª falha: 2 segundos;
+- 4ª falha: 10 segundos;
+- 5ª falha e seguintes: 15 minutos;
+- sucesso limpa o estado de falhas;
+- tentativas durante bloqueio ativo não prolongam o bloqueio.
 
 ## Objetivos de engenharia
 
@@ -108,4 +119,4 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-16
 
-A fundação atual inclui usuários locais, hashing de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, tela de login e logout. O próximo slice de segurança é lockout/throttling, hardening de timing e trilha de auditoria.
+A fundação atual inclui usuários locais, hashing de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente e mitigação de timing por dummy password verification. Os próximos itens de segurança são trilha de auditoria e benchmark do hashing; smoke visual/interativo do WPF continua obrigatório antes de release.
