@@ -12,6 +12,7 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <Grid Grid.Row="0" Margin="0,0,0,20">
@@ -25,10 +26,11 @@
                      FontSize="28"
                      FontWeight="SemiBold"
                      Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="Consulte usuários ativos e inativos. Alterações serão adicionadas em etapas separadas."
+          <TextBlock Text="Crie usuários e consulte contas ativas ou inativas. Permissões continuam sendo validadas na camada de aplicação."
                      Foreground="{StaticResource Brush.Muted}"
                      Margin="0,7,0,0"
-                     FontSize="14" />
+                     FontSize="14"
+                     TextWrapping="Wrap" />
         </StackPanel>
 
         <Button Grid.Column="1"
@@ -45,6 +47,99 @@
       </Grid>
 
       <Border Grid.Row="1"
+              Margin="0,0,0,18"
+              Padding="16"
+              Background="{StaticResource Brush.Surface}"
+              BorderBrush="{StaticResource Brush.Border}"
+              BorderThickness="1"
+              CornerRadius="6">
+        <StackPanel>
+          <TextBlock Text="Novo usuário"
+                     FontSize="17"
+                     FontWeight="SemiBold"
+                     Foreground="{StaticResource Brush.Text}" />
+          <TextBlock Text="A senha é lida diretamente dos campos protegidos e não é mantida no ViewModel, sessão ou logs."
+                     Margin="0,4,0,14"
+                     Foreground="{StaticResource Brush.Muted}"
+                     TextWrapping="Wrap" />
+
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="230" />
+              <ColumnDefinition Width="210" />
+              <ColumnDefinition Width="210" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+              <TextBlock Text="Usuário" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
+              <TextBox x:Name="CreateUsernameTextBox"
+                       MaxLength="100"
+                       MinHeight="32"
+                       Padding="8,5" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+              <TextBlock Text="Senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
+              <PasswordBox x:Name="CreatePasswordInput"
+                           MaxLength="128"
+                           MinHeight="32"
+                           Padding="8,5" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Margin="0,0,12,0">
+              <TextBlock Text="Confirmar senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
+              <PasswordBox x:Name="ConfirmPasswordInput"
+                           MaxLength="128"
+                           MinHeight="32"
+                           Padding="8,5"
+                           KeyDown="ConfirmPasswordInput_KeyDown" />
+            </StackPanel>
+
+            <Button x:Name="CreateUserButton"
+                    Grid.Column="3"
+                    Content="Criar usuário"
+                    Click="CreateUser_Click"
+                    IsEnabled="{Binding CanCreateUser}"
+                    MinWidth="116"
+                    MinHeight="32"
+                    Padding="14,6"
+                    Margin="0,22,0,0"
+                    VerticalAlignment="Top"
+                    Cursor="Hand" />
+          </Grid>
+
+          <TextBlock Text="{Binding PasswordPolicyHint}"
+                     Margin="0,8,0,0"
+                     Foreground="{StaticResource Brush.Muted}" />
+
+          <Border Margin="0,12,0,0"
+                  Padding="12,9"
+                  Background="#FFF4F2"
+                  BorderBrush="#E7C6C0"
+                  BorderThickness="1"
+                  CornerRadius="5"
+                  Visibility="{Binding HasCreateError, Converter={StaticResource BoolToVisibilityConverter}}">
+            <TextBlock Text="{Binding CreateErrorMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource Brush.Text}" />
+          </Border>
+
+          <Border Margin="0,12,0,0"
+                  Padding="12,9"
+                  Background="#E9F6EF"
+                  BorderBrush="#BFDCCB"
+                  BorderThickness="1"
+                  CornerRadius="5"
+                  Visibility="{Binding HasCreateSuccess, Converter={StaticResource BoolToVisibilityConverter}}">
+            <TextBlock Text="{Binding CreateSuccessMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource Brush.Text}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Grid.Row="2"
               Margin="0,0,0,12"
               Padding="14,11"
               Background="#EEF5FC"
@@ -55,7 +150,7 @@
         <TextBlock Text="Carregando usuários..." Foreground="{StaticResource Brush.Text}" />
       </Border>
 
-      <Border Grid.Row="2"
+      <Border Grid.Row="3"
               Margin="0,0,0,12"
               Padding="14,11"
               Background="#FFF4F2"
@@ -68,7 +163,7 @@
                    Foreground="{StaticResource Brush.Text}" />
       </Border>
 
-      <Grid Grid.Row="3">
+      <Grid Grid.Row="4">
         <Border Padding="28"
                 Background="{StaticResource Brush.Surface}"
                 BorderBrush="{StaticResource Brush.Border}"
@@ -81,7 +176,7 @@
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center"
                        Foreground="{StaticResource Brush.Text}" />
-            <TextBlock Text="A lista ficará disponível aqui assim que houver usuários cadastrados."
+            <TextBlock Text="Use o formulário acima para cadastrar o primeiro usuário desta lista."
                        Margin="0,6,0,0"
                        HorizontalAlignment="Center"
                        Foreground="{StaticResource Brush.Muted}" />

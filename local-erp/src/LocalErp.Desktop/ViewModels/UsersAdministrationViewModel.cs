@@ -14,6 +14,21 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
 
     public ObservableCollection<UserListItemViewModel> Users { get; } = [];
 
+    public string PasswordPolicyHint =>
+        $"Use entre {PasswordPolicy.MinimumLength} e {PasswordPolicy.MaximumLength} caracteres.";
+
+    public bool HasUsers => Users.Count > 0;
+
+    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+
+    public bool IsEmpty => HasLoaded && !IsLoading && !HasError && Users.Count == 0;
+
+    public bool HasCreateError => !string.IsNullOrWhiteSpace(CreateErrorMessage);
+
+    public bool HasCreateSuccess => !string.IsNullOrWhiteSpace(CreateSuccessMessage);
+
+    public bool CanCreateUser => !IsCreating;
+
     [ObservableProperty]
     private bool isLoading;
 
@@ -23,11 +38,14 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
     [ObservableProperty]
     private string? errorMessage;
 
-    public bool HasUsers => Users.Count > 0;
+    [ObservableProperty]
+    private bool isCreating;
 
-    public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+    [ObservableProperty]
+    private string? createErrorMessage;
 
-    public bool IsEmpty => HasLoaded && !IsLoading && !HasError && Users.Count == 0;
+    [ObservableProperty]
+    private string? createSuccessMessage;
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -69,17 +87,105 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
         }
     }
 
+    public async Task<bool> CreateUserAsync(
+        string username,
+        string password,
+        string passwordConfirmation)
+    {
+        if (IsCreating)
+        {
+            return false;
+        }
+
+        CreateErrorMessage = null;
+        CreateSuccessMessage = null;
+
+        if (!string.Equals(password, passwordConfirmation, StringComparison.Ordinal))
+        {
+            CreateErrorMessage = "As senhas informadas não coincidem.";
+            return false;
+        }
+
+        IsCreating = true;
+
+        try
+        {
+            var created = await _userService.CreateAsync(username, password);
+            AddOrReplaceUser(created);
+            CreateSuccessMessage = $"Usuário '{created.Username}' criado com sucesso.";
+            return true;
+        }
+        catch (AccessDeniedException)
+        {
+            CreateErrorMessage = "Você não tem permissão para criar usuários.";
+        }
+        catch (InvalidOperationException)
+        {
+            CreateErrorMessage = "Já existe um usuário com esse nome.";
+        }
+        catch (ArgumentException)
+        {
+            CreateErrorMessage = "Verifique o nome de usuário e a política da senha.";
+        }
+        catch (Exception exception)
+        {
+            CreateErrorMessage = "Não foi possível criar o usuário. Consulte os logs para detalhes técnicos.";
+            Log.Error(exception, "Failed to create user from administration screen");
+        }
+        finally
+        {
+            IsCreating = false;
+            NotifyCreateState();
+        }
+
+        return false;
+    }
+
     partial void OnIsLoadingChanged(bool value) => NotifyDerivedState();
 
     partial void OnHasLoadedChanged(bool value) => NotifyDerivedState();
 
     partial void OnErrorMessageChanged(string? value) => NotifyDerivedState();
 
+    partial void OnIsCreatingChanged(bool value) => NotifyCreateState();
+
+    partial void OnCreateErrorMessageChanged(string? value) => NotifyCreateState();
+
+    partial void OnCreateSuccessMessageChanged(string? value) => NotifyCreateState();
+
+    private void AddOrReplaceUser(UserResult user)
+    {
+        var item = UserListItemViewModel.FromResult(user);
+        var existing = Users.FirstOrDefault(candidate => candidate.Id == item.Id);
+        if (existing is not null)
+        {
+            Users.Remove(existing);
+        }
+
+        var insertIndex = 0;
+        while (insertIndex < Users.Count &&
+               string.Compare(Users[insertIndex].Username, item.Username, StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            insertIndex++;
+        }
+
+        Users.Insert(insertIndex, item);
+        HasLoaded = true;
+        NotifyDerivedState();
+    }
+
     private void NotifyDerivedState()
     {
         OnPropertyChanged(nameof(HasUsers));
         OnPropertyChanged(nameof(HasError));
         OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    private void NotifyCreateState()
+    {
+        OnPropertyChanged(nameof(HasCreateError));
+        OnPropertyChanged(nameof(HasCreateSuccess));
+        OnPropertyChanged(nameof(CanCreateUser));
     }
 }
 

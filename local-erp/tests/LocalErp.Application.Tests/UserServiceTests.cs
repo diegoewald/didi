@@ -10,6 +10,10 @@ namespace LocalErp.Application.Tests;
 [TestClass]
 public sealed class UserServiceTests
 {
+    private const string ValidPassword = "secret-value-1234";
+    private const string AnotherValidPassword = "another-secret-1234";
+    private const string NewValidPassword = "new-secret-value-123";
+
     [TestMethod]
     public async Task CreateAsyncHashesPasswordAndReturnsSafeProjection()
     {
@@ -17,12 +21,12 @@ public sealed class UserServiceTests
         var hashService = new RecordingPasswordHashService();
         var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
 
-        var result = await service.CreateAsync(" Diego ", "secret-value");
+        var result = await service.CreateAsync(" Diego ", ValidPassword);
 
         Assert.AreEqual("Diego", result.Username);
         Assert.IsTrue(result.IsActive);
-        Assert.AreEqual("secret-value", hashService.LastPassword);
-        Assert.AreEqual("hashed::secret-value", repository.Users.Single().PasswordHash);
+        Assert.AreEqual(ValidPassword, hashService.LastPassword);
+        Assert.AreEqual($"hashed::{ValidPassword}", repository.Users.Single().PasswordHash);
     }
 
     [TestMethod]
@@ -33,7 +37,33 @@ public sealed class UserServiceTests
         var service = new UserService(repository, new RecordingPasswordHashService(), new AllowAllAuthorizationService());
 
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => service.CreateAsync("  DIEGO  ", "another-secret"));
+            () => service.CreateAsync("  DIEGO  ", AnotherValidPassword));
+    }
+
+    [TestMethod]
+    public async Task CreateAsyncDemandsUsersManagePermission()
+    {
+        var repository = new InMemoryUserRepository();
+        var authorization = new RecordingAuthorizationService();
+        var service = new UserService(repository, new RecordingPasswordHashService(), authorization);
+
+        await service.CreateAsync("diego", ValidPassword);
+
+        Assert.AreEqual(PermissionCatalog.UsersManage, authorization.LastDemandedPermission);
+    }
+
+    [TestMethod]
+    public async Task CreateAsyncRejectsShortPasswordBeforeHashing()
+    {
+        var repository = new InMemoryUserRepository();
+        var hashService = new RecordingPasswordHashService();
+        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+
+        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(
+            () => service.CreateAsync("diego", "too-short"));
+
+        Assert.IsNull(hashService.LastPassword);
+        Assert.AreEqual(0, repository.Users.Count);
     }
 
     [TestMethod]
@@ -45,10 +75,26 @@ public sealed class UserServiceTests
         var hashService = new RecordingPasswordHashService();
         var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
 
-        var result = await service.ChangePasswordAsync(user.Id, "new-secret");
+        var result = await service.ChangePasswordAsync(user.Id, NewValidPassword);
 
         Assert.AreEqual(user.Id, result.Id);
-        Assert.AreEqual("hashed::new-secret", repository.Users.Single().PasswordHash);
+        Assert.AreEqual($"hashed::{NewValidPassword}", repository.Users.Single().PasswordHash);
+    }
+
+    [TestMethod]
+    public async Task ChangePasswordAsyncRejectsShortPasswordBeforeHashing()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("diego", "old-hash");
+        repository.Users.Add(user);
+        var hashService = new RecordingPasswordHashService();
+        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+
+        await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(
+            () => service.ChangePasswordAsync(user.Id, "too-short"));
+
+        Assert.IsNull(hashService.LastPassword);
+        Assert.AreEqual("old-hash", user.PasswordHash);
     }
 
     [TestMethod]

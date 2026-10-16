@@ -23,7 +23,7 @@ public sealed class UserService(
         CancellationToken cancellationToken = default)
     {
         await _authorizationService.DemandAsync(PermissionCatalog.UsersManage, cancellationToken);
-        ArgumentException.ThrowIfNullOrWhiteSpace(password);
+        PasswordPolicy.Validate(password);
 
         var normalizedUsername = User.NormalizeUsername(username);
         var existing = await _repository.GetByNormalizedUsernameAsync(normalizedUsername, cancellationToken);
@@ -52,7 +52,7 @@ public sealed class UserService(
         CancellationToken cancellationToken = default)
     {
         await _authorizationService.DemandAsync(PermissionCatalog.UsersManage, cancellationToken);
-        ArgumentException.ThrowIfNullOrWhiteSpace(newPassword);
+        PasswordPolicy.Validate(newPassword);
 
         var user = await GetRequiredAsync(userId, cancellationToken);
         user.ChangePasswordHash(_passwordHashService.Hash(newPassword));
