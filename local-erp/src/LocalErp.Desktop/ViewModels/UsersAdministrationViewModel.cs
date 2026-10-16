@@ -14,7 +14,7 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
 
     public ObservableCollection<UserListItemViewModel> Users { get; } = [];
 
-    public string PasswordPolicyHint =>
+    public string PasswordPolicyHint { get; } =
         $"Use entre {PasswordPolicy.MinimumLength} e {PasswordPolicy.MaximumLength} caracteres.";
 
     public bool HasUsers => Users.Count > 0;
