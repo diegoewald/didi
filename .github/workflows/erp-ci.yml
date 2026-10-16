@@ -63,6 +63,32 @@ jobs:
       - name: Reapply migrations
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
 
+      - name: Package clean source snapshot
+        shell: pwsh
+        working-directory: .
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP 'local-erp-package'
+          $zip = Join-Path $env:RUNNER_TEMP 'local-erp-v0.1.0-auth-milestone.zip'
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item -Path 'local-erp' -Destination $stage -Recurse
+          foreach ($name in @('bin', 'obj', 'TestResults')) {
+            Get-ChildItem -Path $stage -Directory -Recurse -Filter $name -ErrorAction SilentlyContinue |
+              Sort-Object FullName -Descending |
+              Remove-Item -Recurse -Force
+          }
+          Compress-Archive -Path (Join-Path $stage 'local-erp') -DestinationPath $zip -CompressionLevel Optimal
+
+      - name: Upload source snapshot
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-auth-milestone-source
+          path: ${{ runner.temp }}/local-erp-v0.1.0-auth-milestone.zip
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
