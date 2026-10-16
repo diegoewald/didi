@@ -125,6 +125,23 @@ A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, F
 
 Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
+## Revisão final do slice de auditoria — 2026-10-16
+
+A revisão direta do código, migration e testes confirmou:
+
+- falha de senha: contador, `authentication.sign_in.failed` e eventual `authentication.throttle.applied` compartilham a mesma transação SQLite não adiada;
+- login correto: reset de falhas, rehash opcional e `authentication.sign_in.succeeded` compartilham a mesma transação;
+- bootstrap: administrador, role, grants, vínculo e `authentication.bootstrap.succeeded` compartilham a mesma transação;
+- rollback do bootstrap remove também o evento de auditoria e concorrência gera exatamente um administrador/evento;
+- `SecurityAuditEvent` não possui campos para senha, hash, token ou payload textual arbitrário e impõe timestamp UTC/códigos canônicos;
+- conta inexistente não persiste o username digitado e usa `UserId = null`;
+- FK de auditoria usa `SET NULL`, preservando histórico se um usuário vier a ser excluído no futuro;
+- logout limpa a sessão antes do append de auditoria e a UI fecha o shell mesmo se o append falhar.
+
+Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robustez: os eventos standalone de conta inexistente, inativa ou já bloqueada são gravados por `ISecurityAuditStore.AppendAsync`; se essa persistência falhar, a exceção atualmente propaga. Isso permanece fail-closed e não cria bypass, mas acopla disponibilidade/UX desses caminhos ao armazenamento de auditoria. Avaliar tratamento best-effort ou política explícita antes de release, sem enfraquecer auditoria das operações que alteram estado.
+
+Com essas dívidas registradas, o baseline básico de segurança está suficientemente fechado para iniciar administração de usuários sem exigir que smoke visual, benchmark no hardware alvo, retenção e administração completa sejam falsamente marcados como concluídos.
+
 ## Dependências
 
 Antes de atualizar/adicionar dependências:
@@ -150,5 +167,7 @@ Antes de atualizar/adicionar dependências:
 - suíte automatizada: 82/82;
 - `has-pending-model-changes`: sem mudanças pendentes;
 - cinco migrations: apply -> rollback 0 -> reapply validado;
+- revisão final do slice de auditoria: concluída sem defeito bloqueante;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
-- pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`.
+- pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
+- pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado.

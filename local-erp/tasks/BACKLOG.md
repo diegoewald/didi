@@ -22,8 +22,9 @@
 - [x] migration `20261016135247_AddSecurityAuditTrail`;
 - [x] ferramenta reproduzível de benchmark de password hashing;
 - [x] baseline de benchmark executado em Windows CI;
-- [ ] revisão de segurança final do slice de auditoria/benchmark;
+- [x] revisão de segurança final do slice de auditoria/benchmark;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
+- [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
 - [ ] UI de administração de usuários;
 - [ ] UI de roles/permissões;
 - [ ] troca de senha pelo próprio usuário;
@@ -54,10 +55,12 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Marco de auditoria e benchmark — 2026-10-16
+## Baseline básico de segurança fechado — 2026-10-16
 
-A trilha de autenticação e o benchmark reproduzível já estão integrados. Baseline atual: 82/82 testes, 5 migrations, build Release sem warnings/erros e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A revisão do slice de auditoria confirmou atomicidade nos fluxos que alteram estado, ausência de credenciais/payload arbitrário no modelo de auditoria, preservação da sessão encerrada mesmo quando a auditoria de logout falha e schema/migration coerentes. Não foi encontrado defeito bloqueante para iniciar administração de usuários.
+
+A trilha de autenticação e o benchmark reproduzível estão integrados. Baseline atual: 82/82 testes, 5 migrations, build Release sem warnings/erros e ciclo de migrations apply -> rollback 0 -> reapply validado.
 
 O benchmark já foi executado em Windows CI, mas isso não fecha a validação de hardware final. Antes de release, executar o mesmo benchmark numa máquina representativa e manter o smoke visual/interativo do WPF como obrigatório.
 
-Após a revisão de segurança final deste slice, avançar para administração de usuários em partes pequenas e depois cadastros-base, sem esconder as dívidas de retenção de auditoria, smoke visual e benchmark no hardware alvo.
+Próxima frente funcional: administração de usuários em partes pequenas, começando pela listagem real protegida por `users.read`. Depois, criação, ativação/desativação, reset administrativo de senha, associação de roles e auditoria das operações administrativas.
