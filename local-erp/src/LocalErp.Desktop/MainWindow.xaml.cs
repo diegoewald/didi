@@ -1,6 +1,7 @@
 using System.Windows;
 using LocalErp.Application.Security;
 using LocalErp.Desktop.ViewModels;
+using Serilog;
 
 namespace LocalErp.Desktop;
 
@@ -21,10 +22,20 @@ public partial class MainWindow : Window
 
     public bool LogoutRequested { get; private set; }
 
-    private void Logout_Click(object sender, RoutedEventArgs e)
+    private async void Logout_Click(object sender, RoutedEventArgs e)
     {
-        _authenticationService.SignOut();
-        LogoutRequested = true;
-        Close();
+        try
+        {
+            await _authenticationService.SignOutAsync();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Security audit write failed during sign-out");
+        }
+        finally
+        {
+            LogoutRequested = true;
+            Close();
+        }
     }
 }

@@ -17,6 +17,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 
     public DbSet<RolePermissionGrant> RolePermissions => Set<RolePermissionGrant>();
 
+    public DbSet<SecurityAuditEvent> SecurityAuditEvents => Set<SecurityAuditEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

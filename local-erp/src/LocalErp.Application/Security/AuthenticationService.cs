@@ -1,6 +1,7 @@
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Users;
+using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 
 namespace LocalErp.Application.Security;
@@ -10,6 +11,7 @@ public sealed class AuthenticationService(
     IPasswordHashService passwordHashService,
     IAuthenticationAttemptStore attemptStore,
     IAuthenticationTimingProtector timingProtector,
+    ISecurityAuditStore auditStore,
     IUserSession session,
     IClock clock)
 {
@@ -21,6 +23,8 @@ public sealed class AuthenticationService(
         ?? throw new ArgumentNullException(nameof(attemptStore));
     private readonly IAuthenticationTimingProtector _timingProtector = timingProtector
         ?? throw new ArgumentNullException(nameof(timingProtector));
+    private readonly ISecurityAuditStore _auditStore = auditStore
+        ?? throw new ArgumentNullException(nameof(auditStore));
     private readonly IUserSession _session = session
         ?? throw new ArgumentNullException(nameof(session));
     private readonly IClock _clock = clock
@@ -38,15 +42,41 @@ public sealed class AuthenticationService(
         var user = await _repository.GetByNormalizedUsernameAsync(normalizedUsername, cancellationToken);
         var utcNow = _clock.UtcNow;
 
-        if (user is null || !user.IsActive)
+        if (user is null)
         {
             _timingProtector.PerformDummyVerification(password);
+            await _auditStore.AppendAsync(
+                new SecurityAuditEvent(
+                    utcNow,
+                    SecurityAuditCodes.AuthenticationSignInFailed,
+                    detailCode: SecurityAuditDetailCodes.UnknownAccount),
+                cancellationToken);
+            return AuthenticationResult.Failed;
+        }
+
+        if (!user.IsActive)
+        {
+            _timingProtector.PerformDummyVerification(password);
+            await _auditStore.AppendAsync(
+                new SecurityAuditEvent(
+                    utcNow,
+                    SecurityAuditCodes.AuthenticationSignInFailed,
+                    user.Id,
+                    SecurityAuditDetailCodes.InactiveAccount),
+                cancellationToken);
             return AuthenticationResult.Failed;
         }
 
         if (user.IsSignInBlocked(utcNow))
         {
             _timingProtector.PerformDummyVerification(password);
+            await _auditStore.AppendAsync(
+                new SecurityAuditEvent(
+                    utcNow,
+                    SecurityAuditCodes.AuthenticationSignInBlocked,
+                    user.Id,
+                    SecurityAuditDetailCodes.TemporarilyBlocked),
+                cancellationToken);
             return AuthenticationResult.Failed;
         }
 
@@ -83,8 +113,21 @@ public sealed class AuthenticationService(
         return AuthenticationResult.Success(safeUser);
     }
 
-    public void SignOut()
+    public async Task SignOutAsync(CancellationToken cancellationToken = default)
     {
+        var user = _session.CurrentUser;
         _session.SignOut();
+
+        if (user is null)
+        {
+            return;
+        }
+
+        await _auditStore.AppendAsync(
+            new SecurityAuditEvent(
+                _clock.UtcNow,
+                SecurityAuditCodes.AuthenticationSignOut,
+                user.Id),
+            cancellationToken);
     }
 }

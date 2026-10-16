@@ -1,6 +1,7 @@
 using System.Data;
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Security;
+using LocalErp.Domain.Security;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -38,6 +39,24 @@ public sealed class SqliteAuthenticationAttemptStore(
             var nextFailureCount = checked(user.FailedSignInCount + 1);
             var blockDuration = AuthenticationThrottlePolicy.GetBlockDurationAfterFailure(nextFailureCount);
             user.RecordFailedSignIn(utcNow, blockDuration);
+            context.SecurityAuditEvents.Add(
+                new SecurityAuditEvent(
+                    utcNow,
+                    SecurityAuditCodes.AuthenticationSignInFailed,
+                    user.Id,
+                    SecurityAuditDetailCodes.InvalidPassword));
+
+            if (blockDuration > TimeSpan.Zero)
+            {
+                context.SecurityAuditEvents.Add(
+                    new SecurityAuditEvent(
+                        utcNow,
+                        SecurityAuditCodes.AuthenticationThrottleApplied,
+                        user.Id,
+                        nextFailureCount >= AuthenticationThrottlePolicy.LockoutThreshold
+                            ? SecurityAuditDetailCodes.TemporaryLockout
+                            : SecurityAuditDetailCodes.ProgressiveDelay));
+            }
 
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -79,6 +98,11 @@ public sealed class SqliteAuthenticationAttemptStore(
             }
 
             user.ResetSignInFailures();
+            context.SecurityAuditEvents.Add(
+                new SecurityAuditEvent(
+                    utcNow,
+                    SecurityAuditCodes.AuthenticationSignInSucceeded,
+                    user.Id));
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return true;

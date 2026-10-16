@@ -1,5 +1,6 @@
 using System.Data;
 using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using Microsoft.Data.Sqlite;
@@ -8,10 +9,13 @@ using Microsoft.EntityFrameworkCore;
 namespace LocalErp.Persistence.Repositories;
 
 public sealed class SqliteAdministratorBootstrapStore(
-    IDbContextFactory<ErpDbContext> contextFactory) : IAdministratorBootstrapStore
+    IDbContextFactory<ErpDbContext> contextFactory,
+    IClock clock) : IAdministratorBootstrapStore
 {
     private readonly IDbContextFactory<ErpDbContext> _contextFactory = contextFactory
         ?? throw new ArgumentNullException(nameof(contextFactory));
+    private readonly IClock _clock = clock
+        ?? throw new ArgumentNullException(nameof(clock));
 
     public async Task<bool> IsBootstrapRequiredAsync(
         CancellationToken cancellationToken = default)
@@ -65,6 +69,11 @@ public sealed class SqliteAdministratorBootstrapStore(
             context.RolePermissions.AddRange(
                 validatedPermissions.Select(permissionCode =>
                     new RolePermissionGrant(administratorRole.Id, permissionCode)));
+            context.SecurityAuditEvents.Add(
+                new SecurityAuditEvent(
+                    _clock.UtcNow,
+                    SecurityAuditCodes.AdministratorBootstrapSucceeded,
+                    administrator.Id));
 
             await context.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);

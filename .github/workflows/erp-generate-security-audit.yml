@@ -1,0 +1,69 @@
+name: Generate security audit migration and benchmark
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/erp-generate-security-audit.yml'
+      - 'local-erp/src/LocalErp.Domain/Security/**'
+      - 'local-erp/src/LocalErp.Persistence/Configurations/SecurityAuditEventConfiguration.cs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: local-erp
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore EF tool
+        run: dotnet tool restore
+
+      - name: Restore persistence dependencies
+        run: dotnet restore src/LocalErp.Persistence/LocalErp.Persistence.csproj
+
+      - name: Build persistence
+        run: dotnet build src/LocalErp.Persistence/LocalErp.Persistence.csproj --configuration Release --no-restore
+
+      - name: Generate migration
+        run: dotnet ef migrations add AddSecurityAuditTrail --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Build benchmark
+        run: dotnet build tools/LocalErp.PasswordHashBenchmark/LocalErp.PasswordHashBenchmark.csproj --configuration Release
+
+      - name: Run password hash benchmark
+        shell: pwsh
+        run: |
+          dotnet run --configuration Release --no-build --project tools/LocalErp.PasswordHashBenchmark/LocalErp.PasswordHashBenchmark.csproj -- --samples 20 --warmup 2 --iterations 220000 | Tee-Object -FilePath $env:RUNNER_TEMP\password-hash-benchmark.json
+
+      - name: Upload migration
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-audit-migration
+          path: |
+            local-erp/src/LocalErp.Persistence/Migrations/*AddSecurityAuditTrail*.cs
+            local-erp/src/LocalErp.Persistence/Migrations/ErpDbContextModelSnapshot.cs
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload benchmark
+        uses: actions/upload-artifact@v7
+        with:
+          name: password-hash-benchmark
+          path: ${{ runner.temp }}\password-hash-benchmark.json
+          if-no-files-found: error
+          retention-days: 7
