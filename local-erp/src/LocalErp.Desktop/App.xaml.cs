@@ -3,8 +3,8 @@ using System.IO;
 using System.Windows;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Companies;
-using LocalErp.Application.Security;
 using LocalErp.Application.Roles;
+using LocalErp.Application.Security;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
 using LocalErp.Infrastructure.Paths;
@@ -24,6 +24,8 @@ public partial class App : System.Windows.Application
 
     public App()
     {
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
         var paths = AppDataPaths.CreateDefault();
         paths.EnsureCreated();
         var isDevelopment = string.Equals(
@@ -60,8 +62,10 @@ public partial class App : System.Windows.Application
                 services.AddTransient<StartupFlowService>();
                 services.AddTransient<IAuthorizationService, AuthorizationService>();
                 services.AddTransient<RoleService>();
-                services.AddSingleton<MainWindowViewModel>();
-                services.AddSingleton<MainWindow>();
+                services.AddTransient<AdministratorBootstrapWindow>();
+                services.AddTransient<LoginWindow>();
+                services.AddTransient<MainWindowViewModel>();
+                services.AddTransient<MainWindow>();
             })
             .Build();
     }
@@ -89,38 +93,7 @@ public partial class App : System.Windows.Application
                     insertedRecords);
             }
 
-            var startupFlow = _host.Services.GetRequiredService<StartupFlowService>();
-            var route = startupFlow.DetermineRouteAsync().GetAwaiter().GetResult();
-            Log.Information("Startup access route resolved as {StartupRoute}", route);
-
-            switch (route)
-            {
-                case StartupRoute.AdministratorBootstrapRequired:
-                    MessageBox.Show(
-                        "Este banco ainda não possui um administrador. A criação do primeiro administrador é obrigatória antes de acessar o sistema. A interface de configuração inicial será habilitada no próximo marco.",
-                        "Configuração inicial necessária",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    Shutdown(2);
-                    return;
-
-                case StartupRoute.SignInRequired:
-                    MessageBox.Show(
-                        "É necessário autenticar-se para acessar o Local ERP. A interface de login será habilitada no próximo marco.",
-                        "Autenticação necessária",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    Shutdown(3);
-                    return;
-
-                case StartupRoute.Main:
-                    var window = _host.Services.GetRequiredService<MainWindow>();
-                    window.Show();
-                    return;
-
-                default:
-                    throw new InvalidOperationException($"Unsupported startup route '{route}'.");
-            }
+            RunInteractiveShell();
         }
         catch (Exception exception)
         {
@@ -131,6 +104,55 @@ public partial class App : System.Windows.Application
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
             Shutdown(1);
+        }
+    }
+
+    private void RunInteractiveShell()
+    {
+        while (true)
+        {
+            var startupFlow = _host.Services.GetRequiredService<StartupFlowService>();
+            var route = startupFlow.DetermineRouteAsync().GetAwaiter().GetResult();
+            Log.Information("Startup access route resolved as {StartupRoute}", route);
+
+            switch (route)
+            {
+                case StartupRoute.AdministratorBootstrapRequired:
+                    var bootstrapWindow = _host.Services.GetRequiredService<AdministratorBootstrapWindow>();
+                    if (bootstrapWindow.ShowDialog() != true)
+                    {
+                        Shutdown();
+                        return;
+                    }
+
+                    continue;
+
+                case StartupRoute.SignInRequired:
+                    var loginWindow = _host.Services.GetRequiredService<LoginWindow>();
+                    if (loginWindow.ShowDialog() != true)
+                    {
+                        Shutdown();
+                        return;
+                    }
+
+                    continue;
+
+                case StartupRoute.Main:
+                    var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                    MainWindow = mainWindow;
+                    mainWindow.ShowDialog();
+
+                    if (mainWindow.LogoutRequested)
+                    {
+                        continue;
+                    }
+
+                    Shutdown();
+                    return;
+
+                default:
+                    throw new InvalidOperationException($"Unsupported startup route '{route}'.");
+            }
         }
     }
 
