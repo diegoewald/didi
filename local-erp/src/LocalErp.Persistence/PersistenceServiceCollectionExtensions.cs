@@ -25,6 +25,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddTransient<IUserRepository, EfUserRepository>();
         services.AddTransient<IRoleRepository, EfRoleRepository>();
         services.AddTransient<IAuthorizationRepository, EfAuthorizationRepository>();
+        services.AddTransient<IAdministratorBootstrapStore, SqliteAdministratorBootstrapStore>();
         services.AddTransient<DevelopmentDataSeeder>();
 
         return services;
