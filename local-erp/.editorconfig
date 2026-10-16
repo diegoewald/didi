@@ -30,3 +30,5 @@ trim_trailing_whitespace = false
 
 [src/LocalErp.Persistence/Migrations/*.cs]
 csharp_style_namespace_declarations = block_scoped:silent
+# EF Core scaffolds composite-index column arrays directly in generated migrations.
+dotnet_diagnostic.CA1861.severity = none
