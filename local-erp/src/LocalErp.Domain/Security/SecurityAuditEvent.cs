@@ -16,17 +16,18 @@ public sealed class SecurityAuditEvent : Entity
         DateTime occurredAtUtc,
         string eventCode,
         Guid? userId = null,
-        string? detailCode = null)
+        string? detailCode = null,
+        Guid? actorUserId = null,
+        Guid? roleId = null)
     {
         if (occurredAtUtc.Kind != DateTimeKind.Utc)
         {
             throw new ArgumentException("Audit event timestamps must use UTC.", nameof(occurredAtUtc));
         }
 
-        if (userId.HasValue)
-        {
-            ArgumentOutOfRangeException.ThrowIfEqual(userId.Value, Guid.Empty, nameof(userId));
-        }
+        ValidateOptionalIdentifier(userId, nameof(userId));
+        ValidateOptionalIdentifier(actorUserId, nameof(actorUserId));
+        ValidateOptionalIdentifier(roleId, nameof(roleId));
 
         OccurredAtUtc = occurredAtUtc;
         EventCode = ValidateCode(eventCode, EventCodeMaxLength, nameof(eventCode));
@@ -34,6 +35,8 @@ public sealed class SecurityAuditEvent : Entity
             ? null
             : ValidateCode(detailCode, DetailCodeMaxLength, nameof(detailCode));
         UserId = userId;
+        ActorUserId = actorUserId;
+        RoleId = roleId;
     }
 
     public DateTime OccurredAtUtc { get; private set; }
@@ -43,6 +46,18 @@ public sealed class SecurityAuditEvent : Entity
     public string? DetailCode { get; private set; }
 
     public Guid? UserId { get; private set; }
+
+    public Guid? ActorUserId { get; private set; }
+
+    public Guid? RoleId { get; private set; }
+
+    private static void ValidateOptionalIdentifier(Guid? value, string parameterName)
+    {
+        if (value.HasValue)
+        {
+            ArgumentOutOfRangeException.ThrowIfEqual(value.Value, Guid.Empty, parameterName);
+        }
+    }
 
     private static string ValidateCode(string value, int maximumLength, string parameterName)
     {

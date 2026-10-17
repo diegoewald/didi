@@ -26,8 +26,20 @@ internal sealed class SecurityAuditEventConfiguration : IEntityTypeConfiguration
             .HasForeignKey(auditEvent => auditEvent.UserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(auditEvent => auditEvent.ActorUserId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne<Role>()
+            .WithMany()
+            .HasForeignKey(auditEvent => auditEvent.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasIndex(auditEvent => auditEvent.OccurredAtUtc);
         builder.HasIndex(auditEvent => new { auditEvent.UserId, auditEvent.OccurredAtUtc });
+        builder.HasIndex(auditEvent => new { auditEvent.ActorUserId, auditEvent.OccurredAtUtc });
+        builder.HasIndex(auditEvent => new { auditEvent.RoleId, auditEvent.OccurredAtUtc });
         builder.HasIndex(auditEvent => new { auditEvent.EventCode, auditEvent.OccurredAtUtc });
     }
 }

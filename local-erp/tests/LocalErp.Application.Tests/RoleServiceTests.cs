@@ -1,6 +1,8 @@
 using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
+using LocalErp.Application.Users;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -73,6 +75,33 @@ public sealed class RoleServiceTests
     }
 
     [TestMethod]
+    public async Task AssignUserAsyncAuditsActorTargetAndRole()
+    {
+        var roles = new InMemoryRoleRepository();
+        var role = new Role("Operadores");
+        await roles.AddAsync(role);
+        var users = new InMemoryUserRepository();
+        var user = new User("operator", "hash");
+        users.Users.Add(user);
+        var session = CreateAuthenticatedSession();
+        var auditStore = new InMemoryAdministrativeAuditStore(roles);
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            users,
+            auditStore,
+            session);
+
+        await service.AssignUserAsync(user.Id, role.Id);
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserRoleAssigned, auditEvent.EventCode);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
+        Assert.AreEqual(role.Id, auditEvent.RoleId);
+        Assert.AreEqual(session.CurrentUser!.Id, auditEvent.ActorUserId);
+    }
+
+    [TestMethod]
     public async Task ListUserAssignmentsAsyncRequiresRolesReadAndMarksAssignments()
     {
         var authorization = new RecordingAuthorizationService();
@@ -117,6 +146,35 @@ public sealed class RoleServiceTests
     }
 
     [TestMethod]
+    public async Task RemoveUserAsyncAuditsOnlySuccessfulRemoval()
+    {
+        var roles = new InMemoryRoleRepository();
+        var role = new Role("Operadores");
+        await roles.AddAsync(role);
+        var users = new InMemoryUserRepository();
+        var user = new User("operator", "hash");
+        users.Users.Add(user);
+        await roles.AssignUserAsync(user.Id, role.Id);
+        var session = CreateAuthenticatedSession();
+        var auditStore = new InMemoryAdministrativeAuditStore(roles);
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            users,
+            auditStore,
+            session);
+
+        await service.RemoveUserAsync(user.Id, role.Id);
+        await service.RemoveUserAsync(user.Id, role.Id);
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserRoleRemoved, auditEvent.EventCode);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
+        Assert.AreEqual(role.Id, auditEvent.RoleId);
+        Assert.AreEqual(session.CurrentUser!.Id, auditEvent.ActorUserId);
+    }
+
+    [TestMethod]
     public async Task RemoveUserAsyncRejectsLossOfLastAdministrativeCapability()
     {
         var roles = new InMemoryRoleRepository
@@ -129,23 +187,65 @@ public sealed class RoleServiceTests
         var user = new User("admin", "hash");
         users.Users.Add(user);
         await roles.AssignUserAsync(user.Id, role.Id);
-        var service = CreateService(new RecordingAuthorizationService(), roles, users);
+        var auditStore = new InMemoryAdministrativeAuditStore(roles);
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            users,
+            auditStore);
 
         await Assert.ThrowsExactlyAsync<LastAdministrativeRoleAssignmentException>(
             () => service.RemoveUserAsync(user.Id, role.Id));
 
         Assert.IsTrue(roles.HasAssignment(user.Id, role.Id));
+        Assert.AreEqual(0, auditStore.Events.Count);
     }
 
     private static RoleService CreateService(
         RecordingAuthorizationService authorization,
         InMemoryRoleRepository? roles = null,
-        InMemoryUserRepository? users = null)
+        InMemoryUserRepository? users = null,
+        IAdministrativeAuditStore? administrativeAuditStore = null,
+        IUserSession? session = null,
+        IClock? clock = null)
     {
+        var actualRoles = roles ?? new InMemoryRoleRepository();
         return new RoleService(
-            roles ?? new InMemoryRoleRepository(),
+            actualRoles,
             users ?? new InMemoryUserRepository(),
-            authorization);
+            authorization,
+            administrativeAuditStore ?? new InMemoryAdministrativeAuditStore(actualRoles),
+            session ?? CreateAuthenticatedSession(),
+            clock ?? new TestClock());
+    }
+
+    private static TestUserSession CreateAuthenticatedSession()
+    {
+        var session = new TestUserSession();
+        session.SignIn(new UserResult(Guid.NewGuid(), "actor", true));
+        return session;
+    }
+
+    private sealed class TestClock : IClock
+    {
+        public DateTime UtcNow { get; } = new(2026, 10, 17, 23, 45, 0, DateTimeKind.Utc);
+    }
+
+    private sealed class TestUserSession : IUserSession
+    {
+        public bool IsAuthenticated => CurrentUser is not null;
+
+        public UserResult? CurrentUser { get; private set; }
+
+        public void SignIn(UserResult user)
+        {
+            CurrentUser = user ?? throw new ArgumentNullException(nameof(user));
+        }
+
+        public void SignOut()
+        {
+            CurrentUser = null;
+        }
     }
 
     private sealed class RecordingAuthorizationService : IAuthorizationService
@@ -163,6 +263,66 @@ public sealed class RoleServiceTests
             cancellationToken.ThrowIfCancellationRequested();
             DemandedPermissions.Add(permissionCode);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class InMemoryAdministrativeAuditStore(
+        InMemoryRoleRepository roleRepository) : IAdministrativeAuditStore
+    {
+        private readonly InMemoryRoleRepository _roleRepository = roleRepository;
+
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public Task AddUserAsync(
+            User user,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task UpdateUserAsync(
+            User user,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public async Task<bool> AssignUserRoleAsync(
+            Guid userId,
+            Guid roleId,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            if (_roleRepository.HasAssignment(userId, roleId))
+            {
+                return false;
+            }
+
+            await _roleRepository.AssignUserAsync(userId, roleId, cancellationToken);
+            Events.Add(auditEvent);
+            return true;
+        }
+
+        public async Task<RoleAssignmentRemovalResult> RemoveUserRolePreservingPermissionHolderAsync(
+            Guid userId,
+            Guid roleId,
+            string protectedPermissionCode,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            var result = await _roleRepository.RemoveUserPreservingPermissionHolderAsync(
+                userId,
+                roleId,
+                protectedPermissionCode,
+                cancellationToken);
+            if (result == RoleAssignmentRemovalResult.Removed)
+            {
+                Events.Add(auditEvent);
+            }
+
+            return result;
         }
     }
 

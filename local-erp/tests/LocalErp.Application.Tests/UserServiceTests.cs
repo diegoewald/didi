@@ -1,4 +1,5 @@
 using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
 using LocalErp.Domain.Security;
@@ -64,6 +65,29 @@ public sealed class UserServiceTests
 
         Assert.IsNull(hashService.LastPassword);
         Assert.AreEqual(0, repository.Users.Count);
+    }
+
+    [TestMethod]
+    public async Task CreateAsyncAuditsActorAndCreatedUser()
+    {
+        var repository = new InMemoryUserRepository();
+        var session = CreateAuthenticatedSession();
+        var auditStore = new InMemoryAdministrativeAuditStore(repository);
+        var clock = new TestClock();
+        var service = CreateService(
+            repository,
+            session: session,
+            administrativeAuditStore: auditStore,
+            clock: clock);
+
+        var result = await service.CreateAsync("audited-user", ValidPassword);
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserCreated, auditEvent.EventCode);
+        Assert.AreEqual(result.Id, auditEvent.UserId);
+        Assert.AreEqual(session.CurrentUser!.Id, auditEvent.ActorUserId);
+        Assert.IsNull(auditEvent.RoleId);
+        Assert.AreEqual(clock.UtcNow, auditEvent.OccurredAtUtc);
     }
 
     [TestMethod]
@@ -144,6 +168,25 @@ public sealed class UserServiceTests
 
         Assert.IsNull(hashService.LastPassword);
         Assert.AreEqual(0, repository.UpdateCount);
+    }
+
+    [TestMethod]
+    public async Task ChangePasswordAsyncAuditsPasswordResetWithoutPasswordData()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("target", "old-hash");
+        repository.Users.Add(user);
+        var session = CreateAuthenticatedSession();
+        var auditStore = new InMemoryAdministrativeAuditStore(repository);
+        var service = CreateService(repository, session: session, administrativeAuditStore: auditStore);
+
+        await service.ChangePasswordAsync(user.Id, NewValidPassword);
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserPasswordReset, auditEvent.EventCode);
+        Assert.AreEqual(user.Id, auditEvent.UserId);
+        Assert.AreEqual(session.CurrentUser!.Id, auditEvent.ActorUserId);
+        Assert.IsNull(auditEvent.DetailCode);
     }
 
     [TestMethod]
@@ -251,26 +294,62 @@ public sealed class UserServiceTests
         repository.Users.Add(user);
         var session = new TestUserSession();
         session.SignIn(UserResult.FromDomain(user));
-        var service = CreateService(repository, session: session);
+        var auditStore = new InMemoryAdministrativeAuditStore(repository);
+        var service = CreateService(repository, session: session, administrativeAuditStore: auditStore);
 
         await Assert.ThrowsExactlyAsync<SelfDeactivationNotAllowedException>(
             () => service.SetActiveAsync(user.Id, false));
 
         Assert.IsTrue(user.IsActive);
         Assert.AreEqual(0, repository.UpdateCount);
+        Assert.AreEqual(0, auditStore.Events.Count);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncAuditsDeactivationAndActivation()
+    {
+        var repository = new InMemoryUserRepository();
+        var target = new User("target", "hash");
+        repository.Users.Add(target);
+        var auditStore = new InMemoryAdministrativeAuditStore(repository);
+        var service = CreateService(repository, administrativeAuditStore: auditStore);
+
+        await service.SetActiveAsync(target.Id, false);
+        await service.SetActiveAsync(target.Id, true);
+
+        Assert.AreEqual(2, auditStore.Events.Count);
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserDeactivated, auditStore.Events[0].EventCode);
+        Assert.AreEqual(SecurityAuditCodes.AdministrationUserActivated, auditStore.Events[1].EventCode);
+        Assert.IsTrue(auditStore.Events.All(item => item.UserId == target.Id));
     }
 
     private static UserService CreateService(
         InMemoryUserRepository repository,
         IPasswordHashService? passwordHashService = null,
         IAuthorizationService? authorizationService = null,
-        IUserSession? session = null)
+        IUserSession? session = null,
+        IAdministrativeAuditStore? administrativeAuditStore = null,
+        IClock? clock = null)
     {
         return new UserService(
             repository,
             passwordHashService ?? new RecordingPasswordHashService(),
             authorizationService ?? new AllowAllAuthorizationService(),
-            session ?? new TestUserSession());
+            session ?? CreateAuthenticatedSession(),
+            administrativeAuditStore ?? new InMemoryAdministrativeAuditStore(repository),
+            clock ?? new TestClock());
+    }
+
+    private static TestUserSession CreateAuthenticatedSession()
+    {
+        var session = new TestUserSession();
+        session.SignIn(new UserResult(Guid.NewGuid(), "actor", true));
+        return session;
+    }
+
+    private sealed class TestClock : IClock
+    {
+        public DateTime UtcNow { get; } = new(2026, 10, 17, 23, 45, 0, DateTimeKind.Utc);
     }
 
     private sealed class RecordingPasswordHashService : IPasswordHashService
@@ -327,6 +406,51 @@ public sealed class UserServiceTests
         public void SignOut()
         {
             CurrentUser = null;
+        }
+    }
+
+    private sealed class InMemoryAdministrativeAuditStore(
+        InMemoryUserRepository userRepository) : IAdministrativeAuditStore
+    {
+        private readonly InMemoryUserRepository _userRepository = userRepository;
+
+        public List<SecurityAuditEvent> Events { get; } = [];
+
+        public async Task AddUserAsync(
+            User user,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            await _userRepository.AddAsync(user, cancellationToken);
+            Events.Add(auditEvent);
+        }
+
+        public async Task UpdateUserAsync(
+            User user,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            await _userRepository.UpdateAsync(user, cancellationToken);
+            Events.Add(auditEvent);
+        }
+
+        public Task<bool> AssignUserRoleAsync(
+            Guid userId,
+            Guid roleId,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
+        }
+
+        public Task<RoleAssignmentRemovalResult> RemoveUserRolePreservingPermissionHolderAsync(
+            Guid userId,
+            Guid roleId,
+            string protectedPermissionCode,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotSupportedException();
         }
     }
 

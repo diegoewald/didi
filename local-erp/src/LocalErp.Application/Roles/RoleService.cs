@@ -1,4 +1,5 @@
 using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Security;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
@@ -8,7 +9,10 @@ namespace LocalErp.Application.Roles;
 public sealed class RoleService(
     IRoleRepository roleRepository,
     IUserRepository userRepository,
-    IAuthorizationService authorizationService)
+    IAuthorizationService authorizationService,
+    IAdministrativeAuditStore administrativeAuditStore,
+    IUserSession session,
+    IClock clock)
 {
     private readonly IRoleRepository _roleRepository = roleRepository
         ?? throw new ArgumentNullException(nameof(roleRepository));
@@ -16,6 +20,10 @@ public sealed class RoleService(
         ?? throw new ArgumentNullException(nameof(userRepository));
     private readonly IAuthorizationService _authorizationService = authorizationService
         ?? throw new ArgumentNullException(nameof(authorizationService));
+    private readonly IAdministrativeAuditStore _administrativeAuditStore = administrativeAuditStore
+        ?? throw new ArgumentNullException(nameof(administrativeAuditStore));
+    private readonly IUserSession _session = session ?? throw new ArgumentNullException(nameof(session));
+    private readonly IClock _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
     public async Task<RoleResult> CreateAsync(
         string name,
@@ -112,7 +120,15 @@ public sealed class RoleService(
             throw new InvalidOperationException("Users cannot be assigned to inactive roles.");
         }
 
-        await _roleRepository.AssignUserAsync(user.Id, role.Id, cancellationToken);
+        var auditEvent = CreateRoleAuditEvent(
+            SecurityAuditCodes.AdministrationUserRoleAssigned,
+            user.Id,
+            role.Id);
+        await _administrativeAuditStore.AssignUserRoleAsync(
+            user.Id,
+            role.Id,
+            auditEvent,
+            cancellationToken);
     }
 
     public async Task RemoveUserAsync(
@@ -124,10 +140,15 @@ public sealed class RoleService(
         var user = await GetRequiredUserAsync(userId, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
 
-        var removalResult = await _roleRepository.RemoveUserPreservingPermissionHolderAsync(
+        var auditEvent = CreateRoleAuditEvent(
+            SecurityAuditCodes.AdministrationUserRoleRemoved,
+            user.Id,
+            role.Id);
+        var removalResult = await _administrativeAuditStore.RemoveUserRolePreservingPermissionHolderAsync(
             user.Id,
             role.Id,
             PermissionCatalog.RolesManage,
+            auditEvent,
             cancellationToken);
 
         if (removalResult == RoleAssignmentRemovalResult.WouldRemoveLastPermissionHolder)
@@ -156,6 +177,19 @@ public sealed class RoleService(
         await _roleRepository.UpdateAsync(role, cancellationToken);
         var permissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
         return RoleResult.FromDomain(role, permissions);
+    }
+
+    private SecurityAuditEvent CreateRoleAuditEvent(string eventCode, Guid userId, Guid roleId)
+    {
+        var actor = _session.CurrentUser
+            ?? throw new InvalidOperationException("Administrative operations require an authenticated user.");
+
+        return new SecurityAuditEvent(
+            _clock.UtcNow,
+            eventCode,
+            userId: userId,
+            actorUserId: actor.Id,
+            roleId: roleId);
     }
 
     private async Task<User> GetRequiredUserAsync(Guid userId, CancellationToken cancellationToken)

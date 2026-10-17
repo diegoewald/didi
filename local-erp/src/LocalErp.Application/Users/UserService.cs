@@ -1,4 +1,5 @@
 using LocalErp.Application.Abstractions.Persistence;
+using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Security;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Users;
@@ -9,7 +10,9 @@ public sealed class UserService(
     IUserRepository repository,
     IPasswordHashService passwordHashService,
     IAuthorizationService authorizationService,
-    IUserSession session)
+    IUserSession session,
+    IAdministrativeAuditStore administrativeAuditStore,
+    IClock clock)
 {
     private readonly IUserRepository _repository = repository
         ?? throw new ArgumentNullException(nameof(repository));
@@ -19,6 +22,9 @@ public sealed class UserService(
         ?? throw new ArgumentNullException(nameof(authorizationService));
     private readonly IUserSession _session = session
         ?? throw new ArgumentNullException(nameof(session));
+    private readonly IAdministrativeAuditStore _administrativeAuditStore = administrativeAuditStore
+        ?? throw new ArgumentNullException(nameof(administrativeAuditStore));
+    private readonly IClock _clock = clock ?? throw new ArgumentNullException(nameof(clock));
 
     public async Task<UserResult> CreateAsync(
         string username,
@@ -36,7 +42,8 @@ public sealed class UserService(
         }
 
         var user = new User(username, _passwordHashService.Hash(password));
-        await _repository.AddAsync(user, cancellationToken);
+        var auditEvent = CreateAdministrativeAuditEvent(SecurityAuditCodes.AdministrationUserCreated, user.Id);
+        await _administrativeAuditStore.AddUserAsync(user, auditEvent, cancellationToken);
         return UserResult.FromDomain(user);
     }
 
@@ -61,7 +68,10 @@ public sealed class UserService(
         var passwordHash = _passwordHashService.Hash(newPassword);
         user.ChangePasswordHash(passwordHash);
         user.ResetSignInFailures();
-        await _repository.UpdateAsync(user, cancellationToken);
+        var auditEvent = CreateAdministrativeAuditEvent(
+            SecurityAuditCodes.AdministrationUserPasswordReset,
+            user.Id);
+        await _administrativeAuditStore.UpdateUserAsync(user, auditEvent, cancellationToken);
         return UserResult.FromDomain(user);
     }
 
@@ -92,8 +102,25 @@ public sealed class UserService(
             user.Deactivate();
         }
 
-        await _repository.UpdateAsync(user, cancellationToken);
+        var auditEvent = CreateAdministrativeAuditEvent(
+            isActive
+                ? SecurityAuditCodes.AdministrationUserActivated
+                : SecurityAuditCodes.AdministrationUserDeactivated,
+            user.Id);
+        await _administrativeAuditStore.UpdateUserAsync(user, auditEvent, cancellationToken);
         return UserResult.FromDomain(user);
+    }
+
+    private SecurityAuditEvent CreateAdministrativeAuditEvent(string eventCode, Guid targetUserId)
+    {
+        var actor = _session.CurrentUser
+            ?? throw new InvalidOperationException("Administrative operations require an authenticated user.");
+
+        return new SecurityAuditEvent(
+            _clock.UtcNow,
+            eventCode,
+            userId: targetUserId,
+            actorUserId: actor.Id);
     }
 
     private async Task<User> GetRequiredAsync(Guid userId, CancellationToken cancellationToken)

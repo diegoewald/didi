@@ -8,6 +8,13 @@ public static class SecurityAuditCodes
     public const string AuthenticationThrottleApplied = "authentication.throttle.applied";
     public const string AuthenticationSignOut = "authentication.sign_out";
     public const string AdministratorBootstrapSucceeded = "authentication.bootstrap.succeeded";
+
+    public const string AdministrationUserCreated = "administration.user.created";
+    public const string AdministrationUserActivated = "administration.user.activated";
+    public const string AdministrationUserDeactivated = "administration.user.deactivated";
+    public const string AdministrationUserPasswordReset = "administration.user.password_reset";
+    public const string AdministrationUserRoleAssigned = "administration.user_role.assigned";
+    public const string AdministrationUserRoleRemoved = "administration.user_role.removed";
 }
 
 public static class SecurityAuditDetailCodes

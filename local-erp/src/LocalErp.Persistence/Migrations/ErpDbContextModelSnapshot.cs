@@ -80,6 +80,9 @@ namespace LocalErp.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("DetailCode")
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
@@ -92,6 +95,9 @@ namespace LocalErp.Persistence.Migrations
                     b.Property<DateTime>("OccurredAtUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid?>("RoleId")
+                        .HasColumnType("TEXT");
+
                     b.Property<Guid?>("UserId")
                         .HasColumnType("TEXT");
 
@@ -99,7 +105,11 @@ namespace LocalErp.Persistence.Migrations
 
                     b.HasIndex("OccurredAtUtc");
 
+                    b.HasIndex("ActorUserId", "OccurredAtUtc");
+
                     b.HasIndex("EventCode", "OccurredAtUtc");
+
+                    b.HasIndex("RoleId", "OccurredAtUtc");
 
                     b.HasIndex("UserId", "OccurredAtUtc");
 
@@ -169,6 +179,16 @@ namespace LocalErp.Persistence.Migrations
 
             modelBuilder.Entity("LocalErp.Domain.Security.SecurityAuditEvent", b =>
                 {
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("ActorUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("LocalErp.Domain.Security.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("LocalErp.Domain.Users.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
