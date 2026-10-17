@@ -11,14 +11,17 @@ namespace LocalErp.Desktop.Views;
 public partial class AdministrationUsersView : UserControl
 {
     private UserService? _userService;
+    private UserListItemViewModel? _passwordResetTarget;
     private bool _isCreating;
     private bool _isChangingStatus;
+    private bool _isResettingPassword;
 
     public AdministrationUsersView()
     {
         InitializeComponent();
         PasswordPolicyText.Text =
             $"Use entre {PasswordPolicy.MinimumLength} e {PasswordPolicy.MaximumLength} caracteres.";
+        ResetPasswordPolicyText.Text = PasswordPolicyText.Text;
     }
 
     public void Configure(UserService userService)
@@ -66,6 +69,7 @@ public partial class AdministrationUsersView : UserControl
             }
         }
 
+        ClosePasswordResetPanel();
         HideStatusMessages();
         _isChangingStatus = true;
         button.IsEnabled = false;
@@ -107,6 +111,102 @@ public partial class AdministrationUsersView : UserControl
             _isChangingStatus = false;
             button.IsEnabled = true;
             button.Content = user.StatusAction;
+        }
+    }
+
+    private void OpenPasswordReset_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isResettingPassword ||
+            sender is not Button button ||
+            button.DataContext is not UserListItemViewModel user)
+        {
+            return;
+        }
+
+        HideStatusMessages();
+        _passwordResetTarget = user;
+        PasswordResetTitle.Text = $"Redefinir senha — {user.Username}";
+        ResetPasswordInput.Clear();
+        ResetPasswordConfirmationInput.Clear();
+        HideResetPasswordError();
+        PasswordResetPanel.Visibility = Visibility.Visible;
+        ResetPasswordInput.Focus();
+    }
+
+    private async void ResetPasswordConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        await AttemptResetPasswordAsync();
+    }
+
+    private async void ResetPasswordConfirmationInput_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            await AttemptResetPasswordAsync();
+        }
+    }
+
+    private void ResetPasswordCancel_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_isResettingPassword)
+        {
+            ClosePasswordResetPanel();
+        }
+    }
+
+    private async Task AttemptResetPasswordAsync()
+    {
+        if (_isResettingPassword || _userService is null || _passwordResetTarget is null)
+        {
+            return;
+        }
+
+        HideResetPasswordError();
+
+        var password = ResetPasswordInput.Password;
+        var passwordConfirmation = ResetPasswordConfirmationInput.Password;
+        if (!string.Equals(password, passwordConfirmation, StringComparison.Ordinal))
+        {
+            ShowResetPasswordError("As senhas informadas não coincidem.");
+            ResetPasswordInput.Clear();
+            ResetPasswordConfirmationInput.Clear();
+            ResetPasswordInput.Focus();
+            return;
+        }
+
+        var target = _passwordResetTarget;
+        SetResetPasswordBusy(true);
+
+        try
+        {
+            var updated = await _userService.ChangePasswordAsync(target.Id, password);
+            ClosePasswordResetPanel();
+            ShowStatusSuccess(
+                $"Senha do usuário '{updated.Username}' redefinida com sucesso. Tentativas falhas e bloqueio temporário foram removidos.");
+        }
+        catch (AccessDeniedException)
+        {
+            ShowResetPasswordError("Você não tem permissão para redefinir senhas de usuários.");
+        }
+        catch (KeyNotFoundException)
+        {
+            ShowResetPasswordError("O usuário não foi encontrado. Atualize a lista e tente novamente.");
+        }
+        catch (ArgumentException)
+        {
+            ShowResetPasswordError("A nova senha não atende à política exigida.");
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Failed to reset user password from administration screen");
+            ShowResetPasswordError("Não foi possível redefinir a senha. Consulte os logs para detalhes técnicos.");
+        }
+        finally
+        {
+            ResetPasswordInput.Clear();
+            ResetPasswordConfirmationInput.Clear();
+            SetResetPasswordBusy(false);
         }
     }
 
@@ -180,6 +280,25 @@ public partial class AdministrationUsersView : UserControl
         CreateUserButton.Content = isBusy ? "Criando..." : "Criar usuário";
     }
 
+    private void SetResetPasswordBusy(bool isBusy)
+    {
+        _isResettingPassword = isBusy;
+        ResetPasswordInput.IsEnabled = !isBusy;
+        ResetPasswordConfirmationInput.IsEnabled = !isBusy;
+        ResetPasswordConfirmButton.IsEnabled = !isBusy;
+        ResetPasswordCancelButton.IsEnabled = !isBusy;
+        ResetPasswordConfirmButton.Content = isBusy ? "Redefinindo..." : "Redefinir senha";
+    }
+
+    private void ClosePasswordResetPanel()
+    {
+        _passwordResetTarget = null;
+        ResetPasswordInput.Clear();
+        ResetPasswordConfirmationInput.Clear();
+        HideResetPasswordError();
+        PasswordResetPanel.Visibility = Visibility.Collapsed;
+    }
+
     private void HideCreateMessages()
     {
         CreateErrorPanel.Visibility = Visibility.Collapsed;
@@ -222,5 +341,17 @@ public partial class AdministrationUsersView : UserControl
         StatusErrorPanel.Visibility = Visibility.Collapsed;
         StatusSuccessText.Text = message;
         StatusSuccessPanel.Visibility = Visibility.Visible;
+    }
+
+    private void HideResetPasswordError()
+    {
+        ResetPasswordErrorPanel.Visibility = Visibility.Collapsed;
+        ResetPasswordErrorText.Text = string.Empty;
+    }
+
+    private void ShowResetPasswordError(string message)
+    {
+        ResetPasswordErrorText.Text = message;
+        ResetPasswordErrorPanel.Visibility = Visibility.Visible;
     }
 }

@@ -14,6 +14,7 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <Grid Grid.Row="0" Margin="0,0,0,20">
@@ -92,7 +93,47 @@
         </Border>
       </StackPanel>
 
-      <Grid Grid.Row="5">
+      <Border x:Name="PasswordResetPanel" Grid.Row="5" Margin="0,0,0,18" Padding="16"
+              Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+              BorderThickness="1" CornerRadius="6" Visibility="Collapsed">
+        <StackPanel>
+          <TextBlock x:Name="PasswordResetTitle" FontSize="17" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
+          <TextBlock Text="Defina uma nova senha para a conta selecionada. A redefinição também remove tentativas falhas e bloqueio temporário de login, sem alterar se a conta está ativa ou inativa."
+                     Margin="0,4,0,14" Foreground="{StaticResource Brush.Muted}" TextWrapping="Wrap" />
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="230" />
+              <ColumnDefinition Width="230" />
+              <ColumnDefinition Width="Auto" />
+              <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+              <TextBlock Text="Nova senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
+              <PasswordBox x:Name="ResetPasswordInput" MaxLength="128" MinHeight="32" Padding="8,5" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+              <TextBlock Text="Confirmar nova senha" Margin="0,0,0,5" Foreground="{StaticResource Brush.Muted}" />
+              <PasswordBox x:Name="ResetPasswordConfirmationInput" MaxLength="128" MinHeight="32" Padding="8,5"
+                           KeyDown="ResetPasswordConfirmationInput_KeyDown" />
+            </StackPanel>
+            <Button x:Name="ResetPasswordConfirmButton" Grid.Column="2" Content="Redefinir senha"
+                    Click="ResetPasswordConfirm_Click" MinWidth="122" MinHeight="32" Padding="14,6"
+                    Margin="0,22,8,0" VerticalAlignment="Top" Cursor="Hand" />
+            <Button x:Name="ResetPasswordCancelButton" Grid.Column="3" Content="Cancelar"
+                    Click="ResetPasswordCancel_Click" MinWidth="88" MinHeight="32" Padding="14,6"
+                    Margin="0,22,0,0" VerticalAlignment="Top" Background="{StaticResource Brush.Surface}"
+                    BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
+                    Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
+          </Grid>
+          <TextBlock x:Name="ResetPasswordPolicyText" Margin="0,8,0,0" Foreground="{StaticResource Brush.Muted}" />
+          <Border x:Name="ResetPasswordErrorPanel" Margin="0,12,0,0" Padding="12,9" Background="#FFF4F2"
+                  BorderBrush="#E7C6C0" BorderThickness="1" CornerRadius="5" Visibility="Collapsed">
+            <TextBlock x:Name="ResetPasswordErrorText" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Grid Grid.Row="6">
         <Border Padding="28" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
                 BorderThickness="1" CornerRadius="6" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
           <StackPanel HorizontalAlignment="Center">
@@ -110,8 +151,8 @@
                     Background="Transparent" AlternatingRowBackground="#F8FAFC" HorizontalGridLinesBrush="{StaticResource Brush.Border}"
                     VerticalGridLinesBrush="Transparent">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="260" />
-              <DataGridTemplateColumn Header="Status" Width="140">
+              <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="240" />
+              <DataGridTemplateColumn Header="Status" Width="130">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Border Padding="9,3" CornerRadius="10" HorizontalAlignment="Left">
@@ -130,11 +171,26 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="Ação" Width="130">
+              <DataGridTemplateColumn Header="Conta" Width="125">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Button Content="{Binding StatusAction}"
                             Click="ToggleUserStatus_Click"
+                            Padding="11,5"
+                            MinWidth="88"
+                            Background="{StaticResource Brush.Surface}"
+                            BorderBrush="{StaticResource Brush.Border}"
+                            BorderThickness="1"
+                            Foreground="{StaticResource Brush.Text}"
+                            Cursor="Hand" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Senha" Width="145">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="Redefinir"
+                            Click="OpenPasswordReset_Click"
                             Padding="11,5"
                             MinWidth="88"
                             Background="{StaticResource Brush.Surface}"

@@ -58,7 +58,9 @@ public sealed class UserService(
         PasswordPolicy.Validate(newPassword);
 
         var user = await GetRequiredAsync(userId, cancellationToken);
-        user.ChangePasswordHash(_passwordHashService.Hash(newPassword));
+        var passwordHash = _passwordHashService.Hash(newPassword);
+        user.ChangePasswordHash(passwordHash);
+        user.ResetSignInFailures();
         await _repository.UpdateAsync(user, cancellationToken);
         return UserResult.FromDomain(user);
     }

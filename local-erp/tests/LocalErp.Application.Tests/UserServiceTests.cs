@@ -98,6 +98,55 @@ public sealed class UserServiceTests
     }
 
     [TestMethod]
+    public async Task ChangePasswordAsyncDemandsUsersManagePermission()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("target", "old-hash");
+        repository.Users.Add(user);
+        var authorization = new RecordingAuthorizationService();
+        var service = CreateService(repository, authorizationService: authorization);
+
+        await service.ChangePasswordAsync(user.Id, NewValidPassword);
+
+        Assert.AreEqual(PermissionCatalog.UsersManage, authorization.LastDemandedPermission);
+    }
+
+    [TestMethod]
+    public async Task ChangePasswordAsyncClearsSignInFailuresAndPreservesInactiveStatus()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("target", "old-hash");
+        user.RecordFailedSignIn(
+            new DateTime(2026, 10, 17, 21, 0, 0, DateTimeKind.Utc),
+            TimeSpan.FromMinutes(15));
+        user.Deactivate();
+        repository.Users.Add(user);
+        var service = CreateService(repository);
+
+        var result = await service.ChangePasswordAsync(user.Id, NewValidPassword);
+
+        Assert.AreEqual(0, user.FailedSignInCount);
+        Assert.IsNull(user.SignInBlockedUntilUtc);
+        Assert.IsFalse(user.IsActive);
+        Assert.IsFalse(result.IsActive);
+        Assert.AreEqual(1, repository.UpdateCount);
+    }
+
+    [TestMethod]
+    public async Task ChangePasswordAsyncDoesNotHashWhenUserDoesNotExist()
+    {
+        var repository = new InMemoryUserRepository();
+        var hashService = new RecordingPasswordHashService();
+        var service = CreateService(repository, hashService);
+
+        await Assert.ThrowsExactlyAsync<KeyNotFoundException>(
+            () => service.ChangePasswordAsync(Guid.NewGuid(), NewValidPassword));
+
+        Assert.IsNull(hashService.LastPassword);
+        Assert.AreEqual(0, repository.UpdateCount);
+    }
+
+    [TestMethod]
     public async Task ListAsyncExcludesInactiveUsersByDefault()
     {
         var repository = new InMemoryUserRepository();
