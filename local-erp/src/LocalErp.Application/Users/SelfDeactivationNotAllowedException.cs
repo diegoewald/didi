@@ -1,4 +1,9 @@
 namespace LocalErp.Application.Users;
 
-public sealed class SelfDeactivationNotAllowedException()
-    : InvalidOperationException("The authenticated user cannot deactivate their own account.");
+public sealed class SelfDeactivationNotAllowedException : InvalidOperationException
+{
+    public SelfDeactivationNotAllowedException()
+        : base("The authenticated user cannot deactivate their own account.")
+    {
+    }
+}
