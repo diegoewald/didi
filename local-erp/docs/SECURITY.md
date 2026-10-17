@@ -42,7 +42,8 @@ Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Man
 - o shell principal só abre com sessão autenticada;
 - logout limpa a sessão e retorna ao fluxo de login;
 - senhas da UI são lidas diretamente de `PasswordBox` e limpas após uso;
-- no fluxo administrativo de criação, a senha segue diretamente da View para `UserService.CreateAsync` e não passa pelo ViewModel;
+- criação e reset administrativo enviam a senha diretamente da View para `UserService`, sem propriedade ou método de senha no ViewModel;
+- confirmação de senha também permanece restrita aos `PasswordBox` da View;
 - senha, hash e confirmação de senha não são registrados em logs, sessão ou trilha de auditoria.
 
 ## Throttling e lockout
@@ -57,7 +58,8 @@ Política atual:
 - 5ª falha e seguintes: bloqueio de 15 minutos;
 - autenticação bem-sucedida zera contador e bloqueio;
 - tentativas durante um bloqueio ativo não aumentam o contador nem prolongam o bloqueio;
-- atualização do contador, rehash eventual e reset de sucesso usam transação SQLite não adiada para evitar corrida entre tentativas concorrentes.
+- atualização do contador, rehash eventual e reset de sucesso usam transação SQLite não adiada para evitar corrida entre tentativas concorrentes;
+- o reset administrativo de senha também zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização do usuário, para que a recuperação da credencial não deixe um lockout anterior ativo.
 
 A política é deliberadamente vinculada à conta. O bloqueio progressivo curto reduz brute force sem transformar cada tentativa durante um lockout em extensão indefinida, o que diminuiria resistência a negação de serviço direcionada.
 
@@ -101,6 +103,20 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 
 Não foi adicionada uma regra redundante de “último administrador” nesta fase. Para executar `SetActiveAsync`, o operador atual já precisa estar autenticado, ativo e autorizado com `users.manage`; como sua auto-inativação é bloqueada, desativar outra conta preserva ao menos esse operador. Quando a Parte E permitir remover roles/capacidades administrativas, ela deverá impedir a remoção da última capacidade administrativa efetiva, pois nesse ponto a salvaguarda passa a ser materialmente necessária.
 
+## Reset administrativo de senha
+
+`UserService.ChangePasswordAsync` é o caso de uso de recuperação administrativa de senha e exige `users.manage` na Application.
+
+- `PasswordPolicy` de 15–128 caracteres é aplicada antes do hashing;
+- o usuário alvo é carregado antes do hash; conta inexistente falha sem executar hashing desnecessário;
+- nova senha e confirmação existem apenas nos `PasswordBox`/variáveis transitórias da View e não passam pelo ViewModel;
+- os dois `PasswordBox` são limpos após a tentativa, inclusive em erro;
+- o novo hash, `FailedSignInCount = 0` e `SignInBlockedUntilUtc = null` são persistidos na mesma atualização da entidade `User`;
+- `IsActive` é preservado: redefinir a senha de uma conta inativa não a reativa implicitamente;
+- a View impede que reset de senha e alteração de status sejam iniciados concorrentemente, reduzindo ambiguidade de UX; essa serialização não substitui autorização nem invariantes da Application.
+
+Ainda não existe invalidação de sessões administrativas após troca de senha porque o modelo atual mantém apenas a sessão local em memória da instância em execução e não possui infraestrutura de sessões distribuídas/revogáveis. Não inferir uma capacidade de revogação que ainda não existe.
+
 ## Auditoria de autenticação
 
 A trilha de auditoria de autenticação está implementada por `SecurityAuditEvent` e `ISecurityAuditStore`, com persistência EF Core em `SecurityAuditEvents`.
@@ -143,7 +159,7 @@ A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, F
 
 Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
-Operações administrativas ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico durante as primeiras telas.
+Operações administrativas, incluindo criação, alteração de status e reset de senha, ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico durante as primeiras telas.
 
 ## Revisão final do slice de auditoria — 2026-10-16
 
@@ -169,19 +185,20 @@ Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robust
 - throttling/lockout persistente por conta concluído;
 - mitigação de timing por dummy password verification concluída;
 - trilha de auditoria de autenticação concluída;
-- administração de usuários Partes A, B e C concluídas: listagem, criação e ativação/desativação;
+- administração de usuários Partes A, B, C e D concluídas: listagem, criação, ativação/desativação e reset administrativo de senha;
 - auto-inativação da conta autenticada bloqueada na Application;
+- reset administrativo limpa tentativas falhas/bloqueio temporário sem reativar conta inativa;
 - política de senha central aplicada a bootstrap, criação e troca administrativa;
 - migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
 - benchmark reproduzível do hashing concluído no Windows CI;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 91/91;
+- suíte automatizada: 94/94;
 - `has-pending-model-changes`: sem mudanças pendentes;
 - cinco migrations: apply -> rollback 0 -> reapply validado;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
 - pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
 - pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado;
-- pendente funcional: auditoria das operações administrativas na Parte F.
+- pendente funcional: associação de roles na Parte E e auditoria das operações administrativas na Parte F.
 
 ## Dependências
 

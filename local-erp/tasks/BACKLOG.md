@@ -16,7 +16,9 @@
 - [x] Parte C — ativar/desativar usuário com `users.manage`;
 - [x] bloquear auto-inativação da conta autenticada na camada Application;
 - [x] exigir confirmação visual antes de desativar outra conta;
-- [ ] Parte D — reset administrativo de senha;
+- [x] Parte D — reset administrativo de senha com `users.manage`;
+- [x] reset administrativo limpa tentativas falhas/bloqueio temporário sem alterar status ativo/inativo;
+- [x] senha do reset permanece somente em `PasswordBox`/parâmetro transitório e é limpa após a tentativa;
 - [ ] Parte E — associar roles;
 - [ ] Parte F — auditar operações administrativas;
 - [ ] UI de administração de roles/permissões;
@@ -41,9 +43,9 @@
 - [x] ferramenta reproduzível de benchmark de password hashing;
 - [x] baseline de benchmark executado em Windows CI;
 - [x] revisão de segurança final do slice de auditoria/benchmark;
+- [x] recuperação/reset administrativo de senha com política segura;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
 - [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
-- [ ] recuperação/reset administrativo de senha com política segura;
 - [ ] auditar futuras operações administrativas críticas.
 
 ## P1 — Persistência
@@ -71,12 +73,14 @@
 
 ## Baseline atual — 2026-10-17
 
-O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação/status protegidos por `users.manage`, sempre na camada Application.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação/status/reset de senha protegidos por `users.manage`, sempre na camada Application.
 
-A Parte B usa `PasswordBox` diretamente na View para manter a senha fora do estado e dos métodos do ViewModel. A senha é enviada somente para `UserService.CreateAsync`, que aplica `PasswordPolicy`, faz hashing e rejeita duplicidade; os campos protegidos são limpos após a tentativa. `ChangePasswordAsync` também usa a mesma política central de 15–128 caracteres.
+A criação e o reset administrativo usam `PasswordBox` diretamente na View para manter senha e confirmação fora do estado e dos métodos do ViewModel. `UserService.CreateAsync` e `ChangePasswordAsync` aplicam a mesma `PasswordPolicy` de 15–128 caracteres antes do hashing.
 
 A Parte C usa `UserService.SetActiveAsync`. Desativação da própria conta autenticada é bloqueada antes de persistir a alteração; portanto, toda desativação autorizada de outra conta preserva o operador atual, que já precisou passar por `users.manage`. A UI pede confirmação antes de desativar e permite reativar contas inativas. Salvaguardas relacionadas à remoção da última role administrativa serão tratadas na Parte E, quando essa mutação existir.
 
-Baseline automatizado: 91/91 testes (Domain 19, Application 42, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A Parte D expõe `UserService.ChangePasswordAsync` na tabela administrativa. O reset exige confirmação da nova senha, limpa os dois `PasswordBox` após a tentativa e, ao persistir a nova senha, zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização. O status ativo/inativo da conta não é alterado e operações de status/reset são serializadas na View para evitar ações concorrentes sobre a mesma tela.
 
-Próxima tarefa funcional fechada: Parte D — reset administrativo de senha. Deve reutilizar `UserService.ChangePasswordAsync`, manter `users.manage` na Application, usar `PasswordBox` sem senha no ViewModel/log/sessão e exigir a mesma `PasswordPolicy` de 15–128 caracteres.
+Baseline automatizado: 94/94 testes (Domain 19, Application 45, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional: Parte E — associar roles. Antes de permitir remoção de roles/capacidades administrativas, implementar salvaguarda na Application contra remoção da última capacidade administrativa efetiva.

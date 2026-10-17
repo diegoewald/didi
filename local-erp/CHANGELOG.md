@@ -36,7 +36,9 @@ O projeto segue versionamento semântico.
 - testes explícitos para `users.manage` na criação e rejeição de senha abaixo da política em criação e troca administrativa;
 - ação WPF para ativar/desativar usuários com confirmação antes da desativação;
 - `SelfDeactivationNotAllowedException` para impedir auto-inativação administrativa na Application;
-- quatro testes de Application para autorização e mudanças de status de usuário.
+- quatro testes de Application para autorização e mudanças de status de usuário;
+- ação WPF de reset administrativo de senha com dois `PasswordBox`, confirmação e feedback dedicado;
+- três testes de Application cobrindo permissão do reset, limpeza de lockout preservando conta inativa e rejeição de usuário inexistente antes do hashing.
 
 ### Changed
 
@@ -56,7 +58,10 @@ O projeto segue versionamento semântico.
 - `UserService.CreateAsync` e `ChangePasswordAsync` passaram a aplicar a mesma `PasswordPolicy` de 15–128 caracteres usada pelo bootstrap;
 - a criação administrativa mantém a senha fora do ViewModel: a View lê `PasswordBox`, chama diretamente `UserService` e limpa os campos após a tentativa;
 - `UserService.SetActiveAsync` agora usa a sessão autenticada para impedir que o operador desative a própria conta antes da persistência;
-- a tabela administrativa atualiza imediatamente o status após ativação/desativação bem-sucedida.
+- a tabela administrativa atualiza imediatamente o status após ativação/desativação bem-sucedida;
+- `UserService.ChangePasswordAsync` agora limpa `FailedSignInCount` e `SignInBlockedUntilUtc` ao redefinir a senha, preservando `IsActive`;
+- o reset administrativo mantém senha e confirmação fora do ViewModel e limpa os campos protegidos após a tentativa;
+- ações de alteração de status e reset de senha são serializadas na View para impedir operações concorrentes na mesma tela.
 
 ### Validation
 
@@ -64,8 +69,8 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - build de `LocalErp.PasswordHashBenchmark`: 0 warnings / 0 errors;
-- suíte automatizada: 91/91;
-- Domain 19/19, Application 42/42, Persistence 24/24, Infrastructure 6/6;
+- suíte automatizada: 94/94;
+- Domain 19/19, Application 45/45, Persistence 24/24, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 5 migrations: apply -> rollback 0 -> reapply passando;
 - migration smoke inclui `SecurityAuditEvents` e a migration `20261016135247_AddSecurityAuditTrail`;
@@ -74,6 +79,7 @@ O projeto segue versionamento semântico.
 - administração de usuários Parte A: build WPF e regras de listagem/autorização validados no CI;
 - administração de usuários Parte B: criação protegida por `users.manage`, política de senha e fluxo WPF sem senha no ViewModel validados no CI;
 - administração de usuários Parte C: ativação/desativação protegida por `users.manage`, auto-inativação bloqueada e UI de status compilada no CI;
+- administração de usuários Parte D: reset protegido por `users.manage`, política de senha, desbloqueio administrativo preservando status e fluxo WPF sem senha no ViewModel validados no CI;
 - benchmark Windows CI com `IterationCount = 220000`: hash mediana 145.155 ms; verify success mediana 138.080 ms; verify failure mediana 141.959 ms;
 - smoke visual/interativo do fluxo WPF permanece obrigatório antes de release;
 - benchmark em hardware Windows representativo do ambiente final permanece recomendado antes de produção.
@@ -150,4 +156,15 @@ O projeto segue versionamento semântico.
 - desativação exige confirmação de UI;
 - `UserService.SetActiveAsync` impede auto-inativação antes de persistir;
 - quatro testes adicionais de Application elevaram a suíte para 91 testes;
+- nenhuma migration nova foi necessária.
+
+## Marco de administração de usuários — Parte D — 2026-10-17
+
+- a tabela administrativa permite redefinir a senha de uma conta por ação própria;
+- `UserService.ChangePasswordAsync` mantém `users.manage` e `PasswordPolicy` de 15–128 caracteres na Application;
+- nova senha e confirmação ficam fora do ViewModel e são limpas dos `PasswordBox` após cada tentativa;
+- o reset zera tentativas falhas e bloqueio temporário, mas preserva o status ativo/inativo;
+- usuário inexistente é rejeitado antes do hashing;
+- ações de status e reset foram serializadas na View após revisão de concorrência de UX;
+- três testes adicionais de Application elevaram a suíte para 94 testes;
 - nenhuma migration nova foi necessária.

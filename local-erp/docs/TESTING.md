@@ -38,10 +38,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 ## Baseline atual — 2026-10-17
 
 - Domain: 19/19.
-- Application: 42/42.
+- Application: 45/45.
 - Persistence: 24/24.
 - Infrastructure: 6/6.
-- Total automatizado: 91/91.
+- Total automatizado: 94/94.
 - Build Release: 0 warnings / 0 errors.
 - Build da ferramenta de benchmark: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
@@ -57,11 +57,14 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Administração Parte A: `ListAsync(includeInactive: true)` coberto e teste explícito garante demanda de `users.read`.
 - Administração Parte B: criação exige `users.manage`; senha curta é rejeitada antes do hash; troca administrativa também rejeita senha abaixo da política; duplicidade normalizada continua coberta.
 - Administração Parte C: mudança de status exige `users.manage`, ativa conta inativa, desativa outra conta ativa e rejeita auto-inativação antes de chamar `UpdateAsync`.
-- Desktop WPF: XAML/code-behind, navegação, formulário de criação, coluna de ação e confirmação de desativação compilados no Windows CI; senha da criação não passa pelo ViewModel.
+- Administração Parte D: reset de senha exige `users.manage`, limpa estado de falhas/lockout sem alterar `IsActive` e rejeita usuário inexistente antes do hashing.
+- Desktop WPF: XAML/code-behind, navegação, formulário de criação, ações de status e painel de reset de senha compilados no Windows CI; senhas de criação/reset não passam pelo ViewModel.
 
 Durante a Parte B houve uma falha intermediária de build por `CA1822` em uma propriedade de texto usada por binding. A correção preservou o analyzer ativo e o build subsequente voltou a 0 warnings / 0 errors; nenhuma regra foi desabilitada para obter CI verde.
 
 Na Parte C, um commit intermediário com sintaxe abreviada da exceção foi substituído antes da validação final por uma classe convencional. O run intermediário foi cancelado automaticamente quando a branch avançou; o baseline considera apenas o CI do HEAD final.
+
+Na Parte D, a revisão de UI identificou e corrigiu concorrência possível entre alteração de status e reset de senha. O HEAD funcional final serializa essas ações na View antes da documentação do marco.
 
 ## Benchmark Windows CI
 
@@ -86,12 +89,18 @@ O CI hospedado não substitui teste visual/interativo. Executar smoke manual em 
 - logout e retorno ao login;
 - abertura da Administração e renderização da lista de usuários;
 - criação de usuário válido e atualização imediata da tabela;
-- senha divergente, senha abaixo da política, usuário duplicado e acesso sem `users.manage`;
-- limpeza dos dois `PasswordBox` após tentativa;
+- senha divergente, senha abaixo da política, usuário duplicado e acesso sem `users.manage` na criação;
+- limpeza dos dois `PasswordBox` de criação após tentativa;
 - desativação de outra conta com confirmação e atualização imediata do status;
 - reativação de conta inativa;
 - tentativa de auto-inativação exibindo erro sem alterar a conta;
 - acesso sem `users.manage` ao alterar status;
+- abertura/cancelamento do painel de reset administrativo de senha;
+- reset válido de senha para conta ativa e para conta inativa, preservando o status;
+- senha divergente, senha abaixo da política, usuário removido durante a tela e acesso sem `users.manage` no reset;
+- limpeza dos dois `PasswordBox` de reset após tentativa;
+- conta previamente bloqueada conseguindo autenticar com a nova senha após reset administrativo;
+- impedir ação concorrente de status enquanto o reset está em andamento e vice-versa;
 - estados loading/erro/vazio da administração quando aplicáveis;
 - fechamento voluntário das janelas;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.

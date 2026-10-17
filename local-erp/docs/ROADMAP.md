@@ -65,7 +65,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] Parte A — listagem de usuários ativos e inativos protegida por `users.read`;
 - [x] Parte B — criar usuário protegido por `users.manage`, com senha fora do ViewModel;
 - [x] Parte C — ativar/desativar usuário protegido por `users.manage`, bloqueando auto-inativação;
-- [ ] Parte D — reset administrativo de senha;
+- [x] Parte D — reset administrativo de senha protegido por `users.manage`, sem senha no ViewModel;
 - [ ] Parte E — associar roles;
 - [ ] Parte F — auditar operações administrativas.
 
@@ -115,6 +115,14 @@ A tabela de usuários ganhou ação de ativar/desativar. `UserService.SetActiveA
 
 Não foi criada consulta artificial de “último administrador” neste slice: o próprio operador já precisa estar ativo e autorizado com `users.manage`, e sua auto-inativação é bloqueada. Assim, desativar outra conta não remove o último operador atual. A regra para não remover a última role/capacidade administrativa pertence à Parte E, quando associação e remoção de roles forem expostas.
 
-Nenhuma migration nova foi necessária. O baseline automatizado sobe para 91/91 testes, com quatro novos testes de Application cobrindo autorização, ativação, desativação de outra conta e bloqueio de auto-inativação.
+Nenhuma migration nova foi necessária. O baseline automatizado subiu para 91/91 testes, com quatro novos testes de Application cobrindo autorização, ativação, desativação de outra conta e bloqueio de auto-inativação.
 
-Próxima prioridade: Parte D — reset administrativo de senha, reutilizando `UserService.ChangePasswordAsync`, mantendo `users.manage` na Application e senha somente em `PasswordBox`.
+## Marco de administração de usuários — Parte D — 2026-10-17
+
+A tabela administrativa ganhou ação de redefinição de senha. A View abre um painel com dois `PasswordBox`, exige confirmação da nova senha, mantém senha/confirmação fora do ViewModel e limpa os campos após sucesso ou falha. Mudanças de status e reset de senha não podem ser disparadas concorrentemente na tela.
+
+`UserService.ChangePasswordAsync` continua exigindo `users.manage` e `PasswordPolicy` de 15–128 caracteres. Além de persistir o novo hash, o reset administrativo zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização, permitindo recuperação de conta bloqueada sem alterar `IsActive`. Usuário inexistente é rejeitado antes do hashing.
+
+Nenhuma migration nova foi necessária. O baseline automatizado subiu para 94/94 testes (Application 45/45), com cobertura explícita da permissão `users.manage`, limpeza do estado de lockout preservando conta inativa e ausência de hashing quando o usuário não existe.
+
+Próxima prioridade: Parte E — associação de roles. A remoção de role/capacidade administrativa deverá ser protegida na Application contra a eliminação da última capacidade administrativa efetiva.
