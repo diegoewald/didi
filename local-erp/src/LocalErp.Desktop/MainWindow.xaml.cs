@@ -1,4 +1,5 @@
 using System.Windows;
+using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
@@ -13,14 +14,16 @@ public partial class MainWindow : Window
     public MainWindow(
         MainWindowViewModel viewModel,
         AuthenticationService authenticationService,
-        UserService userService)
+        UserService userService,
+        RoleService roleService)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
         ArgumentNullException.ThrowIfNull(userService);
+        ArgumentNullException.ThrowIfNull(roleService);
 
         InitializeComponent();
-        AdministrationUsersPanel.Configure(userService);
+        AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
 

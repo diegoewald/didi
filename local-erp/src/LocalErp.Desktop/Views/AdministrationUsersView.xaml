@@ -6,7 +6,7 @@
   </UserControl.Resources>
 
   <ScrollViewer VerticalScrollBarVisibility="Auto">
-    <Grid Margin="28,26" MaxWidth="980" HorizontalAlignment="Left">
+    <Grid Margin="28,26" MaxWidth="1120" HorizontalAlignment="Left">
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
@@ -24,7 +24,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel>
           <TextBlock Text="Administração de usuários" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="Crie usuários e gerencie contas ativas ou inativas. Permissões e salvaguardas continuam sendo validadas na camada de aplicação."
+          <TextBlock Text="Crie usuários, gerencie contas, redefina senhas e associe roles. Permissões e salvaguardas continuam sendo validadas na camada de aplicação."
                      Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,0" FontSize="14" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="1" Content="Atualizar" Command="{Binding LoadCommand}" Padding="14,7" MinWidth="90"
@@ -151,8 +151,8 @@
                     Background="Transparent" AlternatingRowBackground="#F8FAFC" HorizontalGridLinesBrush="{StaticResource Brush.Border}"
                     VerticalGridLinesBrush="Transparent">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="240" />
-              <DataGridTemplateColumn Header="Status" Width="130">
+              <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="220" />
+              <DataGridTemplateColumn Header="Status" Width="120">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Border Padding="9,3" CornerRadius="10" HorizontalAlignment="Left">
@@ -171,7 +171,7 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="Conta" Width="125">
+              <DataGridTemplateColumn Header="Conta" Width="120">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Button Content="{Binding StatusAction}"
@@ -186,11 +186,26 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="Senha" Width="145">
+              <DataGridTemplateColumn Header="Senha" Width="130">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Button Content="Redefinir"
                             Click="OpenPasswordReset_Click"
+                            Padding="11,5"
+                            MinWidth="88"
+                            Background="{StaticResource Brush.Surface}"
+                            BorderBrush="{StaticResource Brush.Border}"
+                            BorderThickness="1"
+                            Foreground="{StaticResource Brush.Text}"
+                            Cursor="Hand" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Roles" Width="130">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="Gerenciar"
+                            Click="OpenRoleManagement_Click"
                             Padding="11,5"
                             MinWidth="88"
                             Background="{StaticResource Brush.Surface}"

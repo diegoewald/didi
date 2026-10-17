@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
@@ -11,6 +12,7 @@ namespace LocalErp.Desktop.Views;
 public partial class AdministrationUsersView : UserControl
 {
     private UserService? _userService;
+    private RoleService? _roleService;
     private UserListItemViewModel? _passwordResetTarget;
     private bool _isCreating;
     private bool _isChangingStatus;
@@ -24,9 +26,10 @@ public partial class AdministrationUsersView : UserControl
         ResetPasswordPolicyText.Text = PasswordPolicyText.Text;
     }
 
-    public void Configure(UserService userService)
+    public void Configure(UserService userService, RoleService roleService)
     {
         _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+        _roleService = roleService ?? throw new ArgumentNullException(nameof(roleService));
     }
 
     private async void CreateUser_Click(object sender, RoutedEventArgs e)
@@ -133,6 +136,31 @@ public partial class AdministrationUsersView : UserControl
         HideResetPasswordError();
         PasswordResetPanel.Visibility = Visibility.Visible;
         ResetPasswordInput.Focus();
+    }
+
+    private void OpenRoleManagement_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isCreating ||
+            _isChangingStatus ||
+            _isResettingPassword ||
+            _roleService is null ||
+            sender is not Button button ||
+            button.DataContext is not UserListItemViewModel user)
+        {
+            return;
+        }
+
+        ClosePasswordResetPanel();
+        HideStatusMessages();
+
+        var window = new UserRolesWindow(_roleService, user.Id, user.Username, user.IsActive);
+        var owner = Window.GetWindow(this);
+        if (owner is not null)
+        {
+            window.Owner = owner;
+        }
+
+        window.ShowDialog();
     }
 
     private async void ResetPasswordConfirm_Click(object sender, RoutedEventArgs e)

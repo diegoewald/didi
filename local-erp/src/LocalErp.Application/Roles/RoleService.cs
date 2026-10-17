@@ -1,6 +1,7 @@
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Security;
 using LocalErp.Domain.Security;
+using LocalErp.Domain.Users;
 
 namespace LocalErp.Application.Roles;
 
@@ -50,6 +51,20 @@ public sealed class RoleService(
         return results;
     }
 
+    public async Task<IReadOnlyList<UserRoleAssignmentResult>> ListUserAssignmentsAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        await _authorizationService.DemandAsync(PermissionCatalog.RolesRead, cancellationToken);
+        var user = await GetRequiredUserAsync(userId, cancellationToken);
+        var roles = await _roleRepository.ListAsync(includeInactive: true, cancellationToken);
+        var assignedRoleIds = (await _roleRepository.GetRoleIdsForUserAsync(user.Id, cancellationToken)).ToHashSet();
+
+        return roles
+            .Select(role => UserRoleAssignmentResult.FromDomain(role, assignedRoleIds.Contains(role.Id)))
+            .ToArray();
+    }
+
     public async Task<RoleResult> GrantPermissionAsync(
         Guid roleId,
         string permissionCode,
@@ -84,8 +99,7 @@ public sealed class RoleService(
         CancellationToken cancellationToken = default)
     {
         await _authorizationService.DemandAsync(PermissionCatalog.RolesManage, cancellationToken);
-        var user = await _userRepository.GetByIdAsync(userId, cancellationToken)
-            ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
+        var user = await GetRequiredUserAsync(userId, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
 
         if (!user.IsActive)
@@ -107,7 +121,19 @@ public sealed class RoleService(
         CancellationToken cancellationToken = default)
     {
         await _authorizationService.DemandAsync(PermissionCatalog.RolesManage, cancellationToken);
-        await _roleRepository.RemoveUserAsync(userId, roleId, cancellationToken);
+        var user = await GetRequiredUserAsync(userId, cancellationToken);
+        var role = await GetRequiredRoleAsync(roleId, cancellationToken);
+
+        var removalResult = await _roleRepository.RemoveUserPreservingPermissionHolderAsync(
+            user.Id,
+            role.Id,
+            PermissionCatalog.RolesManage,
+            cancellationToken);
+
+        if (removalResult == RoleAssignmentRemovalResult.WouldRemoveLastPermissionHolder)
+        {
+            throw new LastAdministrativeRoleAssignmentException();
+        }
     }
 
     public async Task<RoleResult> SetActiveAsync(
@@ -130,6 +156,17 @@ public sealed class RoleService(
         await _roleRepository.UpdateAsync(role, cancellationToken);
         var permissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
         return RoleResult.FromDomain(role, permissions);
+    }
+
+    private async Task<User> GetRequiredUserAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        if (userId == Guid.Empty)
+        {
+            throw new ArgumentException("User identifier cannot be empty.", nameof(userId));
+        }
+
+        return await _userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
     }
 
     private async Task<Role> GetRequiredRoleAsync(Guid roleId, CancellationToken cancellationToken)

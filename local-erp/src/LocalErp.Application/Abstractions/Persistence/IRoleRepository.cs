@@ -32,13 +32,18 @@ public interface IRoleRepository
         string permissionCode,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Guid>> GetRoleIdsForUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default);
+
     Task AssignUserAsync(
         Guid userId,
         Guid roleId,
         CancellationToken cancellationToken = default);
 
-    Task RemoveUserAsync(
+    Task<RoleAssignmentRemovalResult> RemoveUserPreservingPermissionHolderAsync(
         Guid userId,
         Guid roleId,
+        string protectedPermissionCode,
         CancellationToken cancellationToken = default);
 }
