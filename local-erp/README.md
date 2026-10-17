@@ -9,7 +9,7 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 94/94 testes passando
+- CI Windows: build Release com 0 warnings / 0 errors e 101/101 testes passando
 - Migrations: 5 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
@@ -26,21 +26,27 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 10. o `MainWindow` nunca é aberto quando não existe sessão autenticada;
 11. a área Administração lista usuários ativos/inativos por `users.read` e permite criar, ativar/desativar e redefinir senha por `users.manage`;
 12. a conta autenticada não pode desativar a si própria;
-13. reset administrativo de senha remove tentativas falhas e bloqueio temporário, mas preserva o status ativo/inativo da conta.
+13. reset administrativo de senha remove tentativas falhas e bloqueio temporário, mas preserva o status ativo/inativo da conta;
+14. a tabela permite abrir as roles de cada usuário; consulta exige `roles.read` e associação/remoção exige `roles.manage`;
+15. remover uma associação que eliminaria o último usuário ativo com capacidade efetiva de `roles.manage` é bloqueado atomicamente no SQLite.
 
 Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Criação e reset administrativo usam a política central de 15 a 128 caracteres antes do hashing.
 
 ## Administração de usuários
 
-As Partes A, B, C e D estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo e redefinir senhas.
+As Partes A, B, C, D e E estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
 
-A UI não substitui autorização: a listagem exige `users.read`; criação, alteração de status e reset administrativo de senha exigem `users.manage` na camada Application. As senhas de criação/reset não passam pelo ViewModel; o code-behind limita-se à captura/limpeza dos `PasswordBox`, confirmação/feedback de apresentação e chamada do `UserService`.
+A UI não substitui autorização: a listagem exige `users.read`; criação, alteração de status e reset administrativo de senha exigem `users.manage`; leitura das associações exige `roles.read`; atribuição e remoção de roles exigem `roles.manage` na camada Application.
 
 Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` bloqueia a auto-inativação da conta da sessão antes de persistir a alteração. Como o operador precisa estar autenticado e autorizado com `users.manage`, a desativação válida de outra conta preserva o operador atual.
 
 No reset administrativo, `UserService.ChangePasswordAsync` aplica `PasswordPolicy`, troca o hash e limpa `FailedSignInCount`/`SignInBlockedUntilUtc` na mesma atualização, sem alterar `IsActive`. A View serializa as ações de status e reset para evitar operações concorrentes na mesma tela.
 
-Próximas partes planejadas: associação de roles e auditoria das operações administrativas. A Parte E deverá proteger a remoção da última capacidade administrativa efetiva quando associação/remoção de roles forem expostas.
+Na Parte E, `RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção passa por `RemoveUserPreservingPermissionHolderAsync`: dentro de uma transação SQLite imediata, o ERP verifica se o vínculo contribui para `roles.manage` e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`. O teste de concorrência valida que duas remoções simultâneas dos dois últimos administradores não conseguem remover ambas.
+
+A proteção da Parte E cobre a mutação exposta neste slice: remoção de associação usuário↔role. A futura UI completa de roles/permissões deverá aplicar salvaguarda equivalente antes de expor desativação de role ou revogação de `roles.manage`.
+
+Próxima parte planejada: Parte F — auditoria das operações administrativas.
 
 ## Política de tentativas de login
 
@@ -139,7 +145,7 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-17
 
-A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação persistida por EF Core/SQLite, bloqueio de auto-inativação administrativa e recuperação administrativa de senha.
+A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação persistida por EF Core/SQLite, bloqueio de auto-inativação administrativa, recuperação administrativa de senha e associação segura de roles.
 
 A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
 

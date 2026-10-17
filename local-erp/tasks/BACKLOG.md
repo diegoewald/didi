@@ -19,9 +19,14 @@
 - [x] Parte D — reset administrativo de senha com `users.manage`;
 - [x] reset administrativo limpa tentativas falhas/bloqueio temporário sem alterar status ativo/inativo;
 - [x] senha do reset permanece somente em `PasswordBox`/parâmetro transitório e é limpa após a tentativa;
-- [ ] Parte E — associar roles;
+- [x] Parte E — associar/remover roles de usuários;
+- [x] exigir `roles.read` para consultar associações e `roles.manage` para mutá-las;
+- [x] impedir novas associações para usuário inativo ou role inativa, mantendo remoção de vínculos existentes;
+- [x] proteger atomicamente a remoção da última capacidade efetiva de `roles.manage`;
+- [x] validar concorrência de duas remoções administrativas preservando ao menos um administrador efetivo;
 - [ ] Parte F — auditar operações administrativas;
-- [ ] UI de administração de roles/permissões;
+- [ ] UI completa de administração de roles/permissões;
+- [ ] aplicar salvaguarda equivalente ao expor desativação de role ou revogação de `roles.manage` na UI completa de roles;
 - [ ] troca de senha pelo próprio usuário;
 - [ ] tela/consulta administrativa da trilha de auditoria quando houver necessidade operacional.
 
@@ -44,6 +49,7 @@
 - [x] baseline de benchmark executado em Windows CI;
 - [x] revisão de segurança final do slice de auditoria/benchmark;
 - [x] recuperação/reset administrativo de senha com política segura;
+- [x] salvaguarda contra remoção da última associação que sustenta `roles.manage` efetivo;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
 - [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
 - [ ] auditar futuras operações administrativas críticas.
@@ -59,7 +65,8 @@
 - [x] RBAC com FKs reais;
 - [x] bootstrap atômico com teste de concorrência;
 - [x] estado de throttling persistido com migration e transação SQLite não adiada;
-- [x] `SecurityAuditEvents` persistido com FK opcional e índices de consulta.
+- [x] `SecurityAuditEvents` persistido com FK opcional e índices de consulta;
+- [x] remoção protegida de user-role serializada por transação SQLite imediata.
 
 ## P2 — Engenharia
 
@@ -73,14 +80,18 @@
 
 ## Baseline atual — 2026-10-17
 
-O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação/status/reset de senha protegidos por `users.manage`, sempre na camada Application.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read`, criação/status/reset de senha protegidos por `users.manage`, consulta de associações por `roles.read` e mutação de associações por `roles.manage`, sempre com autoridade na camada Application.
 
 A criação e o reset administrativo usam `PasswordBox` diretamente na View para manter senha e confirmação fora do estado e dos métodos do ViewModel. `UserService.CreateAsync` e `ChangePasswordAsync` aplicam a mesma `PasswordPolicy` de 15–128 caracteres antes do hashing.
 
-A Parte C usa `UserService.SetActiveAsync`. Desativação da própria conta autenticada é bloqueada antes de persistir a alteração; portanto, toda desativação autorizada de outra conta preserva o operador atual, que já precisou passar por `users.manage`. A UI pede confirmação antes de desativar e permite reativar contas inativas. Salvaguardas relacionadas à remoção da última role administrativa serão tratadas na Parte E, quando essa mutação existir.
+A Parte C usa `UserService.SetActiveAsync`. Desativação da própria conta autenticada é bloqueada antes de persistir a alteração; a UI pede confirmação antes de desativar e permite reativar contas inativas.
 
-A Parte D expõe `UserService.ChangePasswordAsync` na tabela administrativa. O reset exige confirmação da nova senha, limpa os dois `PasswordBox` após a tentativa e, ao persistir a nova senha, zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização. O status ativo/inativo da conta não é alterado e operações de status/reset são serializadas na View para evitar ações concorrentes sobre a mesma tela.
+A Parte D expõe `UserService.ChangePasswordAsync` na tabela administrativa. O reset exige confirmação da nova senha, limpa os dois `PasswordBox` após a tentativa e, ao persistir a nova senha, zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização. O status ativo/inativo da conta não é alterado e operações de status/reset são serializadas na View.
 
-Baseline automatizado: 94/94 testes (Domain 19, Application 45, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A Parte E expõe uma janela modal de roles por usuário. `RoleService.ListUserAssignmentsAsync` exige `roles.read`; atribuição e remoção exigem `roles.manage`. Novos vínculos são rejeitados quando usuário ou role está inativo. Ao remover uma associação que sustenta `roles.manage`, `EfRoleRepository` usa uma transação SQLite imediata para verificar e preservar pelo menos um caminho efetivo composto por usuário ativo + role ativa + grant `roles.manage`. O teste concorrente comprova que duas remoções simultâneas dos dois últimos administradores não removem ambos.
 
-Próxima tarefa funcional: Parte E — associar roles. Antes de permitir remoção de roles/capacidades administrativas, implementar salvaguarda na Application contra remoção da última capacidade administrativa efetiva.
+A proteção atual cobre a remoção de associação usuário-role, que é a mutação exposta na Parte E. Quando a UI completa de roles/permissões expuser desativação de role ou revogação de `roles.manage`, essas operações deverão receber salvaguarda equivalente antes de serem consideradas prontas.
+
+Baseline automatizado: 101/101 testes (Domain 19, Application 49, Persistence 27, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional: Parte F — auditar operações administrativas críticas sem registrar senha, hash ou payload sensível e preservando atomicidade quando a operação alterar estado persistido.

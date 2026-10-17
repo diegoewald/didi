@@ -89,7 +89,9 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 - DTOs de resultado não expõem hash de senha;
 - a UI pode ocultar/desabilitar comandos, mas a Application continua sendo a autoridade de autorização;
 - listagem administrativa de usuários exige `users.read`;
-- criação e demais mutações administrativas existentes em `UserService` exigem `users.manage`.
+- criação e demais mutações administrativas existentes em `UserService` exigem `users.manage`;
+- leitura de associações usuário-role exige `roles.read`;
+- atribuição e remoção de associações usuário-role exigem `roles.manage`.
 
 ## Salvaguardas de status administrativo
 
@@ -101,7 +103,7 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 - a View pede confirmação explícita antes de desativar outra conta, mas essa confirmação é apenas proteção de UX e não substitui a regra da Application;
 - a reativação não depende de regra no WPF e também passa por `users.manage`.
 
-Não foi adicionada uma regra redundante de “último administrador” nesta fase. Para executar `SetActiveAsync`, o operador atual já precisa estar autenticado, ativo e autorizado com `users.manage`; como sua auto-inativação é bloqueada, desativar outra conta preserva ao menos esse operador. Quando a Parte E permitir remover roles/capacidades administrativas, ela deverá impedir a remoção da última capacidade administrativa efetiva, pois nesse ponto a salvaguarda passa a ser materialmente necessária.
+A auto-inativação permanece bloqueada porque poderia remover imediatamente a capacidade do operador atual. A proteção de último administrador para mutações de roles é tratada separadamente na Parte E, com base em capacidade efetiva e não apenas no nome de uma role.
 
 ## Reset administrativo de senha
 
@@ -116,6 +118,24 @@ Não foi adicionada uma regra redundante de “último administrador” nesta fa
 - a View impede que reset de senha e alteração de status sejam iniciados concorrentemente, reduzindo ambiguidade de UX; essa serialização não substitui autorização nem invariantes da Application.
 
 Ainda não existe invalidação de sessões administrativas após troca de senha porque o modelo atual mantém apenas a sessão local em memória da instância em execução e não possui infraestrutura de sessões distribuídas/revogáveis. Não inferir uma capacidade de revogação que ainda não existe.
+
+## Associação de roles e preservação administrativa
+
+A Parte E expõe associação e remoção de roles por usuário sem mover regras de segurança para o WPF.
+
+- `RoleService.ListUserAssignmentsAsync` exige `roles.read` e valida que o usuário alvo existe;
+- `RoleService.AssignUserAsync` exige `roles.manage`, rejeita usuário inativo e rejeita role inativa;
+- `RoleService.RemoveUserAsync` exige `roles.manage` e valida usuário/role antes de solicitar a remoção protegida;
+- associações já existentes podem ser removidas mesmo quando usuário ou role está inativo, permitindo limpeza administrativa sem conceder nova capacidade;
+- a capacidade administrativa protegida neste slice é `roles.manage`, porque ela autoriza as mutações de RBAC expostas pela Parte E.
+
+A remoção não usa uma checagem seguida de delete em contextos independentes. `EfRoleRepository.RemoveUserPreservingPermissionHolderAsync` abre uma transação SQLite imediata (`deferred: false`), obtendo serialização de escrita antes de avaliar a regra. Se o vínculo alvo participa de um caminho efetivo de `roles.manage`, a operação só continua quando existe outro caminho efetivo após excluir logicamente esse vínculo. “Efetivo” segue a mesma semântica da autorização: usuário ativo + role ativa + grant da permissão.
+
+Se a remoção eliminaria o último caminho, o repositório faz rollback e retorna `WouldRemoveLastPermissionHolder`; a Application converte esse resultado em `LastAdministrativeRoleAssignmentException`. Isso permite self-demotion quando outro administrador efetivo permanece e bloqueia a self-demotion quando ela eliminaria a capacidade administrativa final.
+
+A concorrência também é parte da regra: com dois últimos administradores e duas remoções simultâneas, a transação imediata serializa as decisões. O teste SQLite real confirma exatamente uma remoção permitida, uma rejeitada e uma associação administrativa restante.
+
+Escopo importante: este slice protege a remoção de associação usuário↔role, que é a mutação de RBAC atualmente exposta na Administração de usuários. `RoleService.SetActiveAsync` e `RoleService.RevokePermissionAsync` já existem como APIs internas do domínio de aplicação, mas ainda não são expostas pela UI completa de roles/permissões. Antes de expor desativação de role ou revogação de `roles.manage`, essas mutações deverão receber salvaguarda equivalente para não criar uma rota alternativa de perda da última capacidade administrativa.
 
 ## Auditoria de autenticação
 
@@ -159,7 +179,7 @@ A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, F
 
 Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
-Operações administrativas, incluindo criação, alteração de status e reset de senha, ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico durante as primeiras telas.
+Operações administrativas, incluindo criação, alteração de status, reset de senha e associação/remoção de roles, ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico.
 
 ## Revisão final do slice de auditoria — 2026-10-16
 
@@ -185,20 +205,23 @@ Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robust
 - throttling/lockout persistente por conta concluído;
 - mitigação de timing por dummy password verification concluída;
 - trilha de auditoria de autenticação concluída;
-- administração de usuários Partes A, B, C e D concluídas: listagem, criação, ativação/desativação e reset administrativo de senha;
+- administração de usuários Partes A, B, C, D e E concluídas: listagem, criação, ativação/desativação, reset administrativo e associação de roles;
 - auto-inativação da conta autenticada bloqueada na Application;
 - reset administrativo limpa tentativas falhas/bloqueio temporário sem reativar conta inativa;
+- remoção da última associação que sustenta `roles.manage` efetivo bloqueada atomicamente;
+- teste concorrente de remoção administrativa validado em SQLite real;
 - política de senha central aplicada a bootstrap, criação e troca administrativa;
 - migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
 - benchmark reproduzível do hashing concluído no Windows CI;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 94/94;
+- suíte automatizada: 101/101;
 - `has-pending-model-changes`: sem mudanças pendentes;
 - cinco migrations: apply -> rollback 0 -> reapply validado;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
 - pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
 - pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado;
-- pendente funcional: associação de roles na Parte E e auditoria das operações administrativas na Parte F.
+- pendente funcional: auditoria das operações administrativas na Parte F;
+- pendente para a futura UI completa de roles/permissões: aplicar a mesma proteção de última capacidade administrativa a desativação de role e revogação de `roles.manage`.
 
 ## Dependências
 

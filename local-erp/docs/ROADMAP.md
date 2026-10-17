@@ -66,7 +66,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] Parte B — criar usuário protegido por `users.manage`, com senha fora do ViewModel;
 - [x] Parte C — ativar/desativar usuário protegido por `users.manage`, bloqueando auto-inativação;
 - [x] Parte D — reset administrativo de senha protegido por `users.manage`, sem senha no ViewModel;
-- [ ] Parte E — associar roles;
+- [x] Parte E — associar/remover roles, com `roles.read`/`roles.manage` e proteção do último administrador efetivo;
 - [ ] Parte F — auditar operações administrativas.
 
 ## Fase 6 — Cadastros-base
@@ -84,7 +84,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fases posteriores
 
 - [ ] relatórios;
-- [ ] administração de roles/permissões;
+- [ ] administração completa de roles/permissões, incluindo proteção equivalente ao desativar role/revogar `roles.manage`;
 - [ ] auditoria administrativa e consulta/retenção operacional da trilha;
 - [ ] backup/restauração;
 - [ ] atualização com migration bundle e recuperação segura;
@@ -125,4 +125,14 @@ A tabela administrativa ganhou ação de redefinição de senha. A View abre um 
 
 Nenhuma migration nova foi necessária. O baseline automatizado subiu para 94/94 testes (Application 45/45), com cobertura explícita da permissão `users.manage`, limpeza do estado de lockout preservando conta inativa e ausência de hashing quando o usuário não existe.
 
-Próxima prioridade: Parte E — associação de roles. A remoção de role/capacidade administrativa deverá ser protegida na Application contra a eliminação da última capacidade administrativa efetiva.
+## Marco de administração de usuários — Parte E — 2026-10-17
+
+A tabela administrativa ganhou ação `Gerenciar` para roles. A janela modal lista roles ativas/inativas e a associação do usuário. `RoleService.ListUserAssignmentsAsync` exige `roles.read`; `AssignUserAsync` e `RemoveUserAsync` exigem `roles.manage`. Usuários inativos e roles inativas não recebem novas associações, mas vínculos existentes continuam removíveis.
+
+A remoção administrativa protege a capacidade raiz `roles.manage`. `EfRoleRepository.RemoveUserPreservingPermissionHolderAsync` executa em transação SQLite imediata: se o vínculo alvo participa de um caminho efetivo de administração, a exclusão só ocorre quando existe outro caminho formado por usuário ativo + role ativa + grant `roles.manage`. Assim, a regra é persistente e resistente a duas remoções concorrentes, não apenas uma validação de UI.
+
+Self-demotion é permitida quando outro administrador efetivo permanece; se não permanecer, a Application lança `LastAdministrativeRoleAssignmentException`. A futura administração completa de roles deverá aplicar proteção equivalente antes de permitir desativar uma role ou revogar seu `roles.manage`, pois essas mutações não são expostas neste slice.
+
+Nenhuma migration nova foi necessária. O baseline automatizado subiu para 101/101 testes (Domain 19, Application 49, Persistence 27, Infrastructure 6), incluindo teste concorrente que confirma exatamente uma remoção e um bloqueio quando dois últimos administradores são removidos simultaneamente.
+
+Próxima prioridade: Parte F — auditoria das operações administrativas, preservando privacidade e atomicidade das mutações críticas.
