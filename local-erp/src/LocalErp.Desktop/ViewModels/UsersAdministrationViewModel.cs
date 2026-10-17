@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
 using Serilog;
@@ -29,7 +28,6 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
     [ObservableProperty]
     private string? errorMessage;
 
-    [RelayCommand]
     public async Task LoadAsync()
     {
         if (IsLoading)
@@ -69,7 +67,7 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
         }
     }
 
-    public void ApplyCreatedUser(UserResult user)
+    public void ApplyUser(UserResult user)
     {
         ArgumentNullException.ThrowIfNull(user);
 
@@ -92,6 +90,8 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
         NotifyDerivedState();
     }
 
+    public void ApplyCreatedUser(UserResult user) => ApplyUser(user);
+
     partial void OnIsLoadingChanged(bool value) => NotifyDerivedState();
 
     partial void OnHasLoadedChanged(bool value) => NotifyDerivedState();
@@ -109,6 +109,8 @@ public partial class UsersAdministrationViewModel(UserService userService) : Obs
 public sealed record UserListItemViewModel(Guid Id, string Username, bool IsActive)
 {
     public string Status => IsActive ? "Ativo" : "Inativo";
+
+    public string StatusAction => IsActive ? "Desativar" : "Ativar";
 
     public static UserListItemViewModel FromResult(UserResult user)
     {

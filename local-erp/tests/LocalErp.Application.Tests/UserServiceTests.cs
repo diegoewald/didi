@@ -19,7 +19,7 @@ public sealed class UserServiceTests
     {
         var repository = new InMemoryUserRepository();
         var hashService = new RecordingPasswordHashService();
-        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+        var service = CreateService(repository, hashService);
 
         var result = await service.CreateAsync(" Diego ", ValidPassword);
 
@@ -34,7 +34,7 @@ public sealed class UserServiceTests
     {
         var repository = new InMemoryUserRepository();
         repository.Users.Add(new User("Diego", "existing-hash"));
-        var service = new UserService(repository, new RecordingPasswordHashService(), new AllowAllAuthorizationService());
+        var service = CreateService(repository);
 
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(
             () => service.CreateAsync("  DIEGO  ", AnotherValidPassword));
@@ -45,7 +45,7 @@ public sealed class UserServiceTests
     {
         var repository = new InMemoryUserRepository();
         var authorization = new RecordingAuthorizationService();
-        var service = new UserService(repository, new RecordingPasswordHashService(), authorization);
+        var service = CreateService(repository, authorizationService: authorization);
 
         await service.CreateAsync("diego", ValidPassword);
 
@@ -57,7 +57,7 @@ public sealed class UserServiceTests
     {
         var repository = new InMemoryUserRepository();
         var hashService = new RecordingPasswordHashService();
-        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+        var service = CreateService(repository, hashService);
 
         await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(
             () => service.CreateAsync("diego", "too-short"));
@@ -73,7 +73,7 @@ public sealed class UserServiceTests
         var user = new User("diego", "old-hash");
         repository.Users.Add(user);
         var hashService = new RecordingPasswordHashService();
-        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+        var service = CreateService(repository, hashService);
 
         var result = await service.ChangePasswordAsync(user.Id, NewValidPassword);
 
@@ -88,7 +88,7 @@ public sealed class UserServiceTests
         var user = new User("diego", "old-hash");
         repository.Users.Add(user);
         var hashService = new RecordingPasswordHashService();
-        var service = new UserService(repository, hashService, new AllowAllAuthorizationService());
+        var service = CreateService(repository, hashService);
 
         await Assert.ThrowsExactlyAsync<ArgumentOutOfRangeException>(
             () => service.ChangePasswordAsync(user.Id, "too-short"));
@@ -105,7 +105,7 @@ public sealed class UserServiceTests
         var inactive = new User("inactive", "hash");
         inactive.Deactivate();
         repository.Users.Add(inactive);
-        var service = new UserService(repository, new RecordingPasswordHashService(), new AllowAllAuthorizationService());
+        var service = CreateService(repository);
 
         var result = await service.ListAsync();
 
@@ -121,7 +121,7 @@ public sealed class UserServiceTests
         var inactive = new User("inactive", "hash");
         inactive.Deactivate();
         repository.Users.Add(inactive);
-        var service = new UserService(repository, new RecordingPasswordHashService(), new AllowAllAuthorizationService());
+        var service = CreateService(repository);
 
         var result = await service.ListAsync(includeInactive: true);
 
@@ -136,11 +136,92 @@ public sealed class UserServiceTests
         var repository = new InMemoryUserRepository();
         repository.Users.Add(new User("active", "hash"));
         var authorization = new RecordingAuthorizationService();
-        var service = new UserService(repository, new RecordingPasswordHashService(), authorization);
+        var service = CreateService(repository, authorizationService: authorization);
 
         await service.ListAsync(includeInactive: true);
 
         Assert.AreEqual(PermissionCatalog.UsersRead, authorization.LastDemandedPermission);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncDemandsUsersManagePermission()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("target", "hash");
+        repository.Users.Add(user);
+        var authorization = new RecordingAuthorizationService();
+        var service = CreateService(repository, authorizationService: authorization);
+
+        await service.SetActiveAsync(user.Id, false);
+
+        Assert.AreEqual(PermissionCatalog.UsersManage, authorization.LastDemandedPermission);
+        Assert.IsFalse(user.IsActive);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncDeactivatesAnotherUser()
+    {
+        var repository = new InMemoryUserRepository();
+        var actor = new User("actor", "hash");
+        var target = new User("target", "hash");
+        repository.Users.Add(actor);
+        repository.Users.Add(target);
+        var session = new TestUserSession();
+        session.SignIn(UserResult.FromDomain(actor));
+        var service = CreateService(repository, session: session);
+
+        var result = await service.SetActiveAsync(target.Id, false);
+
+        Assert.IsFalse(result.IsActive);
+        Assert.IsFalse(target.IsActive);
+        Assert.IsTrue(actor.IsActive);
+        Assert.AreEqual(1, repository.UpdateCount);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncActivatesInactiveUser()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("target", "hash");
+        user.Deactivate();
+        repository.Users.Add(user);
+        var service = CreateService(repository);
+
+        var result = await service.SetActiveAsync(user.Id, true);
+
+        Assert.IsTrue(result.IsActive);
+        Assert.IsTrue(user.IsActive);
+        Assert.AreEqual(1, repository.UpdateCount);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncRejectsSelfDeactivationBeforePersistence()
+    {
+        var repository = new InMemoryUserRepository();
+        var user = new User("actor", "hash");
+        repository.Users.Add(user);
+        var session = new TestUserSession();
+        session.SignIn(UserResult.FromDomain(user));
+        var service = CreateService(repository, session: session);
+
+        await Assert.ThrowsExactlyAsync<SelfDeactivationNotAllowedException>(
+            () => service.SetActiveAsync(user.Id, false));
+
+        Assert.IsTrue(user.IsActive);
+        Assert.AreEqual(0, repository.UpdateCount);
+    }
+
+    private static UserService CreateService(
+        InMemoryUserRepository repository,
+        IPasswordHashService? passwordHashService = null,
+        IAuthorizationService? authorizationService = null,
+        IUserSession? session = null)
+    {
+        return new UserService(
+            repository,
+            passwordHashService ?? new RecordingPasswordHashService(),
+            authorizationService ?? new AllowAllAuthorizationService(),
+            session ?? new TestUserSession());
     }
 
     private sealed class RecordingPasswordHashService : IPasswordHashService
@@ -183,9 +264,28 @@ public sealed class UserServiceTests
         }
     }
 
+    private sealed class TestUserSession : IUserSession
+    {
+        public bool IsAuthenticated => CurrentUser is not null;
+
+        public UserResult? CurrentUser { get; private set; }
+
+        public void SignIn(UserResult user)
+        {
+            CurrentUser = user ?? throw new ArgumentNullException(nameof(user));
+        }
+
+        public void SignOut()
+        {
+            CurrentUser = null;
+        }
+    }
+
     private sealed class InMemoryUserRepository : IUserRepository
     {
         public List<User> Users { get; } = [];
+
+        public int UpdateCount { get; private set; }
 
         public Task AddAsync(User user, CancellationToken cancellationToken = default)
         {
@@ -219,6 +319,7 @@ public sealed class UserServiceTests
 
         public Task UpdateAsync(User user, CancellationToken cancellationToken = default)
         {
+            UpdateCount++;
             return Task.CompletedTask;
         }
     }

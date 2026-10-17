@@ -13,6 +13,7 @@
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
         <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
       </Grid.RowDefinitions>
 
       <Grid Grid.Row="0" Margin="0,0,0,20">
@@ -22,7 +23,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel>
           <TextBlock Text="Administração de usuários" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="Crie usuários e consulte contas ativas ou inativas. Permissões continuam sendo validadas na camada de aplicação."
+          <TextBlock Text="Crie usuários e gerencie contas ativas ou inativas. Permissões e salvaguardas continuam sendo validadas na camada de aplicação."
                      Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,0" FontSize="14" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="1" Content="Atualizar" Command="{Binding LoadCommand}" Padding="14,7" MinWidth="90"
@@ -80,7 +81,18 @@
         <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
       </Border>
 
-      <Grid Grid.Row="4">
+      <StackPanel Grid.Row="4">
+        <Border x:Name="StatusErrorPanel" Margin="0,0,0,12" Padding="12,9" Background="#FFF4F2"
+                BorderBrush="#E7C6C0" BorderThickness="1" CornerRadius="5" Visibility="Collapsed">
+          <TextBlock x:Name="StatusErrorText" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
+        </Border>
+        <Border x:Name="StatusSuccessPanel" Margin="0,0,0,12" Padding="12,9" Background="#E9F6EF"
+                BorderBrush="#BFDCCB" BorderThickness="1" CornerRadius="5" Visibility="Collapsed">
+          <TextBlock x:Name="StatusSuccessText" TextWrapping="Wrap" Foreground="{StaticResource Brush.Text}" />
+        </Border>
+      </StackPanel>
+
+      <Grid Grid.Row="5">
         <Border Padding="28" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
                 BorderThickness="1" CornerRadius="6" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibilityConverter}}">
           <StackPanel HorizontalAlignment="Center">
@@ -99,7 +111,7 @@
                     VerticalGridLinesBrush="Transparent">
             <DataGrid.Columns>
               <DataGridTextColumn Header="Usuário" Binding="{Binding Username}" Width="*" MinWidth="260" />
-              <DataGridTemplateColumn Header="Status" Width="150">
+              <DataGridTemplateColumn Header="Status" Width="140">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Border Padding="9,3" CornerRadius="10" HorizontalAlignment="Left">
@@ -115,6 +127,21 @@
                       </Border.Style>
                       <TextBlock Text="{Binding Status}" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
                     </Border>
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Ação" Width="130">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="{Binding StatusAction}"
+                            Click="ToggleUserStatus_Click"
+                            Padding="11,5"
+                            MinWidth="88"
+                            Background="{StaticResource Brush.Surface}"
+                            BorderBrush="{StaticResource Brush.Border}"
+                            BorderThickness="1"
+                            Foreground="{StaticResource Brush.Text}"
+                            Cursor="Hand" />
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>

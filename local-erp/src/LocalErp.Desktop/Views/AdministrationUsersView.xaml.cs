@@ -12,6 +12,7 @@ public partial class AdministrationUsersView : UserControl
 {
     private UserService? _userService;
     private bool _isCreating;
+    private bool _isChangingStatus;
 
     public AdministrationUsersView()
     {
@@ -36,6 +37,76 @@ public partial class AdministrationUsersView : UserControl
         {
             e.Handled = true;
             await AttemptCreateUserAsync();
+        }
+    }
+
+    private async void ToggleUserStatus_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isChangingStatus ||
+            _userService is null ||
+            sender is not Button button ||
+            button.DataContext is not UserListItemViewModel user)
+        {
+            return;
+        }
+
+        var activate = !user.IsActive;
+        if (!activate)
+        {
+            var confirmation = MessageBox.Show(
+                $"Desativar o usuário '{user.Username}'? Ele não poderá entrar no ERP até ser reativado.",
+                "Confirmar desativação",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning,
+                MessageBoxResult.No);
+
+            if (confirmation != MessageBoxResult.Yes)
+            {
+                return;
+            }
+        }
+
+        HideStatusMessages();
+        _isChangingStatus = true;
+        button.IsEnabled = false;
+        button.Content = activate ? "Ativando..." : "Desativando...";
+
+        try
+        {
+            var updated = await _userService.SetActiveAsync(user.Id, activate);
+
+            if (DataContext is UsersAdministrationViewModel viewModel)
+            {
+                viewModel.ApplyUser(updated);
+            }
+
+            ShowStatusSuccess(
+                activate
+                    ? $"Usuário '{updated.Username}' ativado com sucesso."
+                    : $"Usuário '{updated.Username}' desativado com sucesso.");
+        }
+        catch (SelfDeactivationNotAllowedException)
+        {
+            ShowStatusError("A conta usada nesta sessão não pode ser desativada por ela mesma.");
+        }
+        catch (AccessDeniedException)
+        {
+            ShowStatusError("Você não tem permissão para alterar o status de usuários.");
+        }
+        catch (KeyNotFoundException)
+        {
+            ShowStatusError("O usuário não foi encontrado. Atualize a lista e tente novamente.");
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Failed to change user active status from administration screen");
+            ShowStatusError("Não foi possível alterar o status do usuário. Consulte os logs para detalhes técnicos.");
+        }
+        finally
+        {
+            _isChangingStatus = false;
+            button.IsEnabled = true;
+            button.Content = user.StatusAction;
         }
     }
 
@@ -129,5 +200,27 @@ public partial class AdministrationUsersView : UserControl
         CreateErrorPanel.Visibility = Visibility.Collapsed;
         CreateSuccessText.Text = message;
         CreateSuccessPanel.Visibility = Visibility.Visible;
+    }
+
+    private void HideStatusMessages()
+    {
+        StatusErrorPanel.Visibility = Visibility.Collapsed;
+        StatusSuccessPanel.Visibility = Visibility.Collapsed;
+        StatusErrorText.Text = string.Empty;
+        StatusSuccessText.Text = string.Empty;
+    }
+
+    private void ShowStatusError(string message)
+    {
+        StatusSuccessPanel.Visibility = Visibility.Collapsed;
+        StatusErrorText.Text = message;
+        StatusErrorPanel.Visibility = Visibility.Visible;
+    }
+
+    private void ShowStatusSuccess(string message)
+    {
+        StatusErrorPanel.Visibility = Visibility.Collapsed;
+        StatusSuccessText.Text = message;
+        StatusSuccessPanel.Visibility = Visibility.Visible;
     }
 }

@@ -1,14 +1,15 @@
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Security;
-using LocalErp.Domain.Users;
 using LocalErp.Domain.Security;
+using LocalErp.Domain.Users;
 
 namespace LocalErp.Application.Users;
 
 public sealed class UserService(
     IUserRepository repository,
     IPasswordHashService passwordHashService,
-    IAuthorizationService authorizationService)
+    IAuthorizationService authorizationService,
+    IUserSession session)
 {
     private readonly IUserRepository _repository = repository
         ?? throw new ArgumentNullException(nameof(repository));
@@ -16,6 +17,8 @@ public sealed class UserService(
         ?? throw new ArgumentNullException(nameof(passwordHashService));
     private readonly IAuthorizationService _authorizationService = authorizationService
         ?? throw new ArgumentNullException(nameof(authorizationService));
+    private readonly IUserSession _session = session
+        ?? throw new ArgumentNullException(nameof(session));
 
     public async Task<UserResult> CreateAsync(
         string username,
@@ -67,6 +70,16 @@ public sealed class UserService(
     {
         await _authorizationService.DemandAsync(PermissionCatalog.UsersManage, cancellationToken);
         var user = await GetRequiredAsync(userId, cancellationToken);
+
+        if (user.IsActive == isActive)
+        {
+            return UserResult.FromDomain(user);
+        }
+
+        if (!isActive && _session.CurrentUser?.Id == user.Id)
+        {
+            throw new SelfDeactivationNotAllowedException();
+        }
 
         if (isActive)
         {
