@@ -46,6 +46,7 @@ public partial class AdministrationUsersView : UserControl
     private async void ToggleUserStatus_Click(object sender, RoutedEventArgs e)
     {
         if (_isChangingStatus ||
+            _isResettingPassword ||
             _userService is null ||
             sender is not Button button ||
             button.DataContext is not UserListItemViewModel user)
@@ -116,7 +117,8 @@ public partial class AdministrationUsersView : UserControl
 
     private void OpenPasswordReset_Click(object sender, RoutedEventArgs e)
     {
-        if (_isResettingPassword ||
+        if (_isChangingStatus ||
+            _isResettingPassword ||
             sender is not Button button ||
             button.DataContext is not UserListItemViewModel user)
         {
