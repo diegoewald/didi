@@ -89,6 +89,18 @@ Essa técnica é uma mitigação, não uma promessa de tempo de execução matem
 - listagem administrativa de usuários exige `users.read`;
 - criação e demais mutações administrativas existentes em `UserService` exigem `users.manage`.
 
+## Salvaguardas de status administrativo
+
+`UserService.SetActiveAsync` exige `users.manage` e mantém as regras de status na Application.
+
+- ativação de conta inativa é permitida a operador autorizado;
+- desativação de outra conta ativa é permitida a operador autorizado;
+- desativação da própria conta autenticada lança `SelfDeactivationNotAllowedException` antes de persistir qualquer alteração;
+- a View pede confirmação explícita antes de desativar outra conta, mas essa confirmação é apenas proteção de UX e não substitui a regra da Application;
+- a reativação não depende de regra no WPF e também passa por `users.manage`.
+
+Não foi adicionada uma regra redundante de “último administrador” nesta fase. Para executar `SetActiveAsync`, o operador atual já precisa estar autenticado, ativo e autorizado com `users.manage`; como sua auto-inativação é bloqueada, desativar outra conta preserva ao menos esse operador. Quando a Parte E permitir remover roles/capacidades administrativas, ela deverá impedir a remoção da última capacidade administrativa efetiva, pois nesse ponto a salvaguarda passa a ser materialmente necessária.
+
 ## Auditoria de autenticação
 
 A trilha de auditoria de autenticação está implementada por `SecurityAuditEvent` e `ISecurityAuditStore`, com persistência EF Core em `SecurityAuditEvents`.
@@ -148,7 +160,7 @@ A revisão direta do código, migration e testes confirmou:
 
 Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robustez: os eventos standalone de conta inexistente, inativa ou já bloqueada são gravados por `ISecurityAuditStore.AppendAsync`; se essa persistência falhar, a exceção atualmente propaga. Isso permanece fail-closed e não cria bypass, mas acopla disponibilidade/UX desses caminhos ao armazenamento de auditoria. Avaliar tratamento best-effort ou política explícita antes de release, sem enfraquecer auditoria das operações que alteram estado.
 
-## Baseline validado — 2026-10-16
+## Baseline validado — 2026-10-17
 
 - bootstrap seguro do primeiro administrador concluído;
 - telas reais de configuração inicial e login concluídas;
@@ -157,12 +169,13 @@ Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robust
 - throttling/lockout persistente por conta concluído;
 - mitigação de timing por dummy password verification concluída;
 - trilha de auditoria de autenticação concluída;
-- administração de usuários Partes A e B concluídas: listagem e criação;
+- administração de usuários Partes A, B e C concluídas: listagem, criação e ativação/desativação;
+- auto-inativação da conta autenticada bloqueada na Application;
 - política de senha central aplicada a bootstrap, criação e troca administrativa;
 - migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
 - benchmark reproduzível do hashing concluído no Windows CI;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 87/87;
+- suíte automatizada: 91/91;
 - `has-pending-model-changes`: sem mudanças pendentes;
 - cinco migrations: apply -> rollback 0 -> reapply validado;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;

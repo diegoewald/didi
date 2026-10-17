@@ -9,7 +9,7 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 87/87 testes passando
+- CI Windows: build Release com 0 warnings / 0 errors e 91/91 testes passando
 - Migrations: 5 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
@@ -24,17 +24,20 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 8. eventos críticos de autenticação são registrados em `SecurityAuditEvents` sem senha, hash, token ou username digitado de conta inexistente;
 9. logout limpa a sessão e tenta registrar o evento de auditoria sem manter a sessão caso essa gravação falhe;
 10. o `MainWindow` nunca é aberto quando não existe sessão autenticada;
-11. a área Administração lista usuários ativos/inativos por `users.read` e permite criar usuários por `users.manage`.
+11. a área Administração lista usuários ativos/inativos por `users.read`, permite criar contas por `users.manage` e também ativar/desativar outras contas por `users.manage`;
+12. a conta autenticada não pode desativar a si própria.
 
 Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Criação e troca administrativa de senha usam a política central de 15 a 128 caracteres antes do hashing.
 
 ## Administração de usuários
 
-As Partes A e B estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro, lista vazia e tabela somente leitura, e também permite criar uma conta nova.
+As Partes A, B e C estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar uma conta nova e gerenciar o status ativo/inativo das contas.
 
-A UI não substitui autorização: a listagem exige `users.read` e a criação exige `users.manage` na camada Application. A senha da criação não passa pelo ViewModel; o code-behind limita-se à captura/limpeza dos `PasswordBox`, feedback de apresentação e chamada do `UserService`.
+A UI não substitui autorização: a listagem exige `users.read`; criação e alteração de status exigem `users.manage` na camada Application. A senha da criação não passa pelo ViewModel; o code-behind limita-se à captura/limpeza dos `PasswordBox`, confirmação/feedback de apresentação e chamada do `UserService`.
 
-Próximas partes planejadas: ativação/desativação, reset administrativo de senha, associação de roles e auditoria das operações administrativas.
+Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` bloqueia a auto-inativação da conta da sessão antes de persistir a alteração. Como o operador precisa estar autenticado e autorizado com `users.manage`, a desativação válida de outra conta preserva o operador atual. Salvaguardas para remoção da última role administrativa serão tratadas junto da associação de roles, quando essa mutação existir.
+
+Próximas partes planejadas: reset administrativo de senha, associação de roles e auditoria das operações administrativas.
 
 ## Política de tentativas de login
 
@@ -130,9 +133,9 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 - [Especificação mestre](docs/PROJECT-BRIEF.md)
 - [Protocolo do agente](SKILL.md)
 
-## Segurança — baseline de 2026-10-16
+## Segurança — baseline de 2026-10-17
 
-A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification e trilha de auditoria de autenticação persistida por EF Core/SQLite.
+A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação persistida por EF Core/SQLite e bloqueio de auto-inativação administrativa.
 
 A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
 

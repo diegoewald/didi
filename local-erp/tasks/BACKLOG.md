@@ -13,7 +13,9 @@
 - [x] Parte B — criar usuário com `users.manage`;
 - [x] aplicar `PasswordPolicy` de 15–128 caracteres em criação e troca administrativa de senha;
 - [x] manter senha fora de propriedades/métodos do ViewModel: `PasswordBox` envia diretamente para `UserService` e é limpo após a tentativa;
-- [ ] Parte C — ativar/desativar usuário;
+- [x] Parte C — ativar/desativar usuário com `users.manage`;
+- [x] bloquear auto-inativação da conta autenticada na camada Application;
+- [x] exigir confirmação visual antes de desativar outra conta;
 - [ ] Parte D — reset administrativo de senha;
 - [ ] Parte E — associar roles;
 - [ ] Parte F — auditar operações administrativas;
@@ -67,12 +69,14 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline atual — 2026-10-16
+## Baseline atual — 2026-10-17
 
-O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação protegida por `users.manage`, sempre na camada Application.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração de usuários possui listagem protegida por `users.read` e criação/status protegidos por `users.manage`, sempre na camada Application.
 
-A Parte B usa `PasswordBox` diretamente na View para manter a senha fora do estado e dos métodos do ViewModel. A senha é enviada somente para `UserService.CreateAsync`, que aplica `PasswordPolicy`, faz hashing e rejeita duplicidade; os campos protegidos são limpos após a tentativa. `ChangePasswordAsync` também passou a usar a mesma política central de 15–128 caracteres.
+A Parte B usa `PasswordBox` diretamente na View para manter a senha fora do estado e dos métodos do ViewModel. A senha é enviada somente para `UserService.CreateAsync`, que aplica `PasswordPolicy`, faz hashing e rejeita duplicidade; os campos protegidos são limpos após a tentativa. `ChangePasswordAsync` também usa a mesma política central de 15–128 caracteres.
 
-Baseline automatizado: 87/87 testes (Domain 19, Application 38, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A Parte C usa `UserService.SetActiveAsync`. Desativação da própria conta autenticada é bloqueada antes de persistir a alteração; portanto, toda desativação autorizada de outra conta preserva o operador atual, que já precisou passar por `users.manage`. A UI pede confirmação antes de desativar e permite reativar contas inativas. Salvaguardas relacionadas à remoção da última role administrativa serão tratadas na Parte E, quando essa mutação existir.
 
-Próxima tarefa funcional fechada: Parte C — ativar/desativar usuário. Antes de expor a ação na UI, revisar salvaguardas contra auto-inativação e perda acidental de acesso administrativo, sem inventar regra de negócio não suportada pelo modelo atual.
+Baseline automatizado: 91/91 testes (Domain 19, Application 42, Persistence 24, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional fechada: Parte D — reset administrativo de senha. Deve reutilizar `UserService.ChangePasswordAsync`, manter `users.manage` na Application, usar `PasswordBox` sem senha no ViewModel/log/sessão e exigir a mesma `PasswordPolicy` de 15–128 caracteres.

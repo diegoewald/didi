@@ -64,7 +64,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 - [x] Parte A — listagem de usuários ativos e inativos protegida por `users.read`;
 - [x] Parte B — criar usuário protegido por `users.manage`, com senha fora do ViewModel;
-- [ ] Parte C — ativar/desativar usuário;
+- [x] Parte C — ativar/desativar usuário protegido por `users.manage`, bloqueando auto-inativação;
 - [ ] Parte D — reset administrativo de senha;
 - [ ] Parte E — associar roles;
 - [ ] Parte F — auditar operações administrativas.
@@ -109,4 +109,12 @@ A mesma área permite criar contas com confirmação de senha. `UserService.Crea
 
 A senha é capturada e limpa em `PasswordBox`, segue diretamente da View para a camada Application e não passa pelo ViewModel. O resultado seguro da criação é o único dado encaminhado ao ViewModel para atualizar a tabela. Nenhuma migration nova foi necessária e o baseline subiu para 87/87 testes.
 
-Próxima prioridade: Parte C — ativar/desativar usuário. Antes de expor o comando, revisar salvaguardas contra auto-inativação e perda acidental de acesso administrativo dentro das regras suportadas pelo modelo atual.
+## Marco de administração de usuários — Parte C — 2026-10-17
+
+A tabela de usuários ganhou ação de ativar/desativar. `UserService.SetActiveAsync` continua exigindo `users.manage` na Application e rejeita a tentativa de desativar a própria conta da sessão antes de qualquer `UpdateAsync`. A View pede confirmação antes da desativação e apresenta feedback de sucesso/erro; reativação permanece disponível para contas inativas.
+
+Não foi criada consulta artificial de “último administrador” neste slice: o próprio operador já precisa estar ativo e autorizado com `users.manage`, e sua auto-inativação é bloqueada. Assim, desativar outra conta não remove o último operador atual. A regra para não remover a última role/capacidade administrativa pertence à Parte E, quando associação e remoção de roles forem expostas.
+
+Nenhuma migration nova foi necessária. O baseline automatizado sobe para 91/91 testes, com quatro novos testes de Application cobrindo autorização, ativação, desativação de outra conta e bloqueio de auto-inativação.
+
+Próxima prioridade: Parte D — reset administrativo de senha, reutilizando `UserService.ChangePasswordAsync`, mantendo `users.manage` na Application e senha somente em `PasswordBox`.
