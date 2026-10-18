@@ -146,6 +146,106 @@ public sealed class SqliteAdministrativeAuditStoreTests
             (await context.SecurityAuditEvents.SingleAsync()).EventCode);
     }
 
+    [TestMethod]
+    public async Task AddRoleAsyncRollsBackRoleWhenAuditActorForeignKeyFails()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var store = new SqliteAdministrativeAuditStore(database);
+        var role = new Role("Operators");
+        var auditEvent = new SecurityAuditEvent(
+            AuditTime,
+            SecurityAuditCodes.AdministrationRoleCreated,
+            actorUserId: Guid.NewGuid(),
+            roleId: role.Id);
+
+        await Assert.ThrowsExactlyAsync<DbUpdateException>(
+            () => store.AddRoleAsync(role, auditEvent));
+
+        await using var context = database.CreateDbContext();
+        Assert.AreEqual(0, await context.Roles.CountAsync());
+        Assert.AreEqual(0, await context.SecurityAuditEvents.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task DeactivateRoleBlocksLossOfLastEffectiveManagerWithoutAudit()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var users = new EfUserRepository(database);
+        var roles = new EfRoleRepository(database);
+        var store = new SqliteAdministrativeAuditStore(database);
+        var actor = new User("admin", "hash");
+        var role = new Role("Administrators");
+        await users.AddAsync(actor);
+        await roles.AddAsync(role);
+        await roles.GrantPermissionAsync(role.Id, PermissionCatalog.RolesManage);
+        await roles.AssignUserAsync(actor.Id, role.Id);
+        var auditEvent = new SecurityAuditEvent(
+            AuditTime,
+            SecurityAuditCodes.AdministrationRoleDeactivated,
+            actorUserId: actor.Id,
+            roleId: role.Id);
+
+        var result = await store.SetRoleActivePreservingPermissionHolderAsync(
+            role.Id,
+            false,
+            PermissionCatalog.RolesManage,
+            auditEvent);
+
+        Assert.AreEqual(ProtectedRoleMutationResult.WouldRemoveLastPermissionHolder, result);
+        var reloaded = await roles.GetByIdAsync(role.Id)
+            ?? throw new InvalidOperationException("Role disappeared after protected mutation.");
+        Assert.IsTrue(reloaded.IsActive);
+        await using var context = database.CreateDbContext();
+        Assert.AreEqual(0, await context.SecurityAuditEvents.CountAsync());
+    }
+
+    [TestMethod]
+    public async Task RevokeRolesManageSucceedsWhenAnotherEffectiveManagerRemainsAndAuditsPermission()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        var users = new EfUserRepository(database);
+        var roles = new EfRoleRepository(database);
+        var store = new SqliteAdministrativeAuditStore(database);
+        var firstUser = new User("admin-one", "hash");
+        var secondUser = new User("admin-two", "hash");
+        var firstRole = new Role("Administrators A");
+        var secondRole = new Role("Administrators B");
+        await users.AddAsync(firstUser);
+        await users.AddAsync(secondUser);
+        await roles.AddAsync(firstRole);
+        await roles.AddAsync(secondRole);
+        await roles.GrantPermissionAsync(firstRole.Id, PermissionCatalog.RolesManage);
+        await roles.GrantPermissionAsync(secondRole.Id, PermissionCatalog.RolesManage);
+        await roles.AssignUserAsync(firstUser.Id, firstRole.Id);
+        await roles.AssignUserAsync(secondUser.Id, secondRole.Id);
+        var auditEvent = new SecurityAuditEvent(
+            AuditTime,
+            SecurityAuditCodes.AdministrationRolePermissionRevoked,
+            detailCode: PermissionCatalog.RolesManage,
+            actorUserId: firstUser.Id,
+            roleId: firstRole.Id);
+
+        var result = await store.RevokeRolePermissionPreservingPermissionHolderAsync(
+            firstRole.Id,
+            PermissionCatalog.RolesManage,
+            PermissionCatalog.RolesManage,
+            auditEvent);
+
+        Assert.AreEqual(ProtectedRoleMutationResult.Changed, result);
+        CollectionAssert.DoesNotContain(
+            (System.Collections.ICollection)(await roles.GetPermissionsAsync(firstRole.Id)),
+            PermissionCatalog.RolesManage);
+        CollectionAssert.Contains(
+            (System.Collections.ICollection)(await roles.GetPermissionsAsync(secondRole.Id)),
+            PermissionCatalog.RolesManage);
+        await using var context = database.CreateDbContext();
+        var persistedAudit = await context.SecurityAuditEvents.SingleAsync();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationRolePermissionRevoked, persistedAudit.EventCode);
+        Assert.AreEqual(PermissionCatalog.RolesManage, persistedAudit.DetailCode);
+        Assert.AreEqual(firstRole.Id, persistedAudit.RoleId);
+        Assert.IsNull(persistedAudit.UserId);
+    }
+
     private sealed class TestDatabase : IDbContextFactory<ErpDbContext>, IAsyncDisposable
     {
         private readonly string _directory;

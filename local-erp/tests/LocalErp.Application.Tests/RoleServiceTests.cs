@@ -26,6 +26,27 @@ public sealed class RoleServiceTests
     }
 
     [TestMethod]
+    public async Task CreateAsyncAuditsActorAndCreatedRole()
+    {
+        var roles = new InMemoryRoleRepository();
+        var session = CreateAuthenticatedSession();
+        var auditStore = new InMemoryAdministrativeAuditStore(roles);
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            administrativeAuditStore: auditStore,
+            session: session);
+
+        var result = await service.CreateAsync("Operadores");
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationRoleCreated, auditEvent.EventCode);
+        Assert.AreEqual(result.Id, auditEvent.RoleId);
+        Assert.AreEqual(session.CurrentUser!.Id, auditEvent.ActorUserId);
+        Assert.IsNull(auditEvent.UserId);
+    }
+
+    [TestMethod]
     public async Task GrantPermissionAsyncIsIdempotentThroughRepositoryContract()
     {
         var roles = new InMemoryRoleRepository();
@@ -38,6 +59,75 @@ public sealed class RoleServiceTests
 
         Assert.AreEqual(1, result.Permissions.Count);
         Assert.AreEqual(PermissionCatalog.CompaniesRead, result.Permissions[0]);
+    }
+
+    [TestMethod]
+    public async Task GrantPermissionAsyncAuditsOnlyFirstGrantWithPermissionDetail()
+    {
+        var roles = new InMemoryRoleRepository();
+        var role = new Role("Operadores");
+        await roles.AddAsync(role);
+        var auditStore = new InMemoryAdministrativeAuditStore(roles);
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            administrativeAuditStore: auditStore);
+
+        await service.GrantPermissionAsync(role.Id, PermissionCatalog.CompaniesRead);
+        await service.GrantPermissionAsync(role.Id, PermissionCatalog.CompaniesRead);
+
+        var auditEvent = auditStore.Events.Single();
+        Assert.AreEqual(SecurityAuditCodes.AdministrationRolePermissionGranted, auditEvent.EventCode);
+        Assert.AreEqual(role.Id, auditEvent.RoleId);
+        Assert.AreEqual(PermissionCatalog.CompaniesRead, auditEvent.DetailCode);
+        Assert.IsNull(auditEvent.UserId);
+    }
+
+    [TestMethod]
+    public async Task RevokePermissionAsyncRejectsLossOfLastAdministrativeCapability()
+    {
+        var roles = new InMemoryRoleRepository();
+        var role = new Role("Administradores");
+        await roles.AddAsync(role);
+        await roles.GrantPermissionAsync(role.Id, PermissionCatalog.RolesManage);
+        var auditStore = new InMemoryAdministrativeAuditStore(roles)
+        {
+            NextProtectedRoleMutationResult = ProtectedRoleMutationResult.WouldRemoveLastPermissionHolder,
+        };
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            administrativeAuditStore: auditStore);
+
+        await Assert.ThrowsExactlyAsync<LastAdministrativeRoleCapabilityException>(
+            () => service.RevokePermissionAsync(role.Id, PermissionCatalog.RolesManage));
+
+        CollectionAssert.Contains(
+            (System.Collections.ICollection)(await roles.GetPermissionsAsync(role.Id)),
+            PermissionCatalog.RolesManage);
+        Assert.AreEqual(0, auditStore.Events.Count);
+    }
+
+    [TestMethod]
+    public async Task SetActiveAsyncRejectsLossOfLastAdministrativeCapability()
+    {
+        var roles = new InMemoryRoleRepository();
+        var role = new Role("Administradores");
+        await roles.AddAsync(role);
+        var auditStore = new InMemoryAdministrativeAuditStore(roles)
+        {
+            NextProtectedRoleMutationResult = ProtectedRoleMutationResult.WouldRemoveLastPermissionHolder,
+        };
+        var service = CreateService(
+            new RecordingAuthorizationService(),
+            roles,
+            administrativeAuditStore: auditStore);
+
+        await Assert.ThrowsExactlyAsync<LastAdministrativeRoleCapabilityException>(
+            () => service.SetActiveAsync(role.Id, false));
+
+        Assert.IsTrue(role.IsActive);
+        Assert.AreEqual(0, auditStore.Events.Count);
     }
 
     [TestMethod]
@@ -273,6 +363,9 @@ public sealed class RoleServiceTests
 
         public List<SecurityAuditEvent> Events { get; } = [];
 
+        public ProtectedRoleMutationResult NextProtectedRoleMutationResult { get; set; }
+            = ProtectedRoleMutationResult.Changed;
+
         public Task AddUserAsync(
             User user,
             SecurityAuditEvent auditEvent,
@@ -323,6 +416,92 @@ public sealed class RoleServiceTests
             }
 
             return result;
+        }
+
+        public async Task AddRoleAsync(
+            Role role,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            await _roleRepository.AddAsync(role, cancellationToken);
+            Events.Add(auditEvent);
+        }
+
+        public async Task<ProtectedRoleMutationResult> SetRoleActivePreservingPermissionHolderAsync(
+            Guid roleId,
+            bool isActive,
+            string protectedPermissionCode,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            PermissionCatalog.Validate(protectedPermissionCode);
+            var role = await _roleRepository.GetByIdAsync(roleId, cancellationToken)
+                ?? throw new KeyNotFoundException();
+            if (role.IsActive == isActive)
+            {
+                return ProtectedRoleMutationResult.Unchanged;
+            }
+
+            if (NextProtectedRoleMutationResult != ProtectedRoleMutationResult.Changed)
+            {
+                return NextProtectedRoleMutationResult;
+            }
+
+            if (isActive)
+            {
+                role.Activate();
+            }
+            else
+            {
+                role.Deactivate();
+            }
+
+            await _roleRepository.UpdateAsync(role, cancellationToken);
+            Events.Add(auditEvent);
+            return ProtectedRoleMutationResult.Changed;
+        }
+
+        public async Task<bool> GrantRolePermissionAsync(
+            Guid roleId,
+            string permissionCode,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedPermission = PermissionCatalog.Validate(permissionCode);
+            var permissions = await _roleRepository.GetPermissionsAsync(roleId, cancellationToken);
+            if (permissions.Contains(normalizedPermission, StringComparer.Ordinal))
+            {
+                return false;
+            }
+
+            await _roleRepository.GrantPermissionAsync(roleId, normalizedPermission, cancellationToken);
+            Events.Add(auditEvent);
+            return true;
+        }
+
+        public async Task<ProtectedRoleMutationResult> RevokeRolePermissionPreservingPermissionHolderAsync(
+            Guid roleId,
+            string permissionCode,
+            string protectedPermissionCode,
+            SecurityAuditEvent auditEvent,
+            CancellationToken cancellationToken = default)
+        {
+            var normalizedPermission = PermissionCatalog.Validate(permissionCode);
+            PermissionCatalog.Validate(protectedPermissionCode);
+            var permissions = await _roleRepository.GetPermissionsAsync(roleId, cancellationToken);
+            if (!permissions.Contains(normalizedPermission, StringComparer.Ordinal))
+            {
+                return ProtectedRoleMutationResult.Unchanged;
+            }
+
+            if (NextProtectedRoleMutationResult != ProtectedRoleMutationResult.Changed)
+            {
+                return NextProtectedRoleMutationResult;
+            }
+
+            await _roleRepository.RevokePermissionAsync(roleId, normalizedPermission, cancellationToken);
+            Events.Add(auditEvent);
+            return ProtectedRoleMutationResult.Changed;
         }
     }
 

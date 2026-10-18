@@ -15,6 +15,11 @@ public static class SecurityAuditCodes
     public const string AdministrationUserPasswordReset = "administration.user.password_reset";
     public const string AdministrationUserRoleAssigned = "administration.user_role.assigned";
     public const string AdministrationUserRoleRemoved = "administration.user_role.removed";
+    public const string AdministrationRoleCreated = "administration.role.created";
+    public const string AdministrationRoleActivated = "administration.role.activated";
+    public const string AdministrationRoleDeactivated = "administration.role.deactivated";
+    public const string AdministrationRolePermissionGranted = "administration.role_permission.granted";
+    public const string AdministrationRolePermissionRevoked = "administration.role_permission.revoked";
 }
 
 public static class SecurityAuditDetailCodes

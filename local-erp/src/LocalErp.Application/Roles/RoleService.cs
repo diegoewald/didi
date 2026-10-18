@@ -38,7 +38,8 @@ public sealed class RoleService(
         }
 
         var role = new Role(name);
-        await _roleRepository.AddAsync(role, cancellationToken);
+        var auditEvent = CreateRoleAuditEvent(SecurityAuditCodes.AdministrationRoleCreated, role.Id);
+        await _administrativeAuditStore.AddRoleAsync(role, auditEvent, cancellationToken);
         return RoleResult.FromDomain(role, []);
     }
 
@@ -81,8 +82,16 @@ public sealed class RoleService(
         await _authorizationService.DemandAsync(PermissionCatalog.RolesManage, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
         var normalizedPermission = PermissionCatalog.Validate(permissionCode);
+        var auditEvent = CreateRoleAuditEvent(
+            SecurityAuditCodes.AdministrationRolePermissionGranted,
+            role.Id,
+            normalizedPermission);
 
-        await _roleRepository.GrantPermissionAsync(role.Id, normalizedPermission, cancellationToken);
+        await _administrativeAuditStore.GrantRolePermissionAsync(
+            role.Id,
+            normalizedPermission,
+            auditEvent,
+            cancellationToken);
         var permissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
         return RoleResult.FromDomain(role, permissions);
     }
@@ -95,8 +104,22 @@ public sealed class RoleService(
         await _authorizationService.DemandAsync(PermissionCatalog.RolesManage, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
         var normalizedPermission = PermissionCatalog.Validate(permissionCode);
+        var auditEvent = CreateRoleAuditEvent(
+            SecurityAuditCodes.AdministrationRolePermissionRevoked,
+            role.Id,
+            normalizedPermission);
 
-        await _roleRepository.RevokePermissionAsync(role.Id, normalizedPermission, cancellationToken);
+        var result = await _administrativeAuditStore.RevokeRolePermissionPreservingPermissionHolderAsync(
+            role.Id,
+            normalizedPermission,
+            PermissionCatalog.RolesManage,
+            auditEvent,
+            cancellationToken);
+        if (result == ProtectedRoleMutationResult.WouldRemoveLastPermissionHolder)
+        {
+            throw new LastAdministrativeRoleCapabilityException();
+        }
+
         var permissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
         return RoleResult.FromDomain(role, permissions);
     }
@@ -120,7 +143,7 @@ public sealed class RoleService(
             throw new InvalidOperationException("Users cannot be assigned to inactive roles.");
         }
 
-        var auditEvent = CreateRoleAuditEvent(
+        var auditEvent = CreateUserRoleAuditEvent(
             SecurityAuditCodes.AdministrationUserRoleAssigned,
             user.Id,
             role.Id);
@@ -140,7 +163,7 @@ public sealed class RoleService(
         var user = await GetRequiredUserAsync(userId, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
 
-        var auditEvent = CreateRoleAuditEvent(
+        var auditEvent = CreateUserRoleAuditEvent(
             SecurityAuditCodes.AdministrationUserRoleRemoved,
             user.Id,
             role.Id);
@@ -164,22 +187,50 @@ public sealed class RoleService(
     {
         await _authorizationService.DemandAsync(PermissionCatalog.RolesManage, cancellationToken);
         var role = await GetRequiredRoleAsync(roleId, cancellationToken);
-
-        if (isActive)
+        if (role.IsActive == isActive)
         {
-            role.Activate();
-        }
-        else
-        {
-            role.Deactivate();
+            var currentPermissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
+            return RoleResult.FromDomain(role, currentPermissions);
         }
 
-        await _roleRepository.UpdateAsync(role, cancellationToken);
+        var auditEvent = CreateRoleAuditEvent(
+            isActive
+                ? SecurityAuditCodes.AdministrationRoleActivated
+                : SecurityAuditCodes.AdministrationRoleDeactivated,
+            role.Id);
+        var result = await _administrativeAuditStore.SetRoleActivePreservingPermissionHolderAsync(
+            role.Id,
+            isActive,
+            PermissionCatalog.RolesManage,
+            auditEvent,
+            cancellationToken);
+        if (result == ProtectedRoleMutationResult.WouldRemoveLastPermissionHolder)
+        {
+            throw new LastAdministrativeRoleCapabilityException();
+        }
+
+        role = await GetRequiredRoleAsync(role.Id, cancellationToken);
         var permissions = await _roleRepository.GetPermissionsAsync(role.Id, cancellationToken);
         return RoleResult.FromDomain(role, permissions);
     }
 
-    private SecurityAuditEvent CreateRoleAuditEvent(string eventCode, Guid userId, Guid roleId)
+    private SecurityAuditEvent CreateRoleAuditEvent(
+        string eventCode,
+        Guid roleId,
+        string? detailCode = null)
+    {
+        var actor = _session.CurrentUser
+            ?? throw new InvalidOperationException("Administrative operations require an authenticated user.");
+
+        return new SecurityAuditEvent(
+            _clock.UtcNow,
+            eventCode,
+            detailCode: detailCode,
+            actorUserId: actor.Id,
+            roleId: roleId);
+    }
+
+    private SecurityAuditEvent CreateUserRoleAuditEvent(string eventCode, Guid userId, Guid roleId)
     {
         var actor = _session.CurrentUser
             ?? throw new InvalidOperationException("Administrative operations require an authenticated user.");
