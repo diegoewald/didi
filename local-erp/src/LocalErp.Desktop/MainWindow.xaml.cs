@@ -3,6 +3,7 @@ using LocalErp.Application.Account;
 using LocalErp.Application.Companies;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
+using LocalErp.Application.Suppliers;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
 using Serilog;
@@ -20,6 +21,7 @@ public partial class MainWindow : Window
         AccountService accountService,
         CompanyService companyService,
         CompanyBranchService companyBranchService,
+        SupplierService supplierService,
         UserService userService,
         RoleService roleService)
     {
@@ -28,16 +30,31 @@ public partial class MainWindow : Window
         _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
         ArgumentNullException.ThrowIfNull(companyService);
         ArgumentNullException.ThrowIfNull(companyBranchService);
+        ArgumentNullException.ThrowIfNull(supplierService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
         InitializeComponent();
         CompaniesCatalogPanel.Configure(companyService, companyBranchService);
+        SuppliersCatalogPanel.Configure(supplierService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
 
     public bool LogoutRequested { get; private set; }
+
+    private async void CatalogsTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!ReferenceEquals(e.Source, CatalogsTabControl) || CatalogsTabControl.SelectedIndex != 1)
+        {
+            return;
+        }
+
+        if (DataContext is MainWindowViewModel viewModel && !viewModel.SuppliersCatalog.HasLoaded)
+        {
+            await viewModel.SuppliersCatalog.LoadAsync();
+        }
+    }
 
     private void ChangePassword_Click(object sender, RoutedEventArgs e)
     {

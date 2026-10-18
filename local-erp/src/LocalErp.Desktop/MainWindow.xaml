@@ -147,18 +147,24 @@
           </StackPanel>
         </ScrollViewer>
 
-        <views:CompaniesCatalogView x:Name="CompaniesCatalogPanel" DataContext="{Binding CompaniesCatalog}">
-          <views:CompaniesCatalogView.Style>
-            <Style TargetType="{x:Type views:CompaniesCatalogView}">
+        <TabControl x:Name="CatalogsTabControl" SelectionChanged="CatalogsTabControl_SelectionChanged">
+          <TabControl.Style>
+            <Style TargetType="TabControl">
               <Setter Property="Visibility" Value="Collapsed" />
               <Style.Triggers>
-                <DataTrigger Binding="{Binding DataContext.IsCatalogsSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True">
                   <Setter Property="Visibility" Value="Visible" />
                 </DataTrigger>
               </Style.Triggers>
             </Style>
-          </views:CompaniesCatalogView.Style>
-        </views:CompaniesCatalogView>
+          </TabControl.Style>
+          <TabItem Header="Empresas">
+            <views:CompaniesCatalogView x:Name="CompaniesCatalogPanel" DataContext="{Binding CompaniesCatalog}" />
+          </TabItem>
+          <TabItem Header="Fornecedores">
+            <views:SuppliersCatalogView x:Name="SuppliersCatalogPanel" DataContext="{Binding SuppliersCatalog}" />
+          </TabItem>
+        </TabControl>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
           <views:AdministrationUsersView.Style>
