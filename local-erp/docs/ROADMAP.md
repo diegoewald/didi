@@ -67,7 +67,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] Parte C — ativar/desativar usuário protegido por `users.manage`, bloqueando auto-inativação;
 - [x] Parte D — reset administrativo de senha protegido por `users.manage`, sem senha no ViewModel;
 - [x] Parte E — associar/remover roles, com `roles.read`/`roles.manage` e proteção do último administrador efetivo;
-- [ ] Parte F — auditar operações administrativas.
+- [x] Parte F — auditar atomicamente as mutações administrativas expostas, distinguindo ator e alvo.
 
 ## Fase 6 — Cadastros-base
 
@@ -84,8 +84,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fases posteriores
 
 - [ ] relatórios;
-- [ ] administração completa de roles/permissões, incluindo proteção equivalente ao desativar role/revogar `roles.manage`;
-- [ ] auditoria administrativa e consulta/retenção operacional da trilha;
+- [ ] administração completa de roles/permissões, incluindo proteção equivalente ao desativar role/revogar `roles.manage` e auditoria atômica dessas mutações;
+- [ ] troca de senha pelo próprio usuário;
+- [ ] consulta/retenção operacional da trilha de auditoria;
 - [ ] backup/restauração;
 - [ ] atualização com migration bundle e recuperação segura;
 - [ ] instalador;
@@ -111,7 +112,7 @@ A senha é capturada e limpa em `PasswordBox`, segue diretamente da View para a 
 
 ## Marco de administração de usuários — Parte C — 2026-10-17
 
-A tabela de usuários ganhou ação de ativar/desativar. `UserService.SetActiveAsync` continua exigindo `users.manage` na Application e rejeita a tentativa de desativar a própria conta da sessão antes de qualquer `UpdateAsync`. A View pede confirmação antes da desativação e apresenta feedback de sucesso/erro; reativação permanece disponível para contas inativas.
+A tabela de usuários ganhou ação de ativar/desativar. `UserService.SetActiveAsync` continua exigindo `users.manage` na Application e rejeita a tentativa de desativar a própria conta da sessão antes de qualquer persistência. A View pede confirmação antes da desativação e apresenta feedback de sucesso/erro; reativação permanece disponível para contas inativas.
 
 Não foi criada consulta artificial de “último administrador” neste slice: o próprio operador já precisa estar ativo e autorizado com `users.manage`, e sua auto-inativação é bloqueada. Assim, desativar outra conta não remove o último operador atual. A regra para não remover a última role/capacidade administrativa pertence à Parte E, quando associação e remoção de roles forem expostas.
 
@@ -129,10 +130,20 @@ Nenhuma migration nova foi necessária. O baseline automatizado subiu para 94/94
 
 A tabela administrativa ganhou ação `Gerenciar` para roles. A janela modal lista roles ativas/inativas e a associação do usuário. `RoleService.ListUserAssignmentsAsync` exige `roles.read`; `AssignUserAsync` e `RemoveUserAsync` exigem `roles.manage`. Usuários inativos e roles inativas não recebem novas associações, mas vínculos existentes continuam removíveis.
 
-A remoção administrativa protege a capacidade raiz `roles.manage`. `EfRoleRepository.RemoveUserPreservingPermissionHolderAsync` executa em transação SQLite imediata: se o vínculo alvo participa de um caminho efetivo de administração, a exclusão só ocorre quando existe outro caminho formado por usuário ativo + role ativa + grant `roles.manage`. Assim, a regra é persistente e resistente a duas remoções concorrentes, não apenas uma validação de UI.
+A remoção administrativa protege a capacidade raiz `roles.manage`. A persistência executa em transação SQLite imediata: se o vínculo alvo participa de um caminho efetivo de administração, a exclusão só ocorre quando existe outro caminho formado por usuário ativo + role ativa + grant `roles.manage`. Assim, a regra é persistente e resistente a duas remoções concorrentes, não apenas uma validação de UI.
 
 Self-demotion é permitida quando outro administrador efetivo permanece; se não permanecer, a Application lança `LastAdministrativeRoleAssignmentException`. A futura administração completa de roles deverá aplicar proteção equivalente antes de permitir desativar uma role ou revogar seu `roles.manage`, pois essas mutações não são expostas neste slice.
 
 Nenhuma migration nova foi necessária. O baseline automatizado subiu para 101/101 testes (Domain 19, Application 49, Persistence 27, Infrastructure 6), incluindo teste concorrente que confirma exatamente uma remoção e um bloqueio quando dois últimos administradores são removidos simultaneamente.
 
-Próxima prioridade: Parte F — auditoria das operações administrativas, preservando privacidade e atomicidade das mutações críticas.
+## Marco de administração de usuários — Parte F — 2026-10-17
+
+A auditoria administrativa passou a distinguir de forma estruturada o usuário afetado (`UserId`), o operador autenticado (`ActorUserId`) e a role afetada quando aplicável (`RoleId`). Os eventos usam códigos canônicos para criação de usuário, ativação, desativação, reset administrativo, associação e remoção de role, sem senha, hash, token ou payload textual arbitrário.
+
+`IAdministrativeAuditStore` concentra a persistência atômica. Criação/status/reset de usuário e o evento correspondente compartilham o mesmo `SaveChanges`; associação/remoção de role e seu evento compartilham uma transação SQLite imediata. Testes de persistência forçam falha de FK no ator e confirmam rollback da mutação, enquanto o teste concorrente de remoção confirma que apenas a alteração efetivamente commitada produz evento.
+
+A migration `20261017234500_AddAdministrativeAuditContext` adiciona contexto de ator/role com FKs opcionais `SET NULL` e índices por ator/data e role/data. Como SQLite não suporta `AddForeignKey` sobre tabela já criada, a versão final da migration reconstrói `SecurityAuditEvents`, copia o histórico existente e recria FKs/índices; o CI validou apply -> rollback 0 -> reapply.
+
+O baseline automatizado subiu para 110/110 testes (Domain 19, Application 54, Persistence 31, Infrastructure 6), com build Release e benchmark sem warnings/erros e snapshot EF sem mudanças pendentes.
+
+Próxima prioridade funcional: administração completa de roles/permissões. Antes de expor desativação de role ou revogação de `roles.manage`, aplicar salvaguarda equivalente à Parte E e integrar essas futuras mutações à auditoria atômica.

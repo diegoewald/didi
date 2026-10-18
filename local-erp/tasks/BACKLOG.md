@@ -24,9 +24,13 @@
 - [x] impedir novas associações para usuário inativo ou role inativa, mantendo remoção de vínculos existentes;
 - [x] proteger atomicamente a remoção da última capacidade efetiva de `roles.manage`;
 - [x] validar concorrência de duas remoções administrativas preservando ao menos um administrador efetivo;
-- [ ] Parte F — auditar operações administrativas;
+- [x] Parte F — auditar operações administrativas expostas;
+- [x] distinguir ator, usuário alvo e role alvo sem payload textual sensível;
+- [x] persistir criação/status/reset e associação/remoção de role junto com o audit event correspondente;
+- [x] garantir rollback da mutação quando a persistência da auditoria falha;
 - [ ] UI completa de administração de roles/permissões;
 - [ ] aplicar salvaguarda equivalente ao expor desativação de role ou revogação de `roles.manage` na UI completa de roles;
+- [ ] auditar desativação de role/revogação de permissão quando essas mutações forem expostas;
 - [ ] troca de senha pelo próprio usuário;
 - [ ] tela/consulta administrativa da trilha de auditoria quando houver necessidade operacional.
 
@@ -50,9 +54,11 @@
 - [x] revisão de segurança final do slice de auditoria/benchmark;
 - [x] recuperação/reset administrativo de senha com política segura;
 - [x] salvaguarda contra remoção da última associação que sustenta `roles.manage` efetivo;
+- [x] auditoria atômica das mutações administrativas atualmente expostas;
+- [x] migration `20261017234500_AddAdministrativeAuditContext`;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
 - [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
-- [ ] auditar futuras operações administrativas críticas.
+- [ ] auditar futuras mutações críticas conforme novos casos de uso administrativos forem expostos.
 
 ## P1 — Persistência
 
@@ -66,7 +72,9 @@
 - [x] bootstrap atômico com teste de concorrência;
 - [x] estado de throttling persistido com migration e transação SQLite não adiada;
 - [x] `SecurityAuditEvents` persistido com FK opcional e índices de consulta;
-- [x] remoção protegida de user-role serializada por transação SQLite imediata.
+- [x] remoção protegida de user-role serializada por transação SQLite imediata;
+- [x] contexto administrativo de auditoria com FKs opcionais para ator/role e preservação de histórico;
+- [x] testes de rollback comprovando atomicidade entre mutação administrativa e audit event.
 
 ## P2 — Engenharia
 
@@ -88,10 +96,12 @@ A Parte C usa `UserService.SetActiveAsync`. Desativação da própria conta aute
 
 A Parte D expõe `UserService.ChangePasswordAsync` na tabela administrativa. O reset exige confirmação da nova senha, limpa os dois `PasswordBox` após a tentativa e, ao persistir a nova senha, zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização. O status ativo/inativo da conta não é alterado e operações de status/reset são serializadas na View.
 
-A Parte E expõe uma janela modal de roles por usuário. `RoleService.ListUserAssignmentsAsync` exige `roles.read`; atribuição e remoção exigem `roles.manage`. Novos vínculos são rejeitados quando usuário ou role está inativo. Ao remover uma associação que sustenta `roles.manage`, `EfRoleRepository` usa uma transação SQLite imediata para verificar e preservar pelo menos um caminho efetivo composto por usuário ativo + role ativa + grant `roles.manage`. O teste concorrente comprova que duas remoções simultâneas dos dois últimos administradores não removem ambos.
+A Parte E expõe uma janela modal de roles por usuário. `RoleService.ListUserAssignmentsAsync` exige `roles.read`; atribuição e remoção exigem `roles.manage`. Novos vínculos são rejeitados quando usuário ou role está inativo. Ao remover uma associação que sustenta `roles.manage`, a persistência usa uma transação SQLite imediata para verificar e preservar pelo menos um caminho efetivo composto por usuário ativo + role ativa + grant `roles.manage`. O teste concorrente comprova que duas remoções simultâneas dos dois últimos administradores não removem ambos.
 
-A proteção atual cobre a remoção de associação usuário-role, que é a mutação exposta na Parte E. Quando a UI completa de roles/permissões expuser desativação de role ou revogação de `roles.manage`, essas operações deverão receber salvaguarda equivalente antes de serem consideradas prontas.
+A Parte F adiciona contexto administrativo estruturado em `SecurityAuditEvents`: `UserId` representa o usuário afetado, `ActorUserId` identifica o operador e `RoleId` identifica a role quando aplicável. Criação de usuário, alteração de status, reset administrativo e associação/remoção de role são persistidos com seus eventos pela abstração `IAdministrativeAuditStore`. Nos caminhos de user-role a operação usa transação SQLite imediata; nas mutações de `User`, um único `SaveChanges` contém alteração e evento. Testes de persistência comprovam rollback quando a FK do ator da auditoria é inválida.
 
-Baseline automatizado: 101/101 testes (Domain 19, Application 49, Persistence 27, Infrastructure 6), 5 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+A migration `20261017234500_AddAdministrativeAuditContext` reconstrói `SecurityAuditEvents` de forma compatível com SQLite, copia o histórico existente e adiciona FKs opcionais `SET NULL` para ator e role. A primeira tentativa intermediária, baseada em `AddForeignKey` sobre tabela existente, foi rejeitada pelo provider SQLite no CI e substituída antes do baseline final.
 
-Próxima tarefa funcional: Parte F — auditar operações administrativas críticas sem registrar senha, hash ou payload sensível e preservando atomicidade quando a operação alterar estado persistido.
+Baseline automatizado: 110/110 testes (Domain 19, Application 54, Persistence 31, Infrastructure 6), 6 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional: administração completa de roles/permissões. Antes de expor desativação de role ou revogação de `roles.manage`, aplicar a mesma salvaguarda de última capacidade administrativa e integrar essas futuras mutações à auditoria atômica.

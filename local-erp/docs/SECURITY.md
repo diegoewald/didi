@@ -129,9 +129,9 @@ A Parte E expõe associação e remoção de roles por usuário sem mover regras
 - associações já existentes podem ser removidas mesmo quando usuário ou role está inativo, permitindo limpeza administrativa sem conceder nova capacidade;
 - a capacidade administrativa protegida neste slice é `roles.manage`, porque ela autoriza as mutações de RBAC expostas pela Parte E.
 
-A remoção não usa uma checagem seguida de delete em contextos independentes. `EfRoleRepository.RemoveUserPreservingPermissionHolderAsync` abre uma transação SQLite imediata (`deferred: false`), obtendo serialização de escrita antes de avaliar a regra. Se o vínculo alvo participa de um caminho efetivo de `roles.manage`, a operação só continua quando existe outro caminho efetivo após excluir logicamente esse vínculo. “Efetivo” segue a mesma semântica da autorização: usuário ativo + role ativa + grant da permissão.
+A remoção não usa uma checagem seguida de delete em contextos independentes. A persistência abre uma transação SQLite imediata (`deferred: false`), obtendo serialização de escrita antes de avaliar a regra. Se o vínculo alvo participa de um caminho efetivo de `roles.manage`, a operação só continua quando existe outro caminho efetivo após excluir logicamente esse vínculo. “Efetivo” segue a mesma semântica da autorização: usuário ativo + role ativa + grant da permissão.
 
-Se a remoção eliminaria o último caminho, o repositório faz rollback e retorna `WouldRemoveLastPermissionHolder`; a Application converte esse resultado em `LastAdministrativeRoleAssignmentException`. Isso permite self-demotion quando outro administrador efetivo permanece e bloqueia a self-demotion quando ela eliminaria a capacidade administrativa final.
+Se a remoção eliminaria o último caminho, o repositório/store faz rollback e retorna `WouldRemoveLastPermissionHolder`; a Application converte esse resultado em `LastAdministrativeRoleAssignmentException`. Isso permite self-demotion quando outro administrador efetivo permanece e bloqueia a self-demotion quando ela eliminaria a capacidade administrativa final.
 
 A concorrência também é parte da regra: com dois últimos administradores e duas remoções simultâneas, a transação imediata serializa as decisões. O teste SQLite real confirma exatamente uma remoção permitida, uma rejeitada e uma associação administrativa restante.
 
@@ -141,7 +141,7 @@ Escopo importante: este slice protege a remoção de associação usuário↔rol
 
 A trilha de auditoria de autenticação está implementada por `SecurityAuditEvent` e `ISecurityAuditStore`, com persistência EF Core em `SecurityAuditEvents`.
 
-Eventos atuais:
+Eventos atuais de autenticação:
 
 - `authentication.sign_in.succeeded`;
 - `authentication.sign_in.failed`;
@@ -168,7 +168,7 @@ Regras de privacidade:
 - não persistir o username digitado quando a conta não existe;
 - `UserId` é opcional e só referencia usuário conhecido.
 
-Atomicidade relevante:
+Atomicidade relevante da autenticação:
 
 - senha incorreta: atualização do contador e audit event são gravados na mesma transação SQLite;
 - login correto: reset de falhas, rehash opcional e audit event são gravados na mesma transação;
@@ -177,11 +177,45 @@ Atomicidade relevante:
 
 A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, FK opcional para `Users` com `SET NULL` e índices por data, evento e usuário/data.
 
+## Auditoria administrativa
+
+A Parte F reutiliza `SecurityAuditEvents`, mas adiciona contexto normalizado para distinguir ator e alvo sem introduzir payload textual arbitrário.
+
+Semântica dos campos:
+
+- `UserId`: usuário conhecido afetado pela operação administrativa; nos eventos de autenticação continua representando a conta conhecida associada ao evento;
+- `ActorUserId`: usuário autenticado que executou a mutação administrativa; permanece `NULL` para os eventos de autenticação que não precisam desse segundo papel;
+- `RoleId`: role afetada por associação/remoção; `NULL` quando a operação não envolve role;
+- `DetailCode`: continua restrito a códigos canônicos e não é usado para transportar senha, username, descrição livre ou payload operacional.
+
+Eventos administrativos atuais:
+
+- `administration.user.created`;
+- `administration.user.activated`;
+- `administration.user.deactivated`;
+- `administration.user.password_reset`;
+- `administration.user_role.assigned`;
+- `administration.user_role.removed`.
+
+`IAdministrativeAuditStore` concentra a garantia de persistência:
+
+- criação de usuário: novo `User` e audit event compartilham um `SaveChanges` transacional;
+- ativação/desativação: alteração de `User` e audit event compartilham um `SaveChanges`;
+- reset administrativo: novo hash, limpeza de lockout e audit event compartilham um `SaveChanges`;
+- associação user-role: vínculo e audit event compartilham transação SQLite imediata;
+- remoção user-role: salvaguarda do último `roles.manage`, exclusão e audit event compartilham a mesma transação SQLite imediata;
+- no-op idempotente de associação/remoção não gera falso evento de sucesso;
+- operação bloqueada pela salvaguarda do último administrador não gera evento de remoção bem-sucedida.
+
+Os testes de persistência forçam `ActorUserId` inválido para provocar erro de FK e confirmam que a mudança de estado também é revertida. O teste concorrente de remoção valida simultaneamente a regra de último administrador e a auditoria: apenas a remoção commitada gera evento.
+
+A migration `20261017234500_AddAdministrativeAuditContext` adiciona `ActorUserId` e `RoleId`, ambos opcionais, com `SET NULL` para preservar o histórico caso usuário/role seja excluído futuramente, além de índices por ator/data e role/data. SQLite não suporta adicionar essas FKs posteriormente com `AddForeignKeyOperation`; por isso a migration final reconstrói `SecurityAuditEvents`, copia todos os eventos existentes com os novos campos nulos e recria FKs/índices. O ciclo apply -> rollback 0 -> reapply foi validado.
+
+Escopo: a auditoria administrativa atual cobre as mutações expostas pela Administração de usuários — criação, status, reset e associação/remoção de role. `RoleService.SetActiveAsync` e `RoleService.RevokePermissionAsync` ainda não fazem parte da UI completa de roles/permissões; antes de expô-las, elas deverão receber tanto a salvaguarda de última capacidade administrativa quanto auditoria atômica própria.
+
 Ainda não existe política aprovada de retenção/limpeza da trilha de auditoria. Não excluir eventos automaticamente sem regra de negócio definida. Essa política deve ser fechada antes de crescimento significativo da base.
 
-Operações administrativas, incluindo criação, alteração de status, reset de senha e associação/remoção de roles, ainda não geram eventos próprios; esse trabalho permanece explicitamente planejado para a Parte F da administração de usuários, em vez de ser improvisado como append não atômico.
-
-## Revisão final do slice de auditoria — 2026-10-16
+## Revisão final do slice de auditoria de autenticação — 2026-10-16
 
 A revisão direta do código, migration e testes confirmou:
 
@@ -191,7 +225,7 @@ A revisão direta do código, migration e testes confirmou:
 - rollback do bootstrap remove também o evento de auditoria e concorrência gera exatamente um administrador/evento;
 - `SecurityAuditEvent` não possui campos para senha, hash, token ou payload textual arbitrário e impõe timestamp UTC/códigos canônicos;
 - conta inexistente não persiste o username digitado e usa `UserId = null`;
-- FK de auditoria usa `SET NULL`, preservando histórico se um usuário vier a ser excluído no futuro;
+- FKs de auditoria usam `SET NULL`, preservando histórico se entidades referenciadas vierem a ser excluídas;
 - logout limpa a sessão antes do append de auditoria e a UI fecha o shell mesmo se o append falhar.
 
 Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robustez: os eventos standalone de conta inexistente, inativa ou já bloqueada são gravados por `ISecurityAuditStore.AppendAsync`; se essa persistência falhar, a exceção atualmente propaga. Isso permanece fail-closed e não cria bypass, mas acopla disponibilidade/UX desses caminhos ao armazenamento de auditoria. Avaliar tratamento best-effort ou política explícita antes de release, sem enfraquecer auditoria das operações que alteram estado.
@@ -205,23 +239,25 @@ Não foi encontrado defeito bloqueante neste slice. Existe uma dívida de robust
 - throttling/lockout persistente por conta concluído;
 - mitigação de timing por dummy password verification concluída;
 - trilha de auditoria de autenticação concluída;
-- administração de usuários Partes A, B, C, D e E concluídas: listagem, criação, ativação/desativação, reset administrativo e associação de roles;
+- administração de usuários Partes A–F concluídas: listagem, criação, ativação/desativação, reset administrativo, associação de roles e auditoria administrativa;
 - auto-inativação da conta autenticada bloqueada na Application;
 - reset administrativo limpa tentativas falhas/bloqueio temporário sem reativar conta inativa;
 - remoção da última associação que sustenta `roles.manage` efetivo bloqueada atomicamente;
 - teste concorrente de remoção administrativa validado em SQLite real;
+- mutações administrativas expostas persistem evento junto com a alteração de estado e fazem rollback conjunto em falha;
+- `ActorUserId`/`RoleId` não introduzem payload textual sensível e usam FKs opcionais `SET NULL`;
 - política de senha central aplicada a bootstrap, criação e troca administrativa;
-- migration `20261016135247_AddSecurityAuditTrail` integrada e validada;
+- migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` integradas e validadas;
 - benchmark reproduzível do hashing concluído no Windows CI;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 101/101;
+- suíte automatizada: 110/110;
 - `has-pending-model-changes`: sem mudanças pendentes;
-- cinco migrations: apply -> rollback 0 -> reapply validado;
+- seis migrations: apply -> rollback 0 -> reapply validado;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
 - pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
 - pendente de robustez: definir comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado;
-- pendente funcional: auditoria das operações administrativas na Parte F;
-- pendente para a futura UI completa de roles/permissões: aplicar a mesma proteção de última capacidade administrativa a desativação de role e revogação de `roles.manage`.
+- pendente funcional: administração completa de roles/permissões e troca de senha pelo próprio usuário;
+- pendente para a futura UI completa de roles/permissões: aplicar proteção de última capacidade e auditoria atômica a desativação de role/revogação de `roles.manage`.
 
 ## Dependências
 

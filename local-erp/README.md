@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: baseline básico de segurança fechado / administração de usuários em andamento
+- Fase: baseline básico de segurança fechado / administração de usuários Partes A–F concluída
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 101/101 testes passando
-- Migrations: 5 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 110/110 testes passando
+- Migrations: 6 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
 
@@ -28,13 +28,15 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 12. a conta autenticada não pode desativar a si própria;
 13. reset administrativo de senha remove tentativas falhas e bloqueio temporário, mas preserva o status ativo/inativo da conta;
 14. a tabela permite abrir as roles de cada usuário; consulta exige `roles.read` e associação/remoção exige `roles.manage`;
-15. remover uma associação que eliminaria o último usuário ativo com capacidade efetiva de `roles.manage` é bloqueado atomicamente no SQLite.
+15. remover uma associação que eliminaria o último usuário ativo com capacidade efetiva de `roles.manage` é bloqueado atomicamente no SQLite;
+16. criação de usuário, ativação/desativação, reset administrativo e associação/remoção de roles geram auditoria administrativa identificando ator e alvo;
+17. mutações administrativas auditadas e seus eventos são persistidos atomicamente: falha de auditoria reverte a mudança de estado.
 
 Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Criação e reset administrativo usam a política central de 15 a 128 caracteres antes do hashing.
 
 ## Administração de usuários
 
-As Partes A, B, C, D e E estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
+As Partes A, B, C, D, E e F estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
 
 A UI não substitui autorização: a listagem exige `users.read`; criação, alteração de status e reset administrativo de senha exigem `users.manage`; leitura das associações exige `roles.read`; atribuição e remoção de roles exigem `roles.manage` na camada Application.
 
@@ -42,11 +44,13 @@ Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` blo
 
 No reset administrativo, `UserService.ChangePasswordAsync` aplica `PasswordPolicy`, troca o hash e limpa `FailedSignInCount`/`SignInBlockedUntilUtc` na mesma atualização, sem alterar `IsActive`. A View serializa as ações de status e reset para evitar operações concorrentes na mesma tela.
 
-Na Parte E, `RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção passa por `RemoveUserPreservingPermissionHolderAsync`: dentro de uma transação SQLite imediata, o ERP verifica se o vínculo contribui para `roles.manage` e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`. O teste de concorrência valida que duas remoções simultâneas dos dois últimos administradores não conseguem remover ambas.
+Na Parte E, `RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção protegida usa transação SQLite imediata: o ERP verifica se o vínculo contribui para `roles.manage` e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`. O teste de concorrência valida que duas remoções simultâneas dos dois últimos administradores não conseguem remover ambas.
 
-A proteção da Parte E cobre a mutação exposta neste slice: remoção de associação usuário↔role. A futura UI completa de roles/permissões deverá aplicar salvaguarda equivalente antes de expor desativação de role ou revogação de `roles.manage`.
+Na Parte F, `SecurityAuditEvent` passou a distinguir `UserId` alvo, `ActorUserId` e `RoleId` opcional. Os eventos administrativos usam apenas códigos canônicos, sem payload textual arbitrário. `IAdministrativeAuditStore` garante que criação, status, reset e associação/remoção de roles sejam commitados junto com o evento correspondente; se a auditoria falha, a mutação também falha. A migration `20261017234500_AddAdministrativeAuditContext` preserva os eventos anteriores ao reconstruir `SecurityAuditEvents` de forma compatível com SQLite e adicionar as novas FKs com `SET NULL`.
 
-Próxima parte planejada: Parte F — auditoria das operações administrativas.
+A proteção/auditoria atual cobre as mutações expostas pela Administração de usuários. A futura UI completa de roles/permissões deverá aplicar salvaguarda e auditoria equivalentes antes de expor desativação de role ou revogação de `roles.manage`.
+
+Próxima frente funcional: administração completa de roles/permissões, começando pelo hardening de desativação de role/revogação de `roles.manage` antes de expor essas mutações na UI. Troca de senha pelo próprio usuário também permanece no backlog.
 
 ## Política de tentativas de login
 
@@ -145,8 +149,8 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-17
 
-A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação persistida por EF Core/SQLite, bloqueio de auto-inativação administrativa, recuperação administrativa de senha e associação segura de roles.
+A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação, bloqueio de auto-inativação administrativa, recuperação administrativa de senha, associação segura de roles e auditoria atômica das mutações administrativas atualmente expostas.
 
-A migration `20261016135247_AddSecurityAuditTrail` está integrada e validada. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
+As migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` estão integradas e validadas. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
 
 Antes de release de produção ainda é recomendado executar o mesmo benchmark em hardware Windows representativo do ambiente alvo. O smoke visual/interativo do fluxo WPF em Windows real também continua obrigatório. A política de retenção/limpeza de `SecurityAuditEvents` ainda deve ser definida antes de crescimento significativo da base de auditoria.
