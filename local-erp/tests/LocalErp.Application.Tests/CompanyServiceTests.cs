@@ -1,6 +1,8 @@
 using LocalErp.Application.Abstractions.Persistence;
 using LocalErp.Application.Companies;
+using LocalErp.Application.Security;
 using LocalErp.Domain.Companies;
+using LocalErp.Domain.Security;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LocalErp.Application.Tests;
@@ -19,6 +21,42 @@ public sealed class CompanyServiceTests
         Assert.AreEqual("Empresa Exemplo", result.Name);
         Assert.IsTrue(result.IsActive);
         Assert.AreEqual(1, repository.Companies.Count);
+    }
+
+    [TestMethod]
+    public async Task ListAsyncDemandsCompaniesRead()
+    {
+        var authorization = new RecordingAuthorizationService();
+        var service = new CompanyService(new InMemoryCompanyRepository(), authorization);
+
+        await service.ListAsync(includeInactive: true);
+
+        CollectionAssert.AreEqual(
+            new[] { PermissionCatalog.CompaniesRead },
+            authorization.Demands.ToArray());
+    }
+
+    [TestMethod]
+    public async Task MutationsDemandCompaniesManage()
+    {
+        var repository = new InMemoryCompanyRepository();
+        var company = new Company("Empresa Existente");
+        await repository.AddAsync(company);
+        var authorization = new RecordingAuthorizationService();
+        var service = new CompanyService(repository, authorization);
+
+        await service.CreateAsync("Nova Empresa");
+        await service.RenameAsync(company.Id, "Empresa Renomeada");
+        await service.SetActiveAsync(company.Id, isActive: false);
+
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                PermissionCatalog.CompaniesManage,
+                PermissionCatalog.CompaniesManage,
+                PermissionCatalog.CompaniesManage,
+            },
+            authorization.Demands.ToArray());
     }
 
     [TestMethod]
@@ -55,6 +93,28 @@ public sealed class CompanyServiceTests
 
         await Assert.ThrowsExactlyAsync<KeyNotFoundException>(
             () => service.RenameAsync(Guid.NewGuid(), "Novo Nome"));
+    }
+
+    private sealed class RecordingAuthorizationService : IAuthorizationService
+    {
+        public List<string> Demands { get; } = [];
+
+        public Task<bool> IsAllowedAsync(
+            string permissionCode,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(true);
+        }
+
+        public Task DemandAsync(
+            string permissionCode,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Demands.Add(permissionCode);
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class InMemoryCompanyRepository : ICompanyRepository

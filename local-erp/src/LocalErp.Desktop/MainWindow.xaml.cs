@@ -1,5 +1,6 @@
 using System.Windows;
 using LocalErp.Application.Account;
+using LocalErp.Application.Companies;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
@@ -17,16 +18,19 @@ public partial class MainWindow : Window
         MainWindowViewModel viewModel,
         AuthenticationService authenticationService,
         AccountService accountService,
+        CompanyService companyService,
         UserService userService,
         RoleService roleService)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
         _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
+        ArgumentNullException.ThrowIfNull(companyService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
         InitializeComponent();
+        CompaniesCatalogPanel.Configure(companyService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }

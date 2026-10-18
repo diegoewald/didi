@@ -9,11 +9,14 @@ public partial class MainWindowViewModel : ObservableObject
 {
     public MainWindowViewModel(
         IUserSession session,
-        UsersAdministrationViewModel usersAdministration)
+        UsersAdministrationViewModel usersAdministration,
+        CompaniesCatalogViewModel companiesCatalog)
     {
         ArgumentNullException.ThrowIfNull(session);
         UsersAdministration = usersAdministration
             ?? throw new ArgumentNullException(nameof(usersAdministration));
+        CompaniesCatalog = companiesCatalog
+            ?? throw new ArgumentNullException(nameof(companiesCatalog));
 
         NavigationItems =
         [
@@ -36,12 +39,17 @@ public partial class MainWindowViewModel : ObservableObject
 
     public UsersAdministrationViewModel UsersAdministration { get; }
 
+    public CompaniesCatalogViewModel CompaniesCatalog { get; }
+
     public string VersionLabel { get; }
 
     public string CurrentUsername { get; }
 
     [ObservableProperty]
     private string currentSection;
+
+    [ObservableProperty]
+    private bool isCatalogsSelected;
 
     [ObservableProperty]
     private bool isAdministrationSelected;
@@ -52,12 +60,20 @@ public partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(item);
 
         CurrentSection = item.Title;
+        IsCatalogsSelected = string.Equals(
+            item.Title,
+            "Cadastros",
+            StringComparison.Ordinal);
         IsAdministrationSelected = string.Equals(
             item.Title,
             "Administração",
             StringComparison.Ordinal);
 
-        if (IsAdministrationSelected)
+        if (IsCatalogsSelected)
+        {
+            await CompaniesCatalog.LoadAsync();
+        }
+        else if (IsAdministrationSelected)
         {
             await UsersAdministration.LoadAsync();
         }

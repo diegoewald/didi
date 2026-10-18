@@ -87,6 +87,9 @@
             <Style TargetType="ScrollViewer">
               <Setter Property="Visibility" Value="Visible" />
               <Style.Triggers>
+                <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsAdministrationSelected}" Value="True">
                   <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
@@ -143,6 +146,19 @@
             </Border>
           </StackPanel>
         </ScrollViewer>
+
+        <views:CompaniesCatalogView x:Name="CompaniesCatalogPanel" DataContext="{Binding CompaniesCatalog}">
+          <views:CompaniesCatalogView.Style>
+            <Style TargetType="{x:Type views:CompaniesCatalogView}">
+              <Setter Property="Visibility" Value="Collapsed" />
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.IsCatalogsSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                  <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </views:CompaniesCatalogView.Style>
+        </views:CompaniesCatalogView>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
           <views:AdministrationUsersView.Style>
