@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Account;
 using LocalErp.Application.Companies;
@@ -47,6 +48,8 @@ public partial class App : System.Windows.Application
                 fileSizeLimitBytes: 10 * 1024 * 1024,
                 rollOnFileSizeLimit: true)
             .CreateLogger();
+
+        RegisterGlobalExceptionHandlers();
 
         _host = Host.CreateDefaultBuilder()
             .UseSerilog()
@@ -107,11 +110,9 @@ public partial class App : System.Windows.Application
         catch (Exception exception)
         {
             Log.Fatal(exception, "Fatal error during application startup");
-            MessageBox.Show(
+            ShowFatalError(
                 "O Local ERP não conseguiu iniciar. Consulte os logs para detalhes técnicos.",
-                "Falha ao iniciar",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+                "Falha ao iniciar");
             Shutdown(1);
         }
     }
@@ -165,8 +166,88 @@ public partial class App : System.Windows.Application
         }
     }
 
+    private void RegisterGlobalExceptionHandlers()
+    {
+        DispatcherUnhandledException += HandleDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += HandleDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += HandleUnobservedTaskException;
+    }
+
+    private void UnregisterGlobalExceptionHandlers()
+    {
+        DispatcherUnhandledException -= HandleDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= HandleDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException -= HandleUnobservedTaskException;
+    }
+
+    private void HandleDispatcherUnhandledException(
+        object sender,
+        DispatcherUnhandledExceptionEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        Log.Fatal(e.Exception, "Unhandled exception on the WPF dispatcher");
+        e.Handled = true;
+
+        ShowFatalError(
+            "O Local ERP encontrou uma falha inesperada e será encerrado para proteger a consistência da sessão. Consulte os logs para detalhes técnicos.",
+            "Falha inesperada");
+        Shutdown(1);
+    }
+
+    private static void HandleDomainUnhandledException(object? sender, UnhandledExceptionEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        if (e.ExceptionObject is Exception exception)
+        {
+            Log.Fatal(
+                exception,
+                "Unhandled exception escaped the application domain; terminating={IsTerminating}",
+                e.IsTerminating);
+        }
+        else
+        {
+            Log.Fatal(
+                "Unhandled non-Exception object escaped the application domain; terminating={IsTerminating}; type={ExceptionObjectType}",
+                e.IsTerminating,
+                e.ExceptionObject?.GetType().FullName ?? "null");
+        }
+
+        if (e.IsTerminating)
+        {
+            Log.CloseAndFlush();
+        }
+    }
+
+    private static void HandleUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        ArgumentNullException.ThrowIfNull(e);
+
+        Log.Error(e.Exception, "Unobserved task exception");
+        e.SetObserved();
+    }
+
+    private static void ShowFatalError(string message, string title)
+    {
+        try
+        {
+            MessageBox.Show(
+                message,
+                title,
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Failed to display fatal error dialog");
+        }
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
+        UnregisterGlobalExceptionHandlers();
+
         try
         {
             Log.Information("Local ERP shutting down");
