@@ -23,7 +23,7 @@
         </Grid.ColumnDefinitions>
         <StackPanel>
           <TextBlock Text="Empresas" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="Cadastro base de empresas do ERP. Consulte ativas e inativas, crie registros, renomeie e controle o status."
+          <TextBlock Text="Cadastro base de empresas e suas filiais. Consulte ativas e inativas, crie registros, renomeie e controle o status."
                      Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,0" FontSize="14" TextWrapping="Wrap" />
         </StackPanel>
         <Button Grid.Column="1" Content="Atualizar" Click="Refresh_Click" Padding="14,7" MinWidth="90"
@@ -121,8 +121,8 @@
                     Background="Transparent" AlternatingRowBackground="#F8FAFC" HorizontalGridLinesBrush="{StaticResource Brush.Border}"
                     VerticalGridLinesBrush="Transparent">
             <DataGrid.Columns>
-              <DataGridTextColumn Header="Empresa" Binding="{Binding Name}" Width="*" MinWidth="300" />
-              <DataGridTemplateColumn Header="Status" Width="120">
+              <DataGridTextColumn Header="Empresa" Binding="{Binding Name}" Width="*" MinWidth="260" />
+              <DataGridTemplateColumn Header="Status" Width="105">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
                     <Border Padding="9,3" CornerRadius="10" HorizontalAlignment="Left">
@@ -141,19 +141,28 @@
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="Nome" Width="120">
+              <DataGridTemplateColumn Header="Filiais" Width="115">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <Button Content="Renomear" Click="OpenRename_Click" Padding="11,5" MinWidth="88"
+                    <Button Content="Gerenciar" Click="OpenBranches_Click" Padding="10,5" MinWidth="82"
                             Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
                             BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
                   </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
               </DataGridTemplateColumn>
-              <DataGridTemplateColumn Header="Situação" Width="120">
+              <DataGridTemplateColumn Header="Nome" Width="110">
                 <DataGridTemplateColumn.CellTemplate>
                   <DataTemplate>
-                    <Button Content="{Binding StatusAction}" Click="ToggleStatus_Click" Padding="11,5" MinWidth="88"
+                    <Button Content="Renomear" Click="OpenRename_Click" Padding="10,5" MinWidth="82"
+                            Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+                            BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
+                  </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+              </DataGridTemplateColumn>
+              <DataGridTemplateColumn Header="Situação" Width="110">
+                <DataGridTemplateColumn.CellTemplate>
+                  <DataTemplate>
+                    <Button Content="{Binding StatusAction}" Click="ToggleStatus_Click" Padding="10,5" MinWidth="82"
                             Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
                             BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
                   </DataTemplate>

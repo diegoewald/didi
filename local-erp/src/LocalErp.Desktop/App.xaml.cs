@@ -58,6 +58,7 @@ public partial class App : System.Windows.Application
                 services.AddSingleton<IUserSession, InMemoryUserSession>();
                 services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
                 services.AddTransient<CompanyService>();
+                services.AddTransient<CompanyBranchService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();

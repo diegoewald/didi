@@ -19,6 +19,7 @@ public partial class MainWindow : Window
         AuthenticationService authenticationService,
         AccountService accountService,
         CompanyService companyService,
+        CompanyBranchService companyBranchService,
         UserService userService,
         RoleService roleService)
     {
@@ -26,11 +27,12 @@ public partial class MainWindow : Window
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
         _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
         ArgumentNullException.ThrowIfNull(companyService);
+        ArgumentNullException.ThrowIfNull(companyBranchService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
         InitializeComponent();
-        CompaniesCatalogPanel.Configure(companyService);
+        CompaniesCatalogPanel.Configure(companyService, companyBranchService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }

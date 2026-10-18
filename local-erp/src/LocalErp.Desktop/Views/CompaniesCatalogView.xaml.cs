@@ -11,6 +11,7 @@ namespace LocalErp.Desktop.Views;
 public partial class CompaniesCatalogView : UserControl
 {
     private CompanyService? _companyService;
+    private CompanyBranchService? _branchService;
     private CompanyListItemViewModel? _renameTarget;
     private bool _isCreating;
     private bool _isMutating;
@@ -20,9 +21,10 @@ public partial class CompaniesCatalogView : UserControl
         InitializeComponent();
     }
 
-    public void Configure(CompanyService companyService)
+    public void Configure(CompanyService companyService, CompanyBranchService branchService)
     {
         _companyService = companyService ?? throw new ArgumentNullException(nameof(companyService));
+        _branchService = branchService ?? throw new ArgumentNullException(nameof(branchService));
     }
 
     private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -52,6 +54,29 @@ public partial class CompaniesCatalogView : UserControl
             e.Handled = true;
             await AttemptCreateCompanyAsync();
         }
+    }
+
+    private void OpenBranches_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isCreating ||
+            _isMutating ||
+            _branchService is null ||
+            sender is not Button button ||
+            button.DataContext is not CompanyListItemViewModel company)
+        {
+            return;
+        }
+
+        CloseRenamePanel();
+        HideMutationMessages();
+        var window = new CompanyBranchesWindow(_branchService, company.Id, company.Name);
+        var owner = Window.GetWindow(this);
+        if (owner is not null)
+        {
+            window.Owner = owner;
+        }
+
+        window.ShowDialog();
     }
 
     private void OpenRename_Click(object sender, RoutedEventArgs e)
@@ -115,7 +140,7 @@ public partial class CompaniesCatalogView : UserControl
         if (!activate)
         {
             var confirmation = MessageBox.Show(
-                $"Desativar a empresa '{company.Name}'? Ela continuará no histórico e poderá ser reativada depois.",
+                $"Desativar a empresa '{company.Name}'? Ela continuará no histórico e poderá ser reativada depois. O status das filiais não será alterado automaticamente.",
                 "Confirmar desativação",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning,
