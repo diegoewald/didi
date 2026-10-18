@@ -22,15 +22,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 
 ## Baseline atual — 2026-10-18
 
-- Domain: 22/22;
-- Application: 69/69;
-- Persistence: 41/41;
+- Domain: 26/26;
+- Application: 74/74;
+- Persistence: 42/42;
 - Infrastructure: 6/6;
-- Total automatizado: 138/138;
+- Total automatizado: 148/148;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 7; apply -> rollback 0 -> reapply passando.
+- Migrations: 8; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -39,9 +39,20 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - listagem de filiais fica restrita à empresa solicitada;
 - Persistence: insert/list/filter/update por empresa e status;
 - FK SQLite rejeita filial apontando para empresa inexistente;
-- migration `20261018105000_AddCompanyBranches` entra no ciclo completo de migration smoke;
-- CI #104 validou backend, snapshot e 7 migrations;
-- CI #105 validou a janela WPF `CompanyBranchesWindow` e o botão `Gerenciar` no catálogo de Empresas sobre o mesmo baseline.
+- migration `20261018105000_AddCompanyBranches` entra no ciclo completo de migration smoke.
+
+### Cobertura de fornecedores
+
+- domínio de `Supplier`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `suppliers.read`; criação, rename e status exigem `suppliers.manage`;
+- Persistence: add/get/list/update e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `suppliers.read` e `suppliers.manage`;
+- migration `20261018142500_AddSuppliers` integra o snapshot e o ciclo completo de migration smoke;
+- CI #108 validou backend + catálogo WPF de Fornecedores com 148/148 testes.
+
+### Cobertura de robustez do shell
+
+O tratamento global de exceções é validado pelo build WPF do CI. O CI #109 recompilou `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException` e manteve a suíte de 148 testes, snapshot EF e 8 migrations verdes. O comportamento visual/fatal ainda exige smoke manual controlado em Windows real.
 
 ### Cobertura de segurança mantida
 
@@ -64,10 +75,9 @@ Executar smoke manual em Windows incluindo:
 - bootstrap/login/logout e throttling;
 - Administração de usuários/roles/permissões;
 - troca própria de senha e limpeza dos `PasswordBox`;
-- catálogo de Empresas: loading/erro/vazio, criação, rename e status;
-- botão `Gerenciar` de cada empresa e abertura da janela de Filiais;
-- Filiais: lista ativa/inativa, criação, rename, ativação/desativação e confirmação;
+- catálogo de Empresas e janela de Filiais;
+- catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
-- permissões insuficientes para `companies.read/manage` exibindo erro sem bypass;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
+- em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;
 - benchmark de senha em hardware representativo.

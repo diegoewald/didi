@@ -30,18 +30,19 @@ Regras:
 
 ## Filiais
 
-`CompanyBranch` contém:
+`CompanyBranch` contém `Id`, `CompanyId`, `Name` e `IsActive`. A migration `20261018105000_AddCompanyBranches` cria `CompanyBranches`, índice `IX_CompanyBranches_CompanyId` e FK `FK_CompanyBranches_Companies_CompanyId` com `ON DELETE RESTRICT`.
 
-- `Id` — `Guid`, chave primária;
-- `CompanyId` — `Guid`, obrigatório;
-- `Name` — obrigatório, máximo 200 caracteres;
+Status não possui cascata. Desativar `Company` não altera `CompanyBranch.IsActive`, e vice-versa. Dados fiscais, endereço, código de estabelecimento, indicação de matriz e outros atributos não fazem parte do schema atual.
+
+## Fornecedores
+
+`Supplier` contém:
+
+- `Id` — `Guid`, chave primária criada pelo domínio;
+- `Name` — obrigatório, normalizado e limitado a 200 caracteres;
 - `IsActive` — obrigatório.
 
-A migration `20261018105000_AddCompanyBranches` cria `CompanyBranches`, índice `IX_CompanyBranches_CompanyId` e FK `FK_CompanyBranches_Companies_CompanyId`. A FK usa `ON DELETE RESTRICT`: uma filial não pode existir sem empresa e uma futura tentativa de excluir uma empresa referenciada não deve apagar filiais silenciosamente.
-
-Status não possui cascata. Desativar `Company` não altera `CompanyBranch.IsActive`, e vice-versa. Essa independência é deliberada até existir regra comercial explícita.
-
-Dados fiscais, endereço, código de estabelecimento, indicação de matriz e outros atributos não fazem parte do schema atual.
+A migration `20261018142500_AddSuppliers` cria a tabela `Suppliers`. Nesta etapa não há CNPJ/CPF, endereço, contatos, dados bancários, condição de pagamento ou códigos externos. Esses campos dependem de requisitos explícitos do fluxo de compras e não devem ser inferidos antecipadamente.
 
 ## SQLite: pontos de atenção
 
@@ -55,7 +56,7 @@ Dados fiscais, endereço, código de estabelecimento, indicação de matriz e ou
 
 ## Baseline de migrations — 2026-10-18
 
-Sete migrations validadas no CI:
+Oito migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -63,9 +64,10 @@ Sete migrations validadas no CI:
 4. `20261016131952_AddAuthenticationThrottling`;
 5. `20261016135247_AddSecurityAuditTrail`;
 6. `20261017234500_AddAdministrativeAuditContext`;
-7. `20261018105000_AddCompanyBranches`.
+7. `20261018105000_AddCompanyBranches`;
+8. `20261018142500_AddSuppliers`.
 
-O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O baseline de Filiais está consistente com o snapshot EF.
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 
 ## Backup
 

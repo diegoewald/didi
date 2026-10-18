@@ -14,19 +14,23 @@ O projeto segue versionamento semântico.
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
 - troca de senha pelo próprio usuário com senha atual e compare-and-set transacional;
 - catálogo WPF de Empresas com listagem, criação, renomeação e status;
-- entidade `CompanyBranch` com `CompanyId`, nome e status;
-- `CompanyBranchService`, `ICompanyBranchRepository` e `EfCompanyBranchRepository`;
-- migration `20261018105000_AddCompanyBranches` com FK para `Companies` e índice por `CompanyId`;
-- testes de domínio/aplicação/persistência para Filiais, incluindo rejeição de FK órfã;
-- janela WPF `CompanyBranchesWindow` acessível por `Gerenciar` em cada empresa, com listagem, criação, rename e status.
+- entidade `CompanyBranch`, serviço/repositório e migration `20261018105000_AddCompanyBranches`;
+- janela WPF `CompanyBranchesWindow` acessível por `Gerenciar` em cada empresa;
+- entidade `Supplier` com nome/status, `SupplierService`, `ISupplierRepository` e `EfSupplierRepository`;
+- permissões `suppliers.read` e `suppliers.manage` no `PermissionCatalog`;
+- migration `20261018142500_AddSuppliers`;
+- catálogo WPF de Fornecedores com listagem de ativos/inativos, criação, renomeação e status;
+- tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
 
 - Filiais reutilizam `companies.read` para consulta e `companies.manage` para mutações;
 - FK de filial usa `ON DELETE RESTRICT`, evitando exclusão silenciosa de filiais por uma futura exclusão de empresa;
 - status de empresa e filial permanecem independentes; não existe cascata implícita;
-- dados fiscais, endereço, códigos internos e regra de matriz permanecem fora do modelo até requisito explícito;
-- shell `Cadastros` agora possui empresa + filial como primeiro cadastro hierárquico completo.
+- Fornecedores usam autorização própria `suppliers.read/manage` na Application;
+- dados fiscais/endereço de filial e campos fiscais, bancários ou comerciais de fornecedor permanecem fora do modelo até requisito explícito;
+- falha não tratada no dispatcher WPF agora é logada como fatal, mostra mensagem genérica e encerra a aplicação para evitar continuidade em estado incerto;
+- exceções não observadas de task são registradas e marcadas como observadas; exceções não tratadas do `AppDomain` recebem logging final.
 
 ### Validation
 
@@ -34,12 +38,12 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 138/138;
-- Domain 22/22, Application 69/69, Persistence 41/41, Infrastructure 6/6;
+- suíte automatizada: 148/148;
+- Domain 26/26, Application 74/74, Persistence 42/42, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 7 migrations: apply -> rollback 0 -> reapply passando;
-- CI #104 validou backend, FK, snapshot e migration de Filiais;
-- CI #105 validou o XAML/code-behind de Filiais sobre o mesmo baseline;
+- 8 migrations: apply -> rollback 0 -> reapply passando;
+- CI #108 validou o slice completo de Fornecedores;
+- CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -71,3 +75,19 @@ O projeto segue versionamento semântico.
 - migration `20261018105000_AddCompanyBranches` validada em apply/rollback/reapply;
 - janela `CompanyBranchesWindow` integrada ao catálogo de Empresas;
 - baseline subiu para 138 testes e 7 migrations.
+
+## Marco de fornecedores — 2026-10-18
+
+- `Supplier` adicionado com identidade, nome e status;
+- `suppliers.read` e `suppliers.manage` adicionados ao catálogo de permissões;
+- serviço/repositório e migration `20261018142500_AddSuppliers` integrados;
+- catálogo WPF de Fornecedores operacional;
+- baseline subiu para 148 testes e 8 migrations;
+- CI #108 validou build, testes, snapshot e ciclo completo de migrations.
+
+## Marco de robustez do shell — 2026-10-18
+
+- tratamento central de exceções não tratadas passou a existir além do startup;
+- falhas fatais do dispatcher são registradas e provocam encerramento controlado com mensagem genérica;
+- `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException` recebem logging final;
+- CI #109 preservou 148/148 testes e 8 migrations.

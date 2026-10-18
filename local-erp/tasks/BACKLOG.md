@@ -20,6 +20,15 @@
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents`;
 - [ ] avaliar política para falhas de escrita de auditoria em caminhos de login que não alteram estado.
 
+## P1 — Shell e robustez
+
+- [x] tratamento global de exceções não tratadas no dispatcher WPF;
+- [x] logging final de `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`;
+- [x] mensagem fatal genérica ao usuário sem stack trace e encerramento controlado do shell em falha de dispatcher;
+- [ ] atalhos e foco/teclado do shell;
+- [ ] consolidar componentes loading/empty/error somente quando a repetição justificar;
+- [ ] smoke manual específico do fluxo fatal em build de diagnóstico, sem injetar falha em produção.
+
 ## P1 — Cadastros-base
 
 - [x] empresa: domínio/persistência existentes e UI operacional em `Cadastros`;
@@ -30,11 +39,14 @@
 - [x] filial: serviço/repositório com listagem por empresa, criação, renomeação e status;
 - [x] filial: reutilizar `companies.read/manage` sem criar permissão redundante;
 - [x] filial: janela WPF acessível pelo botão `Gerenciar` de cada empresa;
-- [x] filial: listar ativas/inativas, criar, renomear e ativar/desativar;
 - [x] migration `20261018105000_AddCompanyBranches` validada em apply/rollback/reapply;
-- [ ] manter dados fiscais, endereço, códigos internos e regra de matriz fora do modelo até requisito explícito;
-- [ ] fornecedores;
-- [ ] produtos/materiais;
+- [x] fornecedor: entidade `Supplier` com nome/status;
+- [x] fornecedor: `suppliers.read` e `suppliers.manage` registrados no `PermissionCatalog`;
+- [x] fornecedor: serviço/repositório com listagem, criação, renomeação e status;
+- [x] fornecedor: catálogo WPF com ativos/inativos e mutações protegidas pela Application;
+- [x] migration `20261018142500_AddSuppliers` validada em apply/rollback/reapply;
+- [ ] fornecedor: não adicionar CNPJ/CPF, endereço, contatos, dados bancários ou condições comerciais sem requisito explícito;
+- [-] produtos/materiais;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
@@ -45,7 +57,8 @@
 - [x] RBAC e auditoria com FKs reais;
 - [x] transações SQLite imediatas nos fluxos concorrentes críticos;
 - [x] `CompanyBranches` com integridade referencial para `Companies`;
-- [x] teste de persistência rejeitando filial órfã por FK.
+- [x] `Suppliers` integrado ao snapshot EF e migration smoke;
+- [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
 
@@ -59,8 +72,10 @@
 
 ## Baseline atual — 2026-10-18
 
-Empresa e filial estão operacionais no cadastro-base. `CompanyBranchService` valida a existência da empresa antes da criação/listagem, mantém autorização em `companies.read/manage` e não introduz regra implícita de cascata de status. A persistência usa FK obrigatória com `RESTRICT`; filial órfã é rejeitada pelo SQLite.
+Empresa, filial e fornecedor estão operacionais nos cadastros-base. `SupplierService` mantém `suppliers.read/manage` na Application e o modelo de fornecedor continua propositalmente mínimo: identidade, nome e status.
 
-Baseline automatizado: 138/138 testes (Domain 22, Application 69, Persistence 41, Infrastructure 6), 7 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado.
+O shell possui uma barreira global de exceção para observabilidade e encerramento seguro de falhas não tratadas, sem deslocar para ela erros recuperáveis que devem continuar sendo tratados no caso de uso/tela correspondente.
 
-Próxima tarefa funcional: **Fornecedores**. Não antecipar dados fiscais/endereço de filial nem regras de matriz sem requisito de negócio. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Baseline automatizado: 148/148 testes (Domain 26, Application 74, Persistence 42, Infrastructure 6), 8 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #109.
+
+Próxima tarefa funcional: **Produtos/materiais**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

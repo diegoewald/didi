@@ -9,18 +9,18 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 138/138 testes passando
-- Migrations: 7 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 148/148 testes passando
+- Migrations: 8 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
-## Fluxo de acesso e segurança
+## Fluxo de acesso, segurança e robustez
 
 O primeiro acesso cria o administrador atomicamente e sem credencial padrão. Instalações configuradas exigem login; a sessão autenticada libera o shell e logout retorna ao login. Autenticação possui throttling/lockout persistente, dummy password verification para reduzir diferença de timing e trilha `SecurityAuditEvents` sem senha, hash, token ou username digitado de conta inexistente.
 
 A Administração permite gerenciar usuários, roles e permissões com autorização deny-by-default na Application. As salvaguardas preservam ao menos uma capacidade efetiva de `roles.manage`. Reset administrativo e troca própria de senha usam a política central de 15–128 caracteres; a troca própria exige a senha atual e usa compare-and-set transacional do hash. Senhas da UI ficam apenas em `PasswordBox`/variáveis transitórias e não entram em ViewModel, sessão, log ou auditoria.
 
-## Cadastros-base
+O shell também registra falhas não tratadas do dispatcher WPF, do `AppDomain` e de tasks não observadas. Uma exceção fatal no dispatcher mostra somente mensagem genérica ao usuário, registra detalhes técnicos em log e encerra a aplicação para evitar continuar uma sessão potencialmente inconsistente. Isso complementa, e não substitui, tratamento local de erros recuperáveis.
 
-`Cadastros` possui catálogo operacional de empresas e filiais.
+## Cadastros-base
 
 ### Empresas
 
@@ -30,11 +30,15 @@ A Administração permite gerenciar usuários, roles e permissões com autoriza�
 
 `CompanyBranch` contém identidade, `CompanyId`, nome e status. Cada filial pertence obrigatoriamente a uma empresa por FK `CompanyBranches.CompanyId -> Companies.Id`, com `ON DELETE RESTRICT`. A tela de Empresas possui ação `Gerenciar` para abrir uma janela modal de filiais, que lista ativas/inativas e permite criar, renomear, ativar e desativar.
 
-Filiais reutilizam `companies.read` para consulta e `companies.manage` para mutações. Desativar uma empresa não altera automaticamente o status das filiais. Dados fiscais, endereço, códigos internos, definição de matriz ou outras regras comerciais não foram presumidos e só devem entrar quando houver requisito de negócio explícito.
+Filiais reutilizam `companies.read` para consulta e `companies.manage` para mutações. Desativar uma empresa não altera automaticamente o status das filiais. Dados fiscais, endereço, códigos internos, definição de matriz ou outras regras comerciais não foram presumidos.
 
-A migration `20261018105000_AddCompanyBranches` cria a tabela, FK e índice de `CompanyId`. O baseline atual possui 7 migrations e o ciclo completo de apply -> rollback 0 -> reapply está verde.
+### Fornecedores
 
-Próxima frente funcional: **Fornecedores**. Produtos/materiais, unidades/categorias e centros de custo permanecem depois no roadmap. Consulta/retensão operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+`Supplier` contém identidade, nome e status. O catálogo WPF lista fornecedores ativos/inativos e permite criar, renomear, ativar e desativar. Consulta exige `suppliers.read`; mutações exigem `suppliers.manage` na Application. A migration `20261018142500_AddSuppliers` cria a tabela `Suppliers`.
+
+O modelo de fornecedor ainda não presume CNPJ/CPF, endereço, contatos, condições comerciais, dados bancários ou códigos externos. Esses campos só devem entrar quando o fluxo de negócio exigir regras explícitas.
+
+Próxima frente funcional: **Produtos/materiais**. Unidades/categorias e centros de custo permanecem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

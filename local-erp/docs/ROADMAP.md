@@ -32,9 +32,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fase 4 — Shell da aplicação
 
 - [-] navegação real por módulos;
-- [ ] tratamento global de erro além do startup;
+- [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas e Filiais, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais e Fornecedores, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -50,8 +50,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] empresa: listagem, criação, renomeação e status;
 - [x] filial: `CompanyBranch` vinculada obrigatoriamente à empresa;
 - [x] filial: persistência, migration, autorização e UI operacional;
-- [-] fornecedores: próxima frente funcional;
-- [ ] produtos/materiais;
+- [x] fornecedor: domínio, persistência, migration, permissões e UI operacional;
+- [-] produtos/materiais: próxima frente funcional;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
@@ -74,10 +74,22 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 `Company` e `CompanyBranch` formam o primeiro cadastro hierárquico operacional. `CompanyBranch` possui somente identidade, `CompanyId`, nome e status. A FK `CompanyBranches.CompanyId -> Companies.Id` é obrigatória e usa `RESTRICT`; não há filial órfã nem cascata de exclusão implícita.
 
-`CompanyBranchService` exige `companies.read` para listagem e `companies.manage` para criação, renomeação e status. A criação/listagem valida que a empresa existe. Desativar empresa ou filial preserva os registros e não há cascata automática de status.
+`CompanyBranchService` exige `companies.read` para listagem e `companies.manage` para criação, renomeação e status. A tela `Empresas` abre `CompanyBranchesWindow` por empresa. Dados fiscais, endereço, códigos internos e conceito de matriz não foram presumidos.
 
-A tela `Empresas` ganhou ação `Gerenciar` para abrir `CompanyBranchesWindow`, onde filiais ativas/inativas podem ser listadas, criadas, renomeadas, ativadas e desativadas. Dados fiscais, endereço, códigos internos e conceito de matriz não foram presumidos.
+A migration `20261018105000_AddCompanyBranches` adiciona tabela, FK e índice. A suíte chegou a 138/138 testes e 7 migrations.
 
-A migration `20261018105000_AddCompanyBranches` adiciona tabela, FK e índice. CI #104 validou domínio/persistência/migration; CI #105 validou o WPF sobre o mesmo baseline. A suíte chegou a 138/138 testes (Domain 22, Application 69, Persistence 41, Infrastructure 6), com 7 migrations e snapshot EF consistente.
+## Marco de fornecedores — 2026-10-18
 
-Próxima prioridade funcional: **Fornecedores**.
+`Supplier` foi introduzido com identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `SupplierService` usa `suppliers.read` para consulta e `suppliers.manage` para criação, renomeação e status; as novas permissões entram no `PermissionCatalog` e, portanto, também no bootstrap do primeiro administrador.
+
+`EfSupplierRepository` persiste o cadastro em `Suppliers`. A migration `20261018142500_AddSuppliers` integra a oitava migration do projeto. O catálogo WPF lista ativos/inativos e permite criar, renomear, ativar e desativar sem mover autorização para a UI.
+
+O CI #108 validou o slice completo com 148/148 testes (Domain 26, Application 74, Persistence 42, Infrastructure 6), snapshot EF consistente e 8 migrations em apply -> rollback 0 -> reapply.
+
+## Marco de robustez do shell — 2026-10-18
+
+O `App` passou a registrar tratamento central para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`. Falha não tratada no dispatcher é registrada como fatal, apresenta mensagem genérica e encerra a aplicação; tasks não observadas são registradas sem expor detalhes ao usuário.
+
+O CI #109 recompilou o WPF e manteve 148/148 testes, snapshot EF e as 8 migrations verdes. O tratamento global é uma última barreira de observabilidade/encerramento seguro e não substitui tratamento local de erros recuperáveis.
+
+Próxima prioridade funcional: **Produtos/materiais**.
