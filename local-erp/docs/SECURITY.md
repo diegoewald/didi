@@ -15,7 +15,7 @@
 
 A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`, com `IterationCount = 220000`.
 
-`PasswordPolicy` centraliza a política atualmente aplicada ao bootstrap, criação administrativa de usuário e troca administrativa de senha: mínimo de 15 e máximo de 128 caracteres. A validação ocorre na Application antes do hashing, para que a segurança não dependa da UI.
+`PasswordPolicy` centraliza a política aplicada ao bootstrap, criação administrativa de usuário, reset administrativo e troca de senha pelo próprio usuário: mínimo de 15 e máximo de 128 caracteres. A validação ocorre na Application antes do hashing, para que a segurança não dependa da UI.
 
 Existe uma ferramenta reproduzível de benchmark em `tools/LocalErp.PasswordHashBenchmark` e o script `scripts/benchmark-password-hashing.ps1`. O benchmark usa o serviço real do ERP e mede hash, verify válido e verify inválido.
 
@@ -43,7 +43,8 @@ Quando houver necessidade de segredo local, avaliar Windows DPAPI/Credential Man
 - logout limpa a sessão e retorna ao fluxo de login;
 - senhas da UI são lidas diretamente de `PasswordBox` e limpas após uso;
 - criação e reset administrativo enviam a senha diretamente da View para `UserService`, sem propriedade ou método de senha no ViewModel;
-- confirmação de senha também permanece restrita aos `PasswordBox` da View;
+- a troca própria mantém senha atual, nova senha e confirmação apenas nos `PasswordBox`/parâmetros transitórios da janela e de `AccountService`;
+- confirmação de senha permanece restrita à View;
 - senha, hash e confirmação de senha não são registrados em logs, sessão ou trilha de auditoria.
 
 ## Throttling e lockout
@@ -59,7 +60,7 @@ Política atual:
 - autenticação bem-sucedida zera contador e bloqueio;
 - tentativas durante um bloqueio ativo não aumentam o contador nem prolongam o bloqueio;
 - atualização do contador, rehash eventual e reset de sucesso usam transação SQLite não adiada para evitar corrida entre tentativas concorrentes;
-- o reset administrativo de senha também zera `FailedSignInCount` e `SignInBlockedUntilUtc` na mesma atualização do usuário.
+- reset administrativo e troca própria de senha bem-sucedida zeram `FailedSignInCount` e `SignInBlockedUntilUtc` junto com a atualização do hash.
 
 ## Mitigação de diferença de timing
 
@@ -87,7 +88,8 @@ Caminhos de usuário inexistente, usuário inativo e conta temporariamente bloqu
 - listagem administrativa de usuários exige `users.read`;
 - criação e demais mutações administrativas de usuário exigem `users.manage`;
 - leitura de roles/associações exige `roles.read`;
-- criação/status de role, grants/revogações e atribuição/remoção de associações exigem `roles.manage`.
+- criação/status de role, grants/revogações e atribuição/remoção de associações exigem `roles.manage`;
+- troca da própria senha não depende de RBAC administrativo: depende de sessão autenticada e prova da senha atual.
 
 ## Salvaguardas de status administrativo
 
@@ -109,7 +111,24 @@ Caminhos de usuário inexistente, usuário inativo e conta temporariamente bloqu
 - o novo hash, `FailedSignInCount = 0` e `SignInBlockedUntilUtc = null` são persistidos na mesma atualização;
 - `IsActive` é preservado.
 
-Ainda não existe invalidação de sessões administrativas após troca de senha porque o modelo atual mantém apenas a sessão local em memória da instância em execução e não possui infraestrutura de sessões distribuídas/revogáveis.
+## Troca de senha pelo próprio usuário
+
+`AccountService.ChangePasswordAsync` é um caso de uso distinto do reset administrativo. Ele não exige `users.manage`; exige que exista uma sessão autenticada correspondente a uma conta ainda existente e ativa.
+
+- a nova senha passa por `PasswordPolicy` antes de qualquer hash novo;
+- a conta persistida é recarregada pelo identificador seguro da sessão;
+- a senha atual é verificada com `IPasswordHashService` contra o hash persistido;
+- senha atual inválida lança `CurrentPasswordInvalidException` e não gera novo hash, mutação ou evento de sucesso;
+- a janela WPF mantém senha atual, nova senha e confirmação em três `PasswordBox`, limpa todos após a tentativa e não usa ViewModel para credenciais;
+- após verificar a senha atual, `AccountService` calcula o novo hash e entrega ao `IUserCredentialStore` também o hash anterior exato que foi verificado;
+- `SqliteUserCredentialStore` abre transação SQLite imediata (`deferred: false`) e revalida conta ativa + igualdade do hash esperado antes de escrever;
+- se reset administrativo ou outra troca de senha alterar a credencial entre a leitura e o lock de escrita, a operação retorna conflito e não sobrescreve a credencial mais recente;
+- duas trocas concorrentes partindo do mesmo hash antigo resultam em exatamente um commit;
+- novo hash, limpeza do estado de falhas/lockout e evento `account.password_changed` são gravados na mesma transação;
+- falha na persistência do audit event reverte a mudança do hash;
+- o evento registra `UserId` e `ActorUserId` com o mesmo identificador da conta e mantém `RoleId`/`DetailCode` nulos; nenhuma senha ou hash é persistida na auditoria.
+
+A sessão local atual permanece autenticada após uma troca própria bem-sucedida porque ela contém apenas a projeção segura do usuário e o modelo ainda não possui infraestrutura de sessões distribuídas/revogáveis. Após logout, somente a nova senha deve autenticar.
 
 ## Associação de roles e preservação administrativa
 
@@ -156,6 +175,10 @@ Eventos de autenticação:
 - `authentication.sign_out`;
 - `authentication.bootstrap.succeeded`.
 
+Evento de conta autenticada:
+
+- `account.password_changed`.
+
 Detail codes de autenticação:
 
 - `unknown_account`;
@@ -174,11 +197,12 @@ Regras de privacidade:
 - não persistir o username digitado quando a conta não existe;
 - `UserId` é opcional e só referencia usuário conhecido.
 
-Atomicidade relevante da autenticação:
+Atomicidade relevante da autenticação/conta:
 
-- senha incorreta: atualização do contador e audit event são gravados na mesma transação SQLite;
+- senha incorreta no login: atualização do contador e audit event são gravados na mesma transação SQLite;
 - login correto: reset de falhas, rehash opcional e audit event são gravados na mesma transação;
 - bootstrap: usuário, role, grants, vínculo e audit event são gravados na mesma transação;
+- troca própria: novo hash, limpeza de falhas e `account.password_changed` compartilham a mesma transação SQLite imediata;
 - logout: a sessão é limpa antes da tentativa de auditoria; falha na auditoria não restaura a sessão.
 
 A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, FK opcional para `Users` com `SET NULL` e índices de consulta.
@@ -190,7 +214,7 @@ A migration `20261016135247_AddSecurityAuditTrail` cria `SecurityAuditEvents`, F
 Semântica dos campos:
 
 - `UserId`: usuário conhecido afetado pela operação, quando aplicável;
-- `ActorUserId`: usuário autenticado que executou a mutação administrativa;
+- `ActorUserId`: usuário autenticado que executou a mutação;
 - `RoleId`: role afetada quando aplicável;
 - `DetailCode`: código canônico estruturado; para grants/revogações contém somente o permission code validado pelo `PermissionCatalog`.
 
@@ -208,7 +232,7 @@ Eventos administrativos atuais:
 - `administration.role_permission.granted`;
 - `administration.role_permission.revoked`.
 
-`IAdministrativeAuditStore` concentra a garantia de persistência:
+`IAdministrativeAuditStore` concentra a garantia de persistência administrativa:
 
 - criação/status/reset de usuário e evento compartilham a mesma unidade de persistência;
 - associação/removal user-role e evento compartilham transação SQLite imediata;
@@ -217,6 +241,8 @@ Eventos administrativos atuais:
 - no-op idempotente não gera evento de sucesso;
 - operação bloqueada pela salvaguarda administrativa não gera evento de sucesso;
 - falha de FK da auditoria reverte a mutação associada.
+
+A troca própria usa `IUserCredentialStore`, e não o store administrativo, porque sua autoridade vem da sessão + senha atual em vez de `users.manage`. A garantia de atomicidade com `SecurityAuditEvents` permanece equivalente.
 
 A migration `20261017234500_AddAdministrativeAuditContext` adiciona `ActorUserId` e `RoleId`, ambos opcionais, com `SET NULL`, além de índices por ator/data e role/data. SQLite não suporta adicionar essas FKs posteriormente com `AddForeignKeyOperation`; por isso a migration final reconstrói `SecurityAuditEvents`, copia o histórico e recria FKs/índices. O ciclo apply -> rollback 0 -> reapply foi validado.
 
@@ -236,22 +262,25 @@ Existe uma dívida de robustez: eventos standalone de conta inexistente, inativa
 - trilha de auditoria de autenticação concluída;
 - administração de usuários Partes A–F concluída;
 - administração completa de roles/permissões concluída;
+- troca de senha pelo próprio usuário concluída;
 - auto-inativação da conta autenticada bloqueada;
 - reset administrativo preserva `IsActive` e limpa lockout;
+- troca própria exige senha atual, preserva a sessão local e limpa lockout no commit;
+- compare-and-set do hash impede sobrescrita concorrente de credencial;
 - remoção da última associação que sustenta `roles.manage` bloqueada atomicamente;
 - desativação da última role efetivamente administrativa bloqueada atomicamente;
 - revogação do último grant efetivo de `roles.manage` bloqueada atomicamente;
-- mutações administrativas expostas persistem evento junto com a alteração de estado e fazem rollback conjunto em falha;
+- mutações auditadas relevantes persistem evento junto com a alteração de estado e fazem rollback conjunto em falha;
 - `ActorUserId`/`RoleId` e `DetailCode` canônico não introduzem payload textual sensível;
 - migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` integradas e validadas;
 - build Release Windows: 0 warnings / 0 errors;
-- suíte automatizada: 117/117 (Domain 19, Application 58, Persistence 34, Infrastructure 6);
+- suíte automatizada: 127/127 (Domain 19, Application 63, Persistence 39, Infrastructure 6);
 - `has-pending-model-changes`: sem mudanças pendentes;
 - seis migrations: apply -> rollback 0 -> reapply validado;
 - pendentes antes de release: benchmark em hardware Windows representativo e smoke visual/manual do WPF em Windows interativo;
 - pendente de governança: política de retenção/limpeza de `SecurityAuditEvents`;
 - pendente de robustez: comportamento desejado para falhas de append standalone de auditoria em caminhos fail-closed sem alteração de estado;
-- próxima prioridade funcional: troca de senha pelo próprio usuário.
+- próxima prioridade funcional: Fase 6 — UI operacional de empresa/filial.
 
 ## Dependências
 

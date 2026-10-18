@@ -5,18 +5,18 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: baseline básico de segurança fechado / administração de usuários e roles operacional
+- Fase: baseline básico de segurança fechado / administração de usuários, roles e conta operacional
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 117/117 testes passando
+- CI Windows: build Release com 0 warnings / 0 errors e 127/127 testes passando
 - Migrations: 6 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
 
 1. instalação/banco sem usuários abre a configuração inicial;
 2. o primeiro administrador é criado atomicamente, sem credencial padrão;
-3. o administrador recebe o papel `Administrator` e todas as permissões registradas;
+3. o administrador recebe a role `Administrator` e todas as permissões registradas;
 4. após o bootstrap, a sessão autenticada libera o shell principal;
 5. instalações já configuradas abrem a tela de login;
 6. falhas de autenticação são limitadas por conta com throttling/lockout persistente;
@@ -30,13 +30,16 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 14. a tabela permite abrir as roles de cada usuário; consulta exige `roles.read` e associação/remoção exige `roles.manage`;
 15. remover uma associação que eliminaria o último usuário ativo com capacidade efetiva de `roles.manage` é bloqueado atomicamente no SQLite;
 16. criação de usuário, ativação/desativação, reset administrativo e associação/remoção de roles geram auditoria administrativa identificando ator e alvo;
-17. a Administração também possui uma janela própria para criar roles, ativar/desativar e conceder/revogar permissões do catálogo;
+17. a Administração possui janela própria para criar roles, ativar/desativar e conceder/revogar permissões do catálogo;
 18. desativar uma role ou revogar `roles.manage` é bloqueado quando eliminaria a última capacidade efetiva de administrar roles;
-19. mutações administrativas auditadas e seus eventos são persistidos atomicamente: falha de auditoria reverte a mudança de estado.
+19. mutações administrativas auditadas e seus eventos são persistidos atomicamente: falha de auditoria reverte a mudança de estado;
+20. qualquer usuário autenticado pode abrir `Alterar senha`, confirmar a senha atual e definir uma nova senha conforme a política central;
+21. a troca própria usa compare-and-set do hash dentro de transação SQLite imediata, impedindo sobrescrever silenciosamente reset/troca concorrente;
+22. novo hash, limpeza de lockout e `account.password_changed` são commitados juntos.
 
-Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Criação e reset administrativo usam a política central de 15 a 128 caracteres antes do hashing.
+Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Bootstrap, criação administrativa, reset e troca própria usam a política central de 15 a 128 caracteres antes do hashing.
 
-## Administração de usuários e roles
+## Administração de usuários, roles e conta
 
 As Partes A, B, C, D, E e F da Administração de usuários estão concluídas. A tela WPF carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
 
@@ -46,13 +49,15 @@ Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` blo
 
 `RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção protegida usa transação SQLite imediata e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`.
 
-A janela `Roles e permissões` permite criar roles, alterar seu status e administrar todas as permissões de `PermissionCatalog`. `RoleService.SetActiveAsync` e `RevokePermissionAsync` agora usam o mesmo contrato transacional de auditoria. Quando uma desativação ou revogação de `roles.manage` removeria o último caminho efetivo de administração, a operação é revertida e a Application retorna `LastAdministrativeRoleCapabilityException`. Concessões, ativações e mutações que preservam outro administrador continuam permitidas.
+A janela `Roles e permissões` permite criar roles, alterar seu status e administrar todas as permissões de `PermissionCatalog`. `RoleService.SetActiveAsync` e `RevokePermissionAsync` usam o contrato transacional de auditoria. Quando uma desativação ou revogação de `roles.manage` removeria o último caminho efetivo de administração, a operação é revertida e a Application retorna `LastAdministrativeRoleCapabilityException`.
 
-`SecurityAuditEvent` distingue `UserId` alvo, `ActorUserId` e `RoleId` opcional. Para grants/revogações de permissão, `DetailCode` recebe somente o código canônico conhecido do catálogo. Não há payload textual arbitrário. `IAdministrativeAuditStore` garante que mutações e eventos correspondentes sejam commitados juntos; no-op idempotente e operação bloqueada não produzem falso evento de sucesso.
+A troca própria de senha é tratada por `AccountService`, separada do reset administrativo e sem exigir `users.manage`. A senha atual precisa ser verificada primeiro. `IUserCredentialStore` revalida conta ativa e hash esperado em transação SQLite imediata antes de substituir a credencial. Se uma operação concorrente já tiver alterado o hash, a troca falha sem sobrescrever o estado mais recente. O evento `account.password_changed` usa a própria conta como `UserId` e `ActorUserId`, sem senha, hash ou payload textual.
 
-A migration `20261017234500_AddAdministrativeAuditContext` preserva os eventos anteriores ao reconstruir `SecurityAuditEvents` de forma compatível com SQLite e adicionar as FKs de ator/role com `SET NULL`. A administração completa de roles/permissões não exigiu nova migration.
+`SecurityAuditEvent` distingue `UserId` alvo, `ActorUserId` e `RoleId` opcional. Para grants/revogações de permissão, `DetailCode` recebe somente o código canônico conhecido do catálogo. Não há payload textual arbitrário. Mutações auditadas relevantes são commitadas junto com seus eventos; no-op, conflito de credencial e operação bloqueada não produzem falso evento de sucesso.
 
-Próxima frente funcional: troca de senha pelo próprio usuário. Também permanecem no backlog a consulta operacional da trilha de auditoria e sua política de retenção.
+A migration `20261017234500_AddAdministrativeAuditContext` preserva os eventos anteriores ao reconstruir `SecurityAuditEvents` de forma compatível com SQLite e adicionar as FKs de ator/role com `SET NULL`. Administração de roles/permissões e troca própria de senha não exigiram migrations adicionais.
+
+Próxima frente funcional: Fase 6 — tornar empresa/filial operacional na UI sobre `CompanyService` e persistência já existentes. Também permanecem no backlog a consulta operacional da trilha de auditoria e sua política de retenção.
 
 ## Política de tentativas de login
 
@@ -61,7 +66,7 @@ Próxima frente funcional: troca de senha pelo próprio usuário. Também perman
 - 4ª falha: 10 segundos;
 - 5ª falha e seguintes: 15 minutos;
 - sucesso limpa o estado de falhas;
-- reset administrativo de senha também limpa contador/bloqueio temporário;
+- reset administrativo e troca própria bem-sucedida também limpam contador/bloqueio temporário;
 - tentativas durante bloqueio ativo não prolongam o bloqueio.
 
 ## Objetivos de engenharia
@@ -151,8 +156,8 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-17
 
-A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação, bloqueio de auto-inativação administrativa, recuperação administrativa de senha, associação segura de roles, administração completa de roles/permissões e auditoria atômica das mutações administrativas expostas.
+A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação, bloqueio de auto-inativação administrativa, recuperação administrativa de senha, associação segura de roles, administração completa de roles/permissões, troca própria de senha e auditoria atômica das mutações relevantes.
 
-As migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` estão integradas e validadas. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
+As migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` estão integradas e validadas. O benchmark reproduzível do hashing foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
 
 Antes de release de produção ainda é recomendado executar o mesmo benchmark em hardware Windows representativo do ambiente alvo. O smoke visual/interativo do fluxo WPF em Windows real também continua obrigatório. A política de retenção/limpeza de `SecurityAuditEvents` ainda deve ser definida antes de crescimento significativo da base de auditoria.

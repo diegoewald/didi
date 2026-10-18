@@ -38,10 +38,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 ## Baseline atual — 2026-10-17
 
 - Domain: 19/19.
-- Application: 58/58.
-- Persistence: 34/34.
+- Application: 63/63.
+- Persistence: 39/39.
 - Infrastructure: 6/6.
-- Total automatizado: 117/117.
+- Total automatizado: 127/127.
 - Build Release: 0 warnings / 0 errors.
 - Build da ferramenta de benchmark: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
@@ -62,15 +62,19 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Concorrência Parte E: duas remoções simultâneas dos dois últimos administradores deixam exatamente uma associação administrativa.
 - Administração Parte F: criação, status, reset e associação/remoção de role validam evento, ator e alvo; falha da FK de auditoria reverte a mutação.
 - Administração de roles/permissões: criação de role e grant auditados; desativação da última role administrativa e revogação do último `roles.manage` efetivo são bloqueadas.
-- Persistência de roles/permissões: testes SQLite confirmam rollback da criação de role em falha de auditoria, bloqueio de desativação sem evento e revogação segura quando outro administrador efetivo permanece.
+- Troca própria de senha — Application: sessão autenticada, senha atual válida, política da nova senha, evento `account.password_changed` e conflito de credencial antes do commit estão cobertos.
+- Troca própria de senha — Persistence: novo hash, reset de lockout e evento são persistidos juntos; hash esperado obsoleto e conta inativa são recusados sem evento; falha da auditoria reverte o hash.
+- Concorrência de credencial: duas trocas simultâneas baseadas no mesmo hash antigo resultam em exatamente um sucesso, um conflito e um único evento persistido.
 - Migration smoke: `ActorUserId` e `RoleId` são exigidos após apply/reapply e o rollback completo das seis migrations passa.
-- Desktop WPF: XAML/code-behind da administração de usuários, janela de associações e janela completa de roles/permissões compilam no Windows CI.
+- Desktop WPF: XAML/code-behind da administração de usuários, janela de associações, janela completa de roles/permissões e janela `Alterar senha` compilam no Windows CI.
 
 Durante a Parte B houve uma falha intermediária de build por `CA1822`; a correção preservou o analyzer ativo. Na Parte D, a revisão de UI corrigiu concorrência entre status e reset. Na Parte E, a salvaguarda do último administrador foi validada com SQLite real e transação não adiada.
 
 Na Parte F, o run funcional intermediário #94 falhou porque a primeira versão da migration tentou `AddForeignKeyOperation` sobre tabela SQLite existente. A correção reconstruiu `SecurityAuditEvents`, preservou registros/FKs e o run #95 validou o ciclo completo.
 
-Na administração completa de roles/permissões, a salvaguarda foi implementada antes da UI. O run #97 validou 117/117 testes e as transações protegidas; o run #98 validou o mesmo baseline junto com o novo XAML/code-behind WPF.
+Na administração completa de roles/permissões, a salvaguarda foi implementada antes da UI. O run #97 validou as transações protegidas; o run #98 validou o mesmo baseline junto com o novo XAML/code-behind WPF.
+
+Na troca própria de senha, o run #100 validou 127/127 testes. O teste concorrente do `SqliteUserCredentialStore` comprova o compare-and-set sob transação imediata: duas operações partindo do mesmo hash antigo não conseguem sobrescrever uma à outra. Nenhuma migration nova foi necessária.
 
 ## Benchmark Windows CI
 
@@ -103,8 +107,13 @@ O CI hospedado não substitui teste visual/interativo. Executar smoke manual em 
 - bloqueio visual ao tentar revogar o último `roles.manage` efetivo;
 - operação equivalente permitida quando outro caminho administrativo efetivo permanece;
 - fechamento/refresh da janela impedidos durante mutação em andamento;
-- verificar em banco/log de diagnóstico controlado que mutações administrativas bem-sucedidas produzem eventos com ator/alvo corretos e sem senha/hash;
-- confirmar que no-op e operação bloqueada não produzem falso evento de sucesso;
+- botão `Alterar senha` disponível para usuário autenticado independentemente de `users.manage`;
+- senha atual incorreta exibindo erro sem alterar a credencial;
+- nova senha divergente ou abaixo da política sendo recusada e todos os `PasswordBox` sendo limpos;
+- troca própria válida mantendo a sessão local atual, seguida de logout: senha antiga deve falhar e nova senha deve autenticar;
+- conta com lockout anterior tendo esse estado limpo após troca própria bem-sucedida;
+- verificar em banco/log de diagnóstico controlado que mutações auditadas bem-sucedidas produzem eventos estruturados corretos e sem senha/hash;
+- confirmar que no-op, operação bloqueada ou conflito de credencial não produzem falso evento de sucesso;
 - estados loading/erro/vazio quando aplicáveis;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.
 

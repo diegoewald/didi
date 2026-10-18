@@ -11,14 +11,13 @@
 - [x] manter `users.read` como autorização da listagem na Application;
 - [x] estados loading/erro/vazio da listagem;
 - [x] Parte B — criar usuário com `users.manage`;
-- [x] aplicar `PasswordPolicy` de 15–128 caracteres em criação e troca administrativa de senha;
-- [x] manter senha fora de propriedades/métodos do ViewModel: `PasswordBox` envia diretamente para `UserService` e é limpo após a tentativa;
+- [x] aplicar `PasswordPolicy` de 15–128 caracteres em criação, reset administrativo e troca própria de senha;
+- [x] manter senhas fora de propriedades/métodos de ViewModel: `PasswordBox` envia diretamente para a camada Application e é limpo após a tentativa;
 - [x] Parte C — ativar/desativar usuário com `users.manage`;
 - [x] bloquear auto-inativação da conta autenticada na camada Application;
 - [x] exigir confirmação visual antes de desativar outra conta;
 - [x] Parte D — reset administrativo de senha com `users.manage`;
 - [x] reset administrativo limpa tentativas falhas/bloqueio temporário sem alterar status ativo/inativo;
-- [x] senha do reset permanece somente em `PasswordBox`/parâmetro transitório e é limpa após a tentativa;
 - [x] Parte E — associar/remover roles de usuários;
 - [x] exigir `roles.read` para consultar associações e `roles.manage` para mutá-las;
 - [x] impedir novas associações para usuário inativo ou role inativa, mantendo remoção de vínculos existentes;
@@ -34,7 +33,11 @@
 - [x] proteger desativação de role quando eliminaria o último `roles.manage` efetivo;
 - [x] proteger revogação de `roles.manage` quando eliminaria a última capacidade administrativa efetiva;
 - [x] auditar atomicamente criação/status de role e grant/revogação de permissões;
-- [ ] troca de senha pelo próprio usuário;
+- [x] troca de senha pelo próprio usuário;
+- [x] exigir senha atual válida antes de trocar a própria senha;
+- [x] revalidar hash esperado e conta ativa em transação SQLite imediata antes do commit;
+- [x] persistir novo hash, limpeza de lockout e `account.password_changed` na mesma transação;
+- [x] impedir que duas trocas concorrentes baseadas no mesmo hash antigo sejam commitadas;
 - [ ] tela/consulta administrativa da trilha de auditoria quando houver necessidade operacional.
 
 ## P1 — Segurança e governança pendente
@@ -61,6 +64,7 @@
 - [x] migration `20261017234500_AddAdministrativeAuditContext`;
 - [x] salvaguarda equivalente para desativação de role e revogação de `roles.manage`;
 - [x] auditoria atômica de criação/status de role e grant/revogação de permissões;
+- [x] troca própria de senha com senha atual, compare-and-set e auditoria atômica;
 - [ ] definir política de retenção/limpeza de `SecurityAuditEvents` antes de crescimento significativo;
 - [ ] avaliar política best-effort/telemetria para falhas de escrita de auditoria nos caminhos de login que não alteram estado;
 - [ ] auditar futuras mutações críticas conforme novos casos de uso administrativos forem expostos.
@@ -80,7 +84,8 @@
 - [x] remoção protegida de user-role serializada por transação SQLite imediata;
 - [x] contexto administrativo de auditoria com FKs opcionais para ator/role e preservação de histórico;
 - [x] testes de rollback comprovando atomicidade entre mutação administrativa e audit event;
-- [x] desativação de role/revogação de `roles.manage` protegidas em transação SQLite imediata.
+- [x] desativação de role/revogação de `roles.manage` protegidas em transação SQLite imediata;
+- [x] troca própria de senha usa transação SQLite imediata e compare-and-set do hash anterior.
 
 ## P2 — Engenharia
 
@@ -94,16 +99,10 @@
 
 ## Baseline atual — 2026-10-17
 
-O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração possui listagem de usuários protegida por `users.read`, mutações de usuário por `users.manage` e administração de associações, roles e permissões por `roles.read`/`roles.manage`, sempre com autoridade na Application e nas invariantes persistentes.
+O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração possui listagem de usuários protegida por `users.read`, mutações administrativas de usuário por `users.manage` e administração de associações, roles e permissões por `roles.read`/`roles.manage`, sempre com autoridade na Application e nas invariantes persistentes.
 
-A criação e o reset administrativo usam `PasswordBox` diretamente na View para manter senha e confirmação fora do estado e dos métodos do ViewModel. `UserService.CreateAsync` e `ChangePasswordAsync` aplicam a mesma `PasswordPolicy` de 15–128 caracteres antes do hashing.
+A troca de senha pelo próprio usuário é um caso de uso separado do reset administrativo. `AccountService.ChangePasswordAsync` exige sessão autenticada, valida a senha atual, aplica `PasswordPolicy` à nova senha e não exige `users.manage`. `IUserCredentialStore` revalida conta ativa e hash esperado dentro de uma transação SQLite imediata; assim um reset administrativo ou outra troca concorrente não pode ser sobrescrito silenciosamente. Novo hash, limpeza do estado de falhas e evento `account.password_changed` são commitados juntos. O evento identifica a mesma conta como alvo e ator e não armazena senha, hash ou payload textual.
 
-A Parte E protege a remoção de associação usuário-role. Quando o vínculo sustenta `roles.manage`, a persistência usa transação SQLite imediata para preservar pelo menos um caminho efetivo composto por usuário ativo + role ativa + grant `roles.manage`.
+Baseline automatizado: 127/127 testes (Domain 19, Application 63, Persistence 39, Infrastructure 6), 6 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
 
-A Parte F adiciona contexto administrativo estruturado em `SecurityAuditEvents`: `UserId` representa o usuário afetado, `ActorUserId` identifica o operador e `RoleId` identifica a role quando aplicável. Mutações administrativas e eventos são persistidos como unidade atômica, com rollback conjunto em falha.
-
-A administração completa de roles/permissões amplia a mesma regra. `RoleService.CreateAsync`, `SetActiveAsync`, `GrantPermissionAsync` e `RevokePermissionAsync` passam pelo `IAdministrativeAuditStore`. Desativação de uma role que contribui para `roles.manage` e revogação desse grant são avaliadas dentro de transação SQLite imediata; se não restar outro caminho efetivo, a operação é bloqueada sem alterar estado nem registrar falso evento de sucesso. A janela WPF expõe criação, status e as seis permissões atuais do catálogo, com confirmação para reduções de privilégio.
-
-Baseline automatizado: 117/117 testes (Domain 19, Application 58, Persistence 34, Infrastructure 6), 6 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
-
-Próxima tarefa funcional: troca de senha pelo próprio usuário, preservando a política central e o tratamento seguro de senha fora do ViewModel. A consulta/retensão operacional da trilha de auditoria permanece depois disso.
+Próxima tarefa funcional: Fase 6 — tornar `Company`/empresa-filial operacional na UI, aproveitando o serviço e a persistência básicos já existentes. A consulta/retenção operacional da trilha de auditoria continua no roadmap posterior; smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

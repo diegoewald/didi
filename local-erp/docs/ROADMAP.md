@@ -47,7 +47,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] lockout/throttling persistente por conta;
 - [x] hardening de timing para usuário inexistente/inativo/bloqueado;
 - [x] trilha de auditoria de autenticação;
-- [x] política de senha central aplicada ao bootstrap, criação e troca administrativa;
+- [x] política de senha central aplicada ao bootstrap, criação, reset administrativo e troca própria;
 - [x] ferramenta reproduzível de benchmark de password hashing e baseline Windows CI;
 - [ ] benchmark do custo de hash em hardware Windows representativo do ambiente final.
 
@@ -71,11 +71,11 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] administração completa de roles/permissões com criação, status e grants/revogações;
 - [x] proteger desativação de role e revogação de `roles.manage` contra perda da última capacidade efetiva;
 - [x] auditar atomicamente criação/status de role e grant/revogação de permissões;
-- [ ] troca de senha pelo próprio usuário.
+- [x] troca de senha pelo próprio usuário com validação da senha atual e auditoria atômica.
 
 ## Fase 6 — Cadastros-base
 
-- [-] empresa/filial: serviço e persistência básicos existem; UI operacional pendente;
+- [-] empresa/filial: serviço e persistência básicos existem; UI operacional é a próxima frente;
 - [ ] fornecedores;
 - [ ] produtos/materiais;
 - [ ] unidades/categorias;
@@ -134,8 +134,18 @@ A auditoria administrativa passou a distinguir de forma estruturada o usuário a
 
 A área Administração ganhou acesso direto à janela `Roles e permissões`. Ela lista roles ativas/inativas, permite criar novas roles, ativar/desativar e administrar as seis permissões atuais do `PermissionCatalog`. A UI pede confirmação antes de reduzir privilégios e serializa mutações para impedir operações concorrentes na mesma janela.
 
-Antes de expor os botões, `RoleService.SetActiveAsync` e `RevokePermissionAsync` foram endurecidos. O `SqliteAdministrativeAuditStore` usa transação SQLite imediata para verificar a capacidade efetiva restante e executar a mutação com seu audit event. Desativar uma role que sustenta `roles.manage` ou revogar esse grant só é permitido quando outro caminho efetivo — usuário ativo + outra role ativa + `roles.manage` — permanece. Operação bloqueada não altera estado nem gera evento de sucesso.
+Antes de expor os botões, `RoleService.SetActiveAsync` e `RevokePermissionAsync` foram endurecidos. O `SqliteAdministrativeAuditStore` usa transação SQLite imediata para verificar a capacidade efetiva restante e executar a mutação com seu audit event. Desativar uma role que sustenta `roles.manage` ou revogar esse grant só é permitido quando outro caminho efetivo permanece. Operação bloqueada não altera estado nem gera evento de sucesso.
 
-Criação de role, ativação/desativação e grant/revogação ganharam eventos canônicos próprios. Para permissão, `DetailCode` contém somente o código validado pelo `PermissionCatalog`. Nenhuma migration nova foi necessária. O baseline automatizado subiu para 117/117 testes (Domain 19, Application 58, Persistence 34, Infrastructure 6), com build WPF Release sem warnings/erros, snapshot EF consistente e seis migrations validadas em apply -> rollback 0 -> reapply.
+Criação de role, ativação/desativação e grant/revogação ganharam eventos canônicos próprios. Para permissão, `DetailCode` contém somente o código validado pelo `PermissionCatalog`. Nenhuma migration nova foi necessária. O baseline automatizado subiu para 117/117 testes.
 
-Próxima prioridade funcional: troca de senha pelo próprio usuário, mantendo senha fora do ViewModel e a política central de 15–128 caracteres.
+## Marco de troca de senha pelo próprio usuário — 2026-10-17
+
+O shell ganhou ação `Alterar senha`, abrindo uma janela modal com três `PasswordBox`: senha atual, nova senha e confirmação. Esses valores permanecem fora de ViewModels, sessão, logs e auditoria e são limpos após cada tentativa.
+
+`AccountService.ChangePasswordAsync` é separado do reset administrativo: exige sessão autenticada e senha atual válida, mas não exige `users.manage`. A nova senha passa pela mesma `PasswordPolicy` de 15–128 caracteres. `IUserCredentialStore` abre transação SQLite imediata e revalida que a conta continua ativa e que o hash armazenado ainda é exatamente o hash verificado pelo serviço. Se outro reset/troca alterar a credencial entre leitura e commit, a operação é recusada em vez de sobrescrever a atualização concorrente.
+
+Novo hash, limpeza de `FailedSignInCount`/`SignInBlockedUntilUtc` e `account.password_changed` são persistidos na mesma transação. O evento usa `UserId` e `ActorUserId` iguais à própria conta, sem `RoleId`, `DetailCode`, senha ou hash. Testes reais de SQLite confirmam rollback em falha da auditoria e que duas trocas simultâneas baseadas no mesmo hash antigo resultam em exatamente um commit.
+
+Nenhuma migration nova foi necessária. O baseline automatizado subiu para 127/127 testes (Domain 19, Application 63, Persistence 39, Infrastructure 6), com build WPF Release sem warnings/erros, snapshot EF consistente e seis migrations validadas em apply -> rollback 0 -> reapply.
+
+Próxima prioridade funcional: Fase 6 — UI operacional de empresa/filial sobre o `CompanyService` e a persistência já existentes.
