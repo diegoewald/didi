@@ -24,12 +24,17 @@
         </Grid.ColumnDefinitions>
         <StackPanel>
           <TextBlock Text="Administração de usuários" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-          <TextBlock Text="Crie usuários, gerencie contas, redefina senhas e associe roles. Permissões e salvaguardas continuam sendo validadas na camada de aplicação."
+          <TextBlock Text="Crie usuários, gerencie contas, redefina senhas, associe roles e administre o catálogo de roles/permissões. As salvaguardas continuam na camada de aplicação/persistência."
                      Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,0" FontSize="14" TextWrapping="Wrap" />
         </StackPanel>
-        <Button Grid.Column="1" Content="Atualizar" Command="{Binding LoadCommand}" Padding="14,7" MinWidth="90"
-                VerticalAlignment="Top" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
-                BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+          <Button Content="Roles e permissões" Click="OpenRolesAdministration_Click" Padding="14,7" MinWidth="138"
+                  Margin="0,0,8,0" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+                  BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
+          <Button Content="Atualizar" Command="{Binding LoadCommand}" Padding="14,7" MinWidth="90"
+                  Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}"
+                  BorderThickness="1" Foreground="{StaticResource Brush.Text}" Cursor="Hand" />
+        </StackPanel>
       </Grid>
 
       <Border Grid.Row="1" Margin="0,0,0,18" Padding="16" Background="{StaticResource Brush.Surface}"
