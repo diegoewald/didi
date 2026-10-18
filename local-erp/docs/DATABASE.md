@@ -10,7 +10,7 @@ SQLite local em `%LocalAppData%\LocalErp\Data\localerp.db`.
 
 PostgreSQL em servidor da rede local. O arquivo SQLite **não** será colocado em compartilhamento SMB para acesso concorrente por vários computadores.
 
-## ORM
+## ORM e migrations
 
 Entity Framework Core 10 com migrations versionadas.
 
@@ -22,58 +22,55 @@ Regras:
 - foreign keys e constraints são preferidas a validação apenas na UI;
 - índices surgem por necessidade de consulta medida/documentada.
 
-## Primeiro modelo persistido
+`dotnet-ef` é fixado no manifesto `.config/dotnet-tools.json`. A `ErpDbContextDesignTimeFactory` usa banco temporário em `%TEMP%/LocalErp/DesignTime`, evitando apontar tooling para dados reais.
 
-`Company` é a primeira entidade de negócio modelada. Nesta fase ela contém apenas identidade, nome e estado ativo/inativo; dados fiscais e demais atributos serão adicionados somente quando houver requisitos explícitos, evitando antecipar regras de negócio.
+## Empresas
 
-O mapping EF Core é separado da entidade de domínio e usa `ValueGeneratedNever` para o `Guid` criado pelo domínio.
+`Company` contém identidade, nome (`max 200`) e `IsActive`. O `Guid` é criado pelo domínio e o mapping usa `ValueGeneratedNever`.
+
+## Filiais
+
+`CompanyBranch` contém:
+
+- `Id` — `Guid`, chave primária;
+- `CompanyId` — `Guid`, obrigatório;
+- `Name` — obrigatório, máximo 200 caracteres;
+- `IsActive` — obrigatório.
+
+A migration `20261018105000_AddCompanyBranches` cria `CompanyBranches`, índice `IX_CompanyBranches_CompanyId` e FK `FK_CompanyBranches_Companies_CompanyId`. A FK usa `ON DELETE RESTRICT`: uma filial não pode existir sem empresa e uma futura tentativa de excluir uma empresa referenciada não deve apagar filiais silenciosamente.
+
+Status não possui cascata. Desativar `Company` não altera `CompanyBranch.IsActive`, e vice-versa. Essa independência é deliberada até existir regra comercial explícita.
+
+Dados fiscais, endereço, código de estabelecimento, indicação de matriz e outros atributos não fazem parte do schema atual.
 
 ## SQLite: pontos de atenção
 
-O provider EF Core SQLite possui limitações em operações de migration e em tipos como `decimal`, `DateTimeOffset` e `TimeSpan` para ordenação/comparação.
-
-Por isso:
-
-- timestamps técnicos serão UTC em `DateTime`;
-- valores monetários persistidos no SQLite seguirão o ADR-0005: inteiro de 64 bits com escala fixa de 6 casas quando precisarem participar de consultas relacionais;
-- nunca usar `double` para valores financeiros apenas para contornar limitação do provider;
-- arredondamento comercial permanece regra explícita de cada fluxo e deverá possuir testes próprios.
-
-## Conexões e concorrência local
-
 - `Foreign Keys=True` é definido explicitamente na connection string;
-- `Cache=Shared` não é utilizado, pois o próprio SQLite desencoraja shared-cache e a documentação do Microsoft.Data.Sqlite recomenda removê-lo quando WAL é utilizado;
-- o timeout padrão é explicitado na connection string;
-- WAL é habilitado de forma idempotente pelo `SqliteDatabaseRuntimeConfigurator` antes da abertura da janela principal;
-- a inicialização valida que `journal_mode=wal` e `foreign_keys=1`, falhando cedo se a configuração não puder ser aplicada;
-- migrations continuam separadas dessa configuração de runtime e só serão geradas pelas ferramentas do EF Core.
+- `Cache=Shared` não é utilizado;
+- WAL é habilitado de forma idempotente antes da janela principal;
+- a inicialização valida `journal_mode=wal` e `foreign_keys=1`;
+- timestamps técnicos usam UTC em `DateTime`;
+- valores monetários seguem ADR-0005: inteiro de 64 bits com escala fixa de 6 casas quando participarem de consultas relacionais;
+- nunca usar `double` para valores financeiros apenas para contornar limitação do provider.
+
+## Baseline de migrations — 2026-10-18
+
+Sete migrations validadas no CI:
+
+1. `20261015121025_InitialCreate`;
+2. `20261015130329_AddLocalUsers`;
+3. `20261015141238_AddRbacAuthorization`;
+4. `20261016131952_AddAuthenticationThrottling`;
+5. `20261016135247_AddSecurityAuditTrail`;
+6. `20261017234500_AddAdministrativeAuditContext`;
+7. `20261018105000_AddCompanyBranches`.
+
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O baseline de Filiais está consistente com o snapshot EF.
 
 ## Backup
 
-A fase de backup deverá usar a API `SqliteConnection.BackupDatabase` ou mecanismo equivalente do SQLite, seguida de validação do arquivo gerado.
+A fase de backup deverá usar `SqliteConnection.BackupDatabase` ou mecanismo equivalente do SQLite, seguida de validação do arquivo gerado.
 
 ## Migração para PostgreSQL
 
-A evolução futura deverá conter:
-
-1. provider PostgreSQL separado;
-2. migrations específicas quando necessário;
-3. export/import transacional e validado;
-4. contagem e checksum lógico dos registros migrados;
-5. backup obrigatório antes da conversão;
-6. ferramenta de diagnóstico e rollback da migração.
-
-
-## Tooling de migrations
-
-`dotnet-ef` é fixado como ferramenta local no manifesto `.config/dotnet-tools.json`, na mesma versão do EF Core usado pela solução.
-
-A `ErpDbContextDesignTimeFactory` usa um banco temporário em `%TEMP%/LocalErp/DesignTime` apenas para design-time, evitando que a geração de migration dependa do WPF ou aponte acidentalmente para dados reais.
-
-Com SDK disponível:
-
-```powershell
-./scripts/new-migration.ps1 InitialCreate
-```
-
-A migration gerada deve ser revisada antes de ser commitada/aplicada.
+A evolução futura deverá conter provider PostgreSQL separado, export/import transacional validado, contagem/checksum lógico, backup obrigatório e estratégia de rollback.
