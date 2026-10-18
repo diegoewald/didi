@@ -5,11 +5,11 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: baseline básico de segurança fechado / administração de usuários Partes A–F concluída
+- Fase: baseline básico de segurança fechado / administração de usuários e roles operacional
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 110/110 testes passando
+- CI Windows: build Release com 0 warnings / 0 errors e 117/117 testes passando
 - Migrations: 6 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso atual
@@ -30,27 +30,29 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 14. a tabela permite abrir as roles de cada usuário; consulta exige `roles.read` e associação/remoção exige `roles.manage`;
 15. remover uma associação que eliminaria o último usuário ativo com capacidade efetiva de `roles.manage` é bloqueado atomicamente no SQLite;
 16. criação de usuário, ativação/desativação, reset administrativo e associação/remoção de roles geram auditoria administrativa identificando ator e alvo;
-17. mutações administrativas auditadas e seus eventos são persistidos atomicamente: falha de auditoria reverte a mudança de estado.
+17. a Administração também possui uma janela própria para criar roles, ativar/desativar e conceder/revogar permissões do catálogo;
+18. desativar uma role ou revogar `roles.manage` é bloqueado quando eliminaria a última capacidade efetiva de administrar roles;
+19. mutações administrativas auditadas e seus eventos são persistidos atomicamente: falha de auditoria reverte a mudança de estado.
 
 Senhas da UI são lidas diretamente de `PasswordBox`, não são armazenadas no ViewModel, sessão, logs ou auditoria e os campos protegidos são limpos após a tentativa. Criação e reset administrativo usam a política central de 15 a 128 caracteres antes do hashing.
 
-## Administração de usuários
+## Administração de usuários e roles
 
-As Partes A, B, C, D, E e F estão concluídas. A tela WPF de Administração carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
+As Partes A, B, C, D, E e F da Administração de usuários estão concluídas. A tela WPF carrega usuários por `UserService.ListAsync(includeInactive: true)`, apresenta estados de carregamento, erro e lista vazia, permite criar contas, gerenciar status ativo/inativo, redefinir senhas e abrir a associação de roles de cada usuário.
 
 A UI não substitui autorização: a listagem exige `users.read`; criação, alteração de status e reset administrativo de senha exigem `users.manage`; leitura das associações exige `roles.read`; atribuição e remoção de roles exigem `roles.manage` na camada Application.
 
-Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` bloqueia a auto-inativação da conta da sessão antes de persistir a alteração. Como o operador precisa estar autenticado e autorizado com `users.manage`, a desativação válida de outra conta preserva o operador atual.
+Desativar uma conta exige confirmação visual. `UserService.SetActiveAsync` bloqueia a auto-inativação da conta da sessão antes de persistir a alteração. No reset administrativo, `UserService.ChangePasswordAsync` aplica `PasswordPolicy`, troca o hash e limpa `FailedSignInCount`/`SignInBlockedUntilUtc` na mesma atualização, sem alterar `IsActive`.
 
-No reset administrativo, `UserService.ChangePasswordAsync` aplica `PasswordPolicy`, troca o hash e limpa `FailedSignInCount`/`SignInBlockedUntilUtc` na mesma atualização, sem alterar `IsActive`. A View serializa as ações de status e reset para evitar operações concorrentes na mesma tela.
+`RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção protegida usa transação SQLite imediata e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`.
 
-Na Parte E, `RoleService.ListUserAssignmentsAsync` projeta roles ativas e inativas com o estado de associação. Contas inativas e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos. A remoção protegida usa transação SQLite imediata: o ERP verifica se o vínculo contribui para `roles.manage` e rejeita a operação quando não restaria nenhum caminho efetivo formado por usuário ativo + role ativa + grant `roles.manage`. O teste de concorrência valida que duas remoções simultâneas dos dois últimos administradores não conseguem remover ambas.
+A janela `Roles e permissões` permite criar roles, alterar seu status e administrar todas as permissões de `PermissionCatalog`. `RoleService.SetActiveAsync` e `RevokePermissionAsync` agora usam o mesmo contrato transacional de auditoria. Quando uma desativação ou revogação de `roles.manage` removeria o último caminho efetivo de administração, a operação é revertida e a Application retorna `LastAdministrativeRoleCapabilityException`. Concessões, ativações e mutações que preservam outro administrador continuam permitidas.
 
-Na Parte F, `SecurityAuditEvent` passou a distinguir `UserId` alvo, `ActorUserId` e `RoleId` opcional. Os eventos administrativos usam apenas códigos canônicos, sem payload textual arbitrário. `IAdministrativeAuditStore` garante que criação, status, reset e associação/remoção de roles sejam commitados junto com o evento correspondente; se a auditoria falha, a mutação também falha. A migration `20261017234500_AddAdministrativeAuditContext` preserva os eventos anteriores ao reconstruir `SecurityAuditEvents` de forma compatível com SQLite e adicionar as novas FKs com `SET NULL`.
+`SecurityAuditEvent` distingue `UserId` alvo, `ActorUserId` e `RoleId` opcional. Para grants/revogações de permissão, `DetailCode` recebe somente o código canônico conhecido do catálogo. Não há payload textual arbitrário. `IAdministrativeAuditStore` garante que mutações e eventos correspondentes sejam commitados juntos; no-op idempotente e operação bloqueada não produzem falso evento de sucesso.
 
-A proteção/auditoria atual cobre as mutações expostas pela Administração de usuários. A futura UI completa de roles/permissões deverá aplicar salvaguarda e auditoria equivalentes antes de expor desativação de role ou revogação de `roles.manage`.
+A migration `20261017234500_AddAdministrativeAuditContext` preserva os eventos anteriores ao reconstruir `SecurityAuditEvents` de forma compatível com SQLite e adicionar as FKs de ator/role com `SET NULL`. A administração completa de roles/permissões não exigiu nova migration.
 
-Próxima frente funcional: administração completa de roles/permissões, começando pelo hardening de desativação de role/revogação de `roles.manage` antes de expor essas mutações na UI. Troca de senha pelo próprio usuário também permanece no backlog.
+Próxima frente funcional: troca de senha pelo próprio usuário. Também permanecem no backlog a consulta operacional da trilha de auditoria e sua política de retenção.
 
 ## Política de tentativas de login
 
@@ -149,7 +151,7 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 
 ## Segurança — baseline de 2026-10-17
 
-A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação, bloqueio de auto-inativação administrativa, recuperação administrativa de senha, associação segura de roles e auditoria atômica das mutações administrativas atualmente expostas.
+A fundação atual inclui usuários locais, hashing de senha, política única de senha, sessão em memória, bootstrap atômico do primeiro administrador, roles, permissões, autorização deny-by-default, login/logout, throttling/lockout persistente, mitigação de timing por dummy password verification, trilha de auditoria de autenticação, bloqueio de auto-inativação administrativa, recuperação administrativa de senha, associação segura de roles, administração completa de roles/permissões e auditoria atômica das mutações administrativas expostas.
 
 As migrations `20261016135247_AddSecurityAuditTrail` e `20261017234500_AddAdministrativeAuditContext` estão integradas e validadas. O benchmark reproduzível do hashing também foi executado no Windows Server 2025 do CI usando o serviço real do ERP e `IterationCount = 220000`; a mediana observada ficou em aproximadamente 145 ms para hash, 138 ms para verify válido e 142 ms para verify inválido.
 

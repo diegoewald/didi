@@ -38,10 +38,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 ## Baseline atual — 2026-10-17
 
 - Domain: 19/19.
-- Application: 54/54.
-- Persistence: 31/31.
+- Application: 58/58.
+- Persistence: 34/34.
 - Infrastructure: 6/6.
-- Total automatizado: 110/110.
+- Total automatizado: 117/117.
 - Build Release: 0 warnings / 0 errors.
 - Build da ferramenta de benchmark: 0 warnings / 0 errors.
 - EF Core: sem mudanças pendentes no modelo.
@@ -54,26 +54,23 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Timing: caminhos de usuário ausente, inativo e bloqueado são testados para exigir dummy password verification.
 - Auditoria de autenticação: invariantes de `SecurityAuditEvent`, códigos inválidos, UTC obrigatório, persistência EF, bootstrap e eventos da `AuthenticationService` cobertos.
 - Startup routing: bootstrap, login e acesso ao shell cobertos na camada Application.
-- Administração Parte A: `ListAsync(includeInactive: true)` coberto e teste explícito garante demanda de `users.read`.
-- Administração Parte B: criação exige `users.manage`; senha curta é rejeitada antes do hash; troca administrativa também rejeita senha abaixo da política; duplicidade normalizada continua coberta.
-- Administração Parte C: mudança de status exige `users.manage`, ativa conta inativa, desativa outra conta ativa e rejeita auto-inativação antes de persistir.
-- Administração Parte D: reset de senha exige `users.manage`, limpa estado de falhas/lockout sem alterar `IsActive` e rejeita usuário inexistente antes do hashing.
-- Administração Parte E: consulta de associações exige `roles.read`; atribuição/remoção exigem `roles.manage`; remoção do último `roles.manage` efetivo é bloqueada.
-- Concorrência Parte E: duas remoções simultâneas dos dois últimos administradores resultam em exatamente uma remoção e um bloqueio, deixando uma associação administrativa persistida.
-- Administração Parte F: criação, ativação/desativação, reset e associação/remoção de role validam evento, ator e alvo na Application.
-- Atomicidade Parte F: testes SQLite confirmam que falha da FK de auditoria reverte atualização de usuário ou associação de role; remoção concorrente registra somente a alteração efetivamente commitada.
+- Administração Parte A: `ListAsync(includeInactive: true)` e exigência de `users.read` cobertos.
+- Administração Parte B: criação exige `users.manage`; senha curta é rejeitada antes do hash; duplicidade normalizada continua coberta.
+- Administração Parte C: mudança de status exige `users.manage` e auto-inativação é rejeitada antes de persistir.
+- Administração Parte D: reset exige `users.manage`, limpa lockout sem alterar `IsActive` e rejeita usuário inexistente antes do hashing.
+- Administração Parte E: leitura de associações exige `roles.read`; atribuição/remoção exigem `roles.manage`; remoção do último `roles.manage` efetivo é bloqueada.
+- Concorrência Parte E: duas remoções simultâneas dos dois últimos administradores deixam exatamente uma associação administrativa.
+- Administração Parte F: criação, status, reset e associação/remoção de role validam evento, ator e alvo; falha da FK de auditoria reverte a mutação.
+- Administração de roles/permissões: criação de role e grant auditados; desativação da última role administrativa e revogação do último `roles.manage` efetivo são bloqueadas.
+- Persistência de roles/permissões: testes SQLite confirmam rollback da criação de role em falha de auditoria, bloqueio de desativação sem evento e revogação segura quando outro administrador efetivo permanece.
 - Migration smoke: `ActorUserId` e `RoleId` são exigidos após apply/reapply e o rollback completo das seis migrations passa.
-- Desktop WPF: XAML/code-behind, navegação, criação, status, reset de senha e janela modal de roles compilados no Windows CI; senhas de criação/reset não passam pelo ViewModel.
+- Desktop WPF: XAML/code-behind da administração de usuários, janela de associações e janela completa de roles/permissões compilam no Windows CI.
 
-Durante a Parte B houve uma falha intermediária de build por `CA1822` em uma propriedade de texto usada por binding. A correção preservou o analyzer ativo e o build subsequente voltou a 0 warnings / 0 errors; nenhuma regra foi desabilitada para obter CI verde.
+Durante a Parte B houve uma falha intermediária de build por `CA1822`; a correção preservou o analyzer ativo. Na Parte D, a revisão de UI corrigiu concorrência entre status e reset. Na Parte E, a salvaguarda do último administrador foi validada com SQLite real e transação não adiada.
 
-Na Parte C, um commit intermediário com sintaxe abreviada da exceção foi substituído antes da validação final por uma classe convencional. O run intermediário foi cancelado automaticamente quando a branch avançou; o baseline considera apenas o CI do HEAD final.
+Na Parte F, o run funcional intermediário #94 falhou porque a primeira versão da migration tentou `AddForeignKeyOperation` sobre tabela SQLite existente. A correção reconstruiu `SecurityAuditEvents`, preservou registros/FKs e o run #95 validou o ciclo completo.
 
-Na Parte D, a revisão de UI identificou e corrigiu concorrência possível entre alteração de status e reset de senha. O HEAD funcional final serializa essas ações na View antes da documentação do marco.
-
-Na Parte E, a salvaguarda do último administrador foi validada na persistência, não apenas por mock de Application. O teste concorrente usa o SQLite real e a transação não adiada para comprovar a serialização de duas remoções concorrentes.
-
-Na Parte F, o run funcional intermediário #94 falhou porque a primeira versão da migration tentou executar `AddForeignKeyOperation` sobre uma tabela SQLite existente, operação não suportada pelo provider. A correção não suprimiu o teste nem removeu FKs: a migration passou a reconstruir `SecurityAuditEvents`, copiar os registros e criar as FKs no `CREATE TABLE`. O run #95 validou 110/110 testes, snapshot EF e o ciclo completo das seis migrations.
+Na administração completa de roles/permissões, a salvaguarda foi implementada antes da UI. O run #97 validou 117/117 testes e as transações protegidas; o run #98 validou o mesmo baseline junto com o novo XAML/code-behind WPF.
 
 ## Benchmark Windows CI
 
@@ -89,39 +86,26 @@ O resultado comprova que a ferramenta é executável e fornece baseline real em 
 
 O CI hospedado não substitui teste visual/interativo. Executar smoke manual em Windows verificando:
 
-- primeira abertura sem usuários;
-- criação do administrador;
-- entrada automática após bootstrap;
-- fechamento/reabertura e login;
-- credencial inválida;
-- comportamento durante throttling/lockout;
-- logout e retorno ao login;
+- primeira abertura sem usuários, bootstrap, reabertura/login e logout;
+- credencial inválida e comportamento durante throttling/lockout;
 - abertura da Administração e renderização da lista de usuários;
-- criação de usuário válido e atualização imediata da tabela;
-- senha divergente, senha abaixo da política, usuário duplicado e acesso sem `users.manage` na criação;
-- limpeza dos dois `PasswordBox` de criação após tentativa;
-- desativação de outra conta com confirmação e atualização imediata do status;
-- reativação de conta inativa;
-- tentativa de auto-inativação exibindo erro sem alterar a conta;
-- acesso sem `users.manage` ao alterar status;
-- abertura/cancelamento do painel de reset administrativo de senha;
-- reset válido de senha para conta ativa e para conta inativa, preservando o status;
-- senha divergente, senha abaixo da política, usuário removido durante a tela e acesso sem `users.manage` no reset;
-- limpeza dos dois `PasswordBox` de reset após tentativa;
-- conta previamente bloqueada conseguindo autenticar com a nova senha após reset administrativo;
-- impedir ação concorrente de status enquanto o reset está em andamento e vice-versa;
-- abertura da janela de roles de usuário e renderização de roles ativas/inativas;
-- associação de role ativa a usuário ativo;
-- bloqueio de nova associação para usuário inativo ou role inativa;
-- remoção de vínculo existente para role inativa;
-- acesso sem `roles.read` à consulta de roles e sem `roles.manage` às mutações;
-- confirmação antes de remover associação;
-- self-demotion permitida quando outro `roles.manage` efetivo permanece;
-- bloqueio visual ao tentar remover a última capacidade efetiva de `roles.manage`;
-- fechamento da janela de roles impedido durante mutação em andamento;
-- verificar em banco/log de diagnóstico controlado que as mutações administrativas bem-sucedidas produzem eventos com ator/alvo corretos e sem senha/hash;
-- estados loading/erro/vazio da administração quando aplicáveis;
-- fechamento voluntário das janelas;
+- criação/status/reset de usuário, incluindo erros e limpeza de `PasswordBox`;
+- conta previamente bloqueada autenticando com a nova senha após reset administrativo;
+- serialização de status/reset na tela;
+- abertura da janela de roles de usuário, associação/removal, roles inativas e permissões insuficientes;
+- self-demotion permitida quando outro `roles.manage` efetivo permanece e bloqueada quando seria a última;
+- abertura da janela `Roles e permissões` pelo botão direto da Administração;
+- criação de role e rejeição visual de nome duplicado/inválido;
+- ativação e desativação de roles com confirmação;
+- concessão e revogação de cada permission code do catálogo;
+- aviso reforçado ao revogar `roles.manage`;
+- bloqueio visual ao tentar desativar a última role administrativa efetiva;
+- bloqueio visual ao tentar revogar o último `roles.manage` efetivo;
+- operação equivalente permitida quando outro caminho administrativo efetivo permanece;
+- fechamento/refresh da janela impedidos durante mutação em andamento;
+- verificar em banco/log de diagnóstico controlado que mutações administrativas bem-sucedidas produzem eventos com ator/alvo corretos e sem senha/hash;
+- confirmar que no-op e operação bloqueada não produzem falso evento de sucesso;
+- estados loading/erro/vazio quando aplicáveis;
 - foco, Enter, escalonamento/DPI e aparência em tema Windows real.
 
-Também permanece recomendado executar o benchmark de password hashing em uma máquina Windows representativa do hardware alvo e preservar os resultados com CPU, Windows, .NET, média, mediana e P95. A política de retenção de auditoria ainda precisa ser definida, mas não bloqueia a validação técnica já concluída da trilha atual.
+Também permanece recomendado executar o benchmark de password hashing em uma máquina Windows representativa do hardware alvo e preservar os resultados com CPU, Windows, .NET, média, mediana e P95. A política de retenção de auditoria ainda precisa ser definida.

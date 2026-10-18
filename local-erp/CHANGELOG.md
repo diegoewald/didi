@@ -48,7 +48,11 @@ O projeto segue versionamento semântico.
 - contexto `ActorUserId` e `RoleId` em `SecurityAuditEvent`, com FKs opcionais e índices de consulta;
 - eventos canônicos `administration.user.*` e `administration.user_role.*` para as mutações expostas pela administração de usuários;
 - migration `20261017234500_AddAdministrativeAuditContext`, preservando o histórico de auditoria existente ao adicionar contexto de ator/role;
-- testes de Application para ator/alvo dos eventos administrativos e testes de Persistence para rollback conjunto e auditoria concorrente.
+- testes de Application para ator/alvo dos eventos administrativos e testes de Persistence para rollback conjunto e auditoria concorrente;
+- `LastAdministrativeRoleCapabilityException` para bloquear desativação/revogação que eliminaria o último `roles.manage` efetivo;
+- eventos canônicos para criação/status de role e grant/revogação de permissões;
+- janela WPF `Roles e permissões` com criação de role, ativação/desativação e administração do `PermissionCatalog`;
+- testes de Application e Persistence para auditoria e salvaguardas de role/permissão.
 
 ### Changed
 
@@ -67,19 +71,22 @@ O projeto segue versionamento semântico.
 - navegação do shell carrega assincronamente a área Administração sem mover autorização para a UI;
 - `UserService.CreateAsync` e `ChangePasswordAsync` passaram a aplicar a mesma `PasswordPolicy` de 15–128 caracteres usada pelo bootstrap;
 - a criação administrativa mantém a senha fora do ViewModel: a View lê `PasswordBox`, chama diretamente `UserService` e limpa os campos após a tentativa;
-- `UserService.SetActiveAsync` agora usa a sessão autenticada para impedir que o operador desative a própria conta antes da persistência;
+- `UserService.SetActiveAsync` usa a sessão autenticada para impedir auto-inativação antes da persistência;
 - a tabela administrativa atualiza imediatamente o status após ativação/desativação bem-sucedida;
-- `UserService.ChangePasswordAsync` agora limpa `FailedSignInCount` e `SignInBlockedUntilUtc` ao redefinir a senha, preservando `IsActive`;
-- o reset administrativo mantém senha e confirmação fora do ViewModel e limpa os campos protegidos após a tentativa;
-- ações de alteração de status e reset de senha são serializadas na View para impedir operações concorrentes na mesma tela;
-- `RoleService` passou a listar associações por usuário com `roles.read` e a validar usuário/role antes de mutações protegidas por `roles.manage`;
+- `UserService.ChangePasswordAsync` limpa `FailedSignInCount` e `SignInBlockedUntilUtc` ao redefinir a senha, preservando `IsActive`;
+- ações de alteração de status e reset de senha são serializadas na View;
+- `RoleService` lista associações por usuário com `roles.read` e valida usuário/role antes de mutações protegidas por `roles.manage`;
 - novas associações são recusadas para usuários inativos ou roles inativas, enquanto vínculos existentes continuam removíveis;
-- remoção de associação usuário-role passou a ser executada em transação SQLite imediata quando precisa preservar a última capacidade efetiva de `roles.manage`;
+- remoção de associação usuário-role usa transação SQLite imediata quando precisa preservar a última capacidade efetiva de `roles.manage`;
 - a proteção administrativa considera capacidade efetiva — usuário ativo + role ativa + grant — em vez de depender do nome `Administrator`;
-- criação de usuário, ativação/desativação e reset administrativo agora persistem o audit event no mesmo `SaveChanges` da mutação;
-- associação/remoção de role agora persistem o vínculo e o audit event na mesma transação SQLite imediata;
-- `SecurityAuditEvent` passou a distinguir conta afetada, ator administrativo e role alvo sem adicionar payload textual arbitrário;
-- a migration de contexto administrativo usa reconstrução da tabela `SecurityAuditEvents`, pois SQLite não suporta `AddForeignKeyOperation` em tabela existente.
+- criação de usuário, ativação/desativação e reset administrativo persistem o audit event no mesmo `SaveChanges` da mutação;
+- associação/remoção de role persistem vínculo e audit event na mesma transação SQLite imediata;
+- `SecurityAuditEvent` distingue conta afetada, ator administrativo e role alvo sem payload textual arbitrário;
+- a migration de contexto administrativo usa reconstrução de `SecurityAuditEvents`, pois SQLite não suporta `AddForeignKeyOperation` em tabela existente;
+- `RoleService.CreateAsync`, `SetActiveAsync`, `GrantPermissionAsync` e `RevokePermissionAsync` passam pelo `IAdministrativeAuditStore`;
+- desativação de role e revogação de `roles.manage` usam transação SQLite imediata para preservar outro caminho administrativo efetivo;
+- permission codes auditados são validados pelo catálogo e persistidos somente como `DetailCode` canônico;
+- a Administração ganhou acesso direto à janela completa de roles/permissões e serializa mutações enquanto a janela está ocupada.
 
 ### Validation
 
@@ -87,21 +94,17 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - build de `LocalErp.PasswordHashBenchmark`: 0 warnings / 0 errors;
-- suíte automatizada: 110/110;
-- Domain 19/19, Application 54/54, Persistence 31/31, Infrastructure 6/6;
+- suíte automatizada: 117/117;
+- Domain 19/19, Application 58/58, Persistence 34/34, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 6 migrations: apply -> rollback 0 -> reapply passando;
 - migration smoke inclui `SecurityAuditEvents`, `ActorUserId`, `RoleId` e as migrations `20261016135247_AddSecurityAuditTrail`/`20261017234500_AddAdministrativeAuditContext`;
 - bootstrap SQLite: rollback e concorrência validados;
 - auditoria de autenticação: invariantes, códigos, timestamps UTC, persistência e eventos cobertos;
-- administração de usuários Parte A: build WPF e regras de listagem/autorização validados no CI;
-- administração de usuários Parte B: criação protegida por `users.manage`, política de senha e fluxo WPF sem senha no ViewModel validados no CI;
-- administração de usuários Parte C: ativação/desativação protegida por `users.manage`, auto-inativação bloqueada e UI de status compilada no CI;
-- administração de usuários Parte D: reset protegido por `users.manage`, política de senha, desbloqueio administrativo preservando status e fluxo WPF sem senha no ViewModel validados no CI;
-- administração de usuários Parte E: leitura por `roles.read`, mutações por `roles.manage`, janela WPF de roles e proteção atômica do último administrador efetivo validadas no CI;
-- concorrência Parte E: duas remoções simultâneas dos dois últimos administradores preservam exatamente um vínculo com capacidade administrativa;
-- administração de usuários Parte F: ator/alvo dos eventos, rollback de mutação quando auditoria falha e auditoria da remoção concorrente validados no SQLite real;
-- o run intermediário #94 detectou corretamente `AddForeignKeyOperation` incompatível com SQLite; a migration foi corrigida por reconstrução de tabela e o run #95 fechou verde;
+- administração de usuários Partes A–F validada no CI, incluindo proteção da última associação administrativa e rollback conjunto de auditoria;
+- administração de roles/permissões: criação, status, grant/revogação, proteção do último `roles.manage` efetivo e auditoria atômica validados;
+- run #97 validou 117/117 testes e as novas salvaguardas persistentes antes da UI;
+- run #98 validou o mesmo baseline junto com a janela WPF completa de roles/permissões;
 - benchmark Windows CI com `IterationCount = 220000`: hash mediana 145.155 ms; verify success mediana 138.080 ms; verify failure mediana 141.959 ms;
 - smoke visual/interativo do fluxo WPF permanece obrigatório antes de release;
 - benchmark em hardware Windows representativo do ambiente final permanece recomendado antes de produção.
@@ -187,7 +190,7 @@ O projeto segue versionamento semântico.
 - nova senha e confirmação ficam fora do ViewModel e são limpas dos `PasswordBox` após cada tentativa;
 - o reset zera tentativas falhas e bloqueio temporário, mas preserva o status ativo/inativo;
 - usuário inexistente é rejeitado antes do hashing;
-- ações de status e reset foram serializadas na View após revisão de concorrência de UX;
+- ações de status e reset foram serializadas na View;
 - três testes adicionais de Application elevaram a suíte para 94 testes;
 - nenhuma migration nova foi necessária.
 
@@ -197,11 +200,10 @@ O projeto segue versionamento semântico.
 - consulta de associações exige `roles.read`; atribuição e remoção exigem `roles.manage` na Application;
 - usuários inativos e roles inativas não recebem novas associações, mas vínculos existentes podem ser removidos;
 - a remoção da última associação que sustenta uma capacidade efetiva de `roles.manage` é bloqueada;
-- a decisão de remoção e a exclusão usam uma única transação SQLite imediata, evitando corrida entre administradores concorrentes;
+- a decisão de remoção e a exclusão usam uma única transação SQLite imediata;
 - teste SQLite real confirma que duas remoções simultâneas dos dois últimos administradores deixam exatamente um administrador efetivo;
 - quatro testes adicionais de Application e três de Persistence elevaram a suíte para 101 testes;
-- nenhuma migration nova foi necessária;
-- desativação de role e revogação de `roles.manage` continuam fora da UI deste slice e deverão receber proteção equivalente quando forem expostas.
+- nenhuma migration nova foi necessária.
 
 ## Marco de administração de usuários — Parte F — 2026-10-17
 
@@ -214,3 +216,16 @@ O projeto segue versionamento semântico.
 - a primeira forma da migration foi rejeitada pelo SQLite por `AddForeignKeyOperation`; a versão final reconstrói a tabela e foi validada em apply/rollback/reapply;
 - cinco testes adicionais de Application e quatro de Persistence elevaram a suíte para 110 testes;
 - nenhuma senha, hash, token ou payload textual arbitrário foi adicionado à trilha.
+
+## Marco de administração de roles/permissões — 2026-10-17
+
+- a área Administração ganhou botão direto para `Roles e permissões`;
+- a nova janela permite criar roles, ativar/desativar e conceder/revogar as permissões do catálogo;
+- `RoleService.SetActiveAsync` protege desativação da role que sustenta o último `roles.manage` efetivo;
+- `RoleService.RevokePermissionAsync` protege revogação do último grant efetivo de `roles.manage`;
+- a proteção considera capacidade efetiva, não o nome `Administrator`;
+- criação/status de role e grant/revogação de permissões geram eventos canônicos com ator/role e permission code estruturado;
+- mutação e auditoria compartilham a mesma unidade transacional; operação bloqueada ou no-op não gera falso evento de sucesso;
+- quatro testes adicionais de Application e três de Persistence elevaram a suíte para 117 testes;
+- nenhuma migration nova foi necessária;
+- build WPF, snapshot EF e seis migrations permaneceram verdes no CI #98.
