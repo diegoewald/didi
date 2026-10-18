@@ -87,6 +87,20 @@
 - [x] desativação de role/revogação de `roles.manage` protegidas em transação SQLite imediata;
 - [x] troca própria de senha usa transação SQLite imediata e compare-and-set do hash anterior.
 
+## P1 — Cadastros-base
+
+- [x] tornar `Company` operacional em `Cadastros` com listagem de ativos/inativos;
+- [x] criar empresa pela UI usando `companies.manage` na Application;
+- [x] renomear e ativar/desativar empresa sem mover autorização para o WPF;
+- [x] estados loading/erro/vazio e refresh explícito para o catálogo de empresas;
+- [x] testes explícitos de `companies.read` para listagem e `companies.manage` para mutações;
+- [ ] definir e modelar `Branch`/filial vinculada à empresa antes de expor a UI de filiais;
+- [ ] manter dados fiscais/endereço de filial fora do modelo até o requisito de negócio ser definido;
+- [ ] fornecedores;
+- [ ] produtos/materiais;
+- [ ] unidades/categorias;
+- [ ] centros de custo.
+
 ## P2 — Engenharia
 
 - [x] CI Windows permanente;
@@ -101,8 +115,10 @@
 
 O baseline básico de segurança está fechado para evolução funcional, sem esconder as dívidas de pré-release. A administração possui listagem de usuários protegida por `users.read`, mutações administrativas de usuário por `users.manage` e administração de associações, roles e permissões por `roles.read`/`roles.manage`, sempre com autoridade na Application e nas invariantes persistentes.
 
-A troca de senha pelo próprio usuário é um caso de uso separado do reset administrativo. `AccountService.ChangePasswordAsync` exige sessão autenticada, valida a senha atual, aplica `PasswordPolicy` à nova senha e não exige `users.manage`. `IUserCredentialStore` revalida conta ativa e hash esperado dentro de uma transação SQLite imediata; assim um reset administrativo ou outra troca concorrente não pode ser sobrescrito silenciosamente. Novo hash, limpeza do estado de falhas e evento `account.password_changed` são commitados juntos. O evento identifica a mesma conta como alvo e ator e não armazena senha, hash ou payload textual.
+A troca de senha pelo próprio usuário é um caso de uso separado do reset administrativo. `AccountService.ChangePasswordAsync` exige sessão autenticada, valida a senha atual, aplica `PasswordPolicy` à nova senha e não exige `users.manage`. `IUserCredentialStore` revalida conta ativa e hash esperado dentro de uma transação SQLite imediata; assim um reset administrativo ou outra troca concorrente não pode ser sobrescrito silenciosamente. Novo hash, limpeza do estado de falhas e evento `account.password_changed` são commitados juntos.
 
-Baseline automatizado: 127/127 testes (Domain 19, Application 63, Persistence 39, Infrastructure 6), 6 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+`Cadastros` agora possui uma tela operacional de empresas sobre o `CompanyService` já existente. A lista inclui empresas ativas e inativas e oferece criação, renomeação e ativação/desativação. `companies.read` continua sendo exigida para consulta e `companies.manage` para todas as mutações na Application. Nenhuma regra de autorização foi deslocada para a UI e nenhuma migration nova foi necessária.
 
-Próxima tarefa funcional: Fase 6 — tornar `Company`/empresa-filial operacional na UI, aproveitando o serviço e a persistência básicos já existentes. A consulta/retenção operacional da trilha de auditoria continua no roadmap posterior; smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Baseline automatizado: 129/129 testes (Domain 19, Application 65, Persistence 39, Infrastructure 6), 6 migrations, build Release sem warnings/erros, ferramenta de benchmark compilando, snapshot EF sem mudanças pendentes e ciclo de migrations apply -> rollback 0 -> reapply validado.
+
+Próxima tarefa funcional: completar empresa/filial modelando uma entidade de filial vinculada a `Company` antes de criar sua UI. Dados fiscais, endereço e demais campos específicos não devem ser inventados sem requisito de negócio. A consulta/retenção operacional da trilha de auditoria continua no roadmap posterior; smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

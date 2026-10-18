@@ -56,9 +56,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [ ] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error: implementados na administração, ainda não padronizados para o shell inteiro;
+- [-] estados loading/empty/error: administração e empresas possuem estados próprios, ainda não padronizados para o shell inteiro;
 - [ ] componentes de tabela/filtro após existir uso real;
-- [ ] smoke visual/interativo do fluxo de autenticação e administração em Windows.
+- [ ] smoke visual/interativo do fluxo de autenticação, administração e cadastros em Windows.
 
 ## Fase 5 — Administração de usuários e roles
 
@@ -75,7 +75,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 ## Fase 6 — Cadastros-base
 
-- [-] empresa/filial: serviço e persistência básicos existem; UI operacional é a próxima frente;
+- [x] empresa (`Company`): UI operacional em `Cadastros` com listagem, criação, renomeação e status;
+- [-] filial: modelo e vínculo com empresa ainda pendentes; não inventar campos fiscais/endereço antes do requisito;
 - [ ] fornecedores;
 - [ ] produtos/materiais;
 - [ ] unidades/categorias;
@@ -148,4 +149,12 @@ Novo hash, limpeza de `FailedSignInCount`/`SignInBlockedUntilUtc` e `account.pas
 
 Nenhuma migration nova foi necessária. O baseline automatizado subiu para 127/127 testes (Domain 19, Application 63, Persistence 39, Infrastructure 6), com build WPF Release sem warnings/erros, snapshot EF consistente e seis migrations validadas em apply -> rollback 0 -> reapply.
 
-Próxima prioridade funcional: Fase 6 — UI operacional de empresa/filial sobre o `CompanyService` e a persistência já existentes.
+## Marco de cadastro de empresas — 2026-10-17
+
+A navegação `Cadastros` deixou de apontar apenas para o conteúdo genérico do shell e passou a abrir `CompaniesCatalogView`. A tela lista empresas ativas e inativas, possui estados de carregamento/erro/vazio, refresh explícito, criação por nome, renomeação e ativação/desativação com confirmação antes de reduzir o status.
+
+A UI permanece apenas como orquestração. `CompanyService.ListAsync` continua exigindo `companies.read`, enquanto `CreateAsync`, `RenameAsync` e `SetActiveAsync` continuam exigindo `companies.manage`. Dois testes adicionais de Application registram explicitamente esse contrato. O `Company` existente já suportava nome/status e a persistência EF correspondente, portanto nenhuma migration foi necessária.
+
+O baseline automatizado subiu para 129/129 testes (Domain 19, Application 65, Persistence 39, Infrastructure 6). O CI #102 validou build WPF Release com 0 warnings/0 errors, snapshot EF sem mudanças e as seis migrations em apply -> rollback 0 -> reapply.
+
+Próxima prioridade funcional: concluir o item empresa/filial modelando filial vinculada a `Company`. O próximo slice deve começar apenas pelo relacionamento e por atributos tecnicamente seguros como identidade/nome/status; dados fiscais, endereço e regras específicas dependem de requisitos de negócio e não devem ser presumidos.
