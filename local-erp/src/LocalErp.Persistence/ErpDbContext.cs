@@ -1,4 +1,5 @@
 using LocalErp.Domain.Companies;
+using LocalErp.Domain.Materials;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Suppliers;
 using LocalErp.Domain.Users;
@@ -11,6 +12,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
     public DbSet<Company> Companies => Set<Company>();
 
     public DbSet<CompanyBranch> CompanyBranches => Set<CompanyBranch>();
+
+    public DbSet<Material> Materials => Set<Material>();
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 

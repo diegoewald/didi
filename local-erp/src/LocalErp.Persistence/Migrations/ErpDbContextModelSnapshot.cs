@@ -58,6 +58,24 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("CompanyBranches", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Materials.Material", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Materials", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Suppliers.Supplier", b =>
                 {
                     b.Property<Guid>("Id")
