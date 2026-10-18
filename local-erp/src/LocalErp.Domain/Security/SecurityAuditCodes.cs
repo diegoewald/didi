@@ -9,6 +9,8 @@ public static class SecurityAuditCodes
     public const string AuthenticationSignOut = "authentication.sign_out";
     public const string AdministratorBootstrapSucceeded = "authentication.bootstrap.succeeded";
 
+    public const string AccountPasswordChanged = "account.password_changed";
+
     public const string AdministrationUserCreated = "administration.user.created";
     public const string AdministrationUserActivated = "administration.user.activated";
     public const string AdministrationUserDeactivated = "administration.user.deactivated";

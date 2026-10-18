@@ -1,4 +1,5 @@
 using System.Windows;
+using LocalErp.Application.Account;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Users;
@@ -10,15 +11,18 @@ namespace LocalErp.Desktop;
 public partial class MainWindow : Window
 {
     private readonly AuthenticationService _authenticationService;
+    private readonly AccountService _accountService;
 
     public MainWindow(
         MainWindowViewModel viewModel,
         AuthenticationService authenticationService,
+        AccountService accountService,
         UserService userService,
         RoleService roleService)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
         _authenticationService = authenticationService ?? throw new ArgumentNullException(nameof(authenticationService));
+        _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -28,6 +32,15 @@ public partial class MainWindow : Window
     }
 
     public bool LogoutRequested { get; private set; }
+
+    private void ChangePassword_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ChangePasswordWindow(_accountService)
+        {
+            Owner = this,
+        };
+        window.ShowDialog();
+    }
 
     private async void Logout_Click(object sender, RoutedEventArgs e)
     {

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using LocalErp.Application.Abstractions.Time;
+using LocalErp.Application.Account;
 using LocalErp.Application.Companies;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
@@ -58,6 +59,7 @@ public partial class App : System.Windows.Application
                 services.AddLocalErpPersistence(Path.Combine(paths.DataDirectory, databaseFileName));
                 services.AddTransient<CompanyService>();
                 services.AddTransient<UserService>();
+                services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
                 services.AddTransient<AdministratorBootstrapService>();
                 services.AddTransient<StartupFlowService>();
