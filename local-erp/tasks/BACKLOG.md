@@ -46,7 +46,14 @@
 - [x] fornecedor: catálogo WPF com ativos/inativos e mutações protegidas pela Application;
 - [x] migration `20261018142500_AddSuppliers` validada em apply/rollback/reapply;
 - [ ] fornecedor: não adicionar CNPJ/CPF, endereço, contatos, dados bancários ou condições comerciais sem requisito explícito;
-- [-] produtos/materiais;
+- [x] material: entidade `Material` com identidade, nome e status;
+- [x] material: `materials.read` e `materials.manage` registrados no `PermissionCatalog`;
+- [x] material: serviço/repositório com listagem, criação, renomeação e status;
+- [x] material: migration `20261018222000_AddMaterials` validada em apply/rollback/reapply;
+- [x] material: domínio, autorização e persistência cobertos por testes;
+- [ ] material: catálogo WPF operacional em `Cadastros`;
+- [ ] material: não adicionar código/SKU, unidade, categoria, estoque, preço ou vínculo comercial sem requisito explícito;
+- [ ] produto: modelar separadamente de `Material`, conforme especificação mestre;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
@@ -58,6 +65,7 @@
 - [x] transações SQLite imediatas nos fluxos concorrentes críticos;
 - [x] `CompanyBranches` com integridade referencial para `Companies`;
 - [x] `Suppliers` integrado ao snapshot EF e migration smoke;
+- [x] `Materials` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
@@ -72,10 +80,10 @@
 
 ## Baseline atual — 2026-10-18
 
-Empresa, filial e fornecedor estão operacionais nos cadastros-base. `SupplierService` mantém `suppliers.read/manage` na Application e o modelo de fornecedor continua propositalmente mínimo: identidade, nome e status.
+Empresa, filial e fornecedor estão operacionais nos cadastros-base. O núcleo de Material também está implementado em Domain/Application/Persistence, mas ainda não possui catálogo WPF.
 
-O shell possui uma barreira global de exceção para observabilidade e encerramento seguro de falhas não tratadas, sem deslocar para ela erros recuperáveis que devem continuar sendo tratados no caso de uso/tela correspondente.
+`Material` possui somente identidade, nome e status. `MaterialService` exige `materials.read` para consulta e `materials.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente e devem ser atualizadas explicitamente por operador com `roles.manage` quando necessário.
 
-Baseline automatizado: 148/148 testes (Domain 26, Application 74, Persistence 42, Infrastructure 6), 8 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #109.
+Baseline automatizado: 158/158 testes (Domain 30, Application 79, Persistence 43, Infrastructure 6), 9 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #112.
 
-Próxima tarefa funcional: **Produtos/materiais**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Próxima tarefa funcional: **catálogo WPF de Materiais**. Produto permanece um conceito separado a modelar depois. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

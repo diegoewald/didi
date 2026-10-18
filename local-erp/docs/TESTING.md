@@ -22,15 +22,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 
 ## Baseline atual — 2026-10-18
 
-- Domain: 26/26;
-- Application: 74/74;
-- Persistence: 42/42;
+- Domain: 30/30;
+- Application: 79/79;
+- Persistence: 43/43;
 - Infrastructure: 6/6;
-- Total automatizado: 148/148;
+- Total automatizado: 158/158;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 8; apply -> rollback 0 -> reapply passando.
+- Migrations: 9; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -50,9 +50,21 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - migration `20261018142500_AddSuppliers` integra o snapshot e o ciclo completo de migration smoke;
 - CI #108 validou backend + catálogo WPF de Fornecedores com 148/148 testes.
 
+### Cobertura de Materiais
+
+- domínio de `Material`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `materials.read`; criação, rename e status exigem `materials.manage`;
+- Application rejeita identificador inexistente sem persistir mutação;
+- Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `materials.read` e `materials.manage`, que entram no bootstrap de instalações novas;
+- migration `20261018222000_AddMaterials` integra o snapshot e o ciclo completo de migration smoke;
+- CI #112 validou o núcleo de Materiais com 158/158 testes e 9 migrations.
+
+A UI WPF de Materiais ainda não existe e, portanto, não deve ser considerada coberta por build/smoke de Desktop neste baseline.
+
 ### Cobertura de robustez do shell
 
-O tratamento global de exceções é validado pelo build WPF do CI. O CI #109 recompilou `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException` e manteve a suíte de 148 testes, snapshot EF e 8 migrations verdes. O comportamento visual/fatal ainda exige smoke manual controlado em Windows real.
+O tratamento global de exceções é validado pelo build WPF do CI. O CI #109 recompilou `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`. O comportamento visual/fatal ainda exige smoke manual controlado em Windows real.
 
 ### Cobertura de segurança mantida
 
@@ -77,6 +89,7 @@ Executar smoke manual em Windows incluindo:
 - troca própria de senha e limpeza dos `PasswordBox`;
 - catálogo de Empresas e janela de Filiais;
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
+- catálogo de Materiais após sua implementação WPF, incluindo `materials.read/manage`;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;
