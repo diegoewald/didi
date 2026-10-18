@@ -22,6 +22,7 @@ public static class PersistenceServiceCollectionExtensions
             options.UseSqlite(connectionString));
 
         services.AddTransient<ICompanyRepository, EfCompanyRepository>();
+        services.AddTransient<ICompanyBranchRepository, EfCompanyBranchRepository>();
         services.AddTransient<IUserRepository, EfUserRepository>();
         services.AddTransient<IRoleRepository, EfRoleRepository>();
         services.AddTransient<IAuthorizationRepository, EfAuthorizationRepository>();

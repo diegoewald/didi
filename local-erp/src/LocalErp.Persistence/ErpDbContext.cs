@@ -1,6 +1,6 @@
 using LocalErp.Domain.Companies;
-using LocalErp.Domain.Users;
 using LocalErp.Domain.Security;
+using LocalErp.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace LocalErp.Persistence;
@@ -8,6 +8,8 @@ namespace LocalErp.Persistence;
 public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbContext(options)
 {
     public DbSet<Company> Companies => Set<Company>();
+
+    public DbSet<CompanyBranch> CompanyBranches => Set<CompanyBranch>();
 
     public DbSet<User> Users => Set<User>();
 

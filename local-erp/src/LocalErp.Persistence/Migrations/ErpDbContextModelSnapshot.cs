@@ -35,6 +35,29 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("Companies", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Companies.CompanyBranch", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId");
+
+                    b.ToTable("CompanyBranches", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Security.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -166,6 +189,15 @@ namespace LocalErp.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Companies.CompanyBranch", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Companies.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LocalErp.Domain.Security.RolePermissionGrant", b =>
