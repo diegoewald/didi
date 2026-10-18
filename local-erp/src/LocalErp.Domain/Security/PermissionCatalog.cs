@@ -6,6 +6,8 @@ public static class PermissionCatalog
 
     public const string CompaniesRead = "companies.read";
     public const string CompaniesManage = "companies.manage";
+    public const string SuppliersRead = "suppliers.read";
+    public const string SuppliersManage = "suppliers.manage";
     public const string UsersRead = "users.read";
     public const string UsersManage = "users.manage";
     public const string RolesRead = "roles.read";
@@ -15,6 +17,8 @@ public static class PermissionCatalog
     [
         CompaniesRead,
         CompaniesManage,
+        SuppliersRead,
+        SuppliersManage,
         UsersRead,
         UsersManage,
         RolesRead,

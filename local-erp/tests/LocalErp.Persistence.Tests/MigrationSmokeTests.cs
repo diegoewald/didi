@@ -15,6 +15,8 @@ public sealed class MigrationSmokeTests
     private const string AddAuthenticationThrottlingMigration = "20261016131952_AddAuthenticationThrottling";
     private const string AddSecurityAuditTrailMigration = "20261016135247_AddSecurityAuditTrail";
     private const string AddAdministrativeAuditContextMigration = "20261017234500_AddAdministrativeAuditContext";
+    private const string AddCompanyBranchesMigration = "20261018105000_AddCompanyBranches";
+    private const string AddSuppliersMigration = "20261018142500_AddSuppliers";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -34,6 +36,8 @@ public sealed class MigrationSmokeTests
                 context.Database.Migrate();
                 AssertExpectedMigrationsApplied(context);
                 AssertTableExists(context, "Companies", expected: true);
+                AssertTableExists(context, "CompanyBranches", expected: true);
+                AssertTableExists(context, "Suppliers", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
@@ -45,6 +49,8 @@ public sealed class MigrationSmokeTests
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
                 AssertTableExists(context, "Companies", expected: false);
+                AssertTableExists(context, "CompanyBranches", expected: false);
+                AssertTableExists(context, "Suppliers", expected: false);
                 AssertTableExists(context, "Users", expected: false);
                 AssertRbacTablesExist(context, expected: false);
                 AssertTableExists(context, "SecurityAuditEvents", expected: false);
@@ -52,6 +58,8 @@ public sealed class MigrationSmokeTests
                 migrator.Migrate();
                 AssertExpectedMigrationsApplied(context);
                 AssertTableExists(context, "Companies", expected: true);
+                AssertTableExists(context, "CompanyBranches", expected: true);
+                AssertTableExists(context, "Suppliers", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
@@ -79,6 +87,8 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddAuthenticationThrottlingMigration);
         CollectionAssert.Contains(appliedMigrations, AddSecurityAuditTrailMigration);
         CollectionAssert.Contains(appliedMigrations, AddAdministrativeAuditContextMigration);
+        CollectionAssert.Contains(appliedMigrations, AddCompanyBranchesMigration);
+        CollectionAssert.Contains(appliedMigrations, AddSuppliersMigration);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)

@@ -23,6 +23,7 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddTransient<ICompanyRepository, EfCompanyRepository>();
         services.AddTransient<ICompanyBranchRepository, EfCompanyBranchRepository>();
+        services.AddTransient<ISupplierRepository, EfSupplierRepository>();
         services.AddTransient<IUserRepository, EfUserRepository>();
         services.AddTransient<IRoleRepository, EfRoleRepository>();
         services.AddTransient<IAuthorizationRepository, EfAuthorizationRepository>();
