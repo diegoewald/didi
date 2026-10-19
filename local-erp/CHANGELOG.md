@@ -25,6 +25,7 @@ O projeto segue versionamento semântico.
 - permissões `materials.read` e `materials.manage` no `PermissionCatalog`;
 - migration `20261018222000_AddMaterials`;
 - testes de domínio, Application, repositório e migration smoke para Materiais;
+- catálogo WPF de Materiais com loading/erro/vazio, criação, renomeação e ativação/desativação;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -53,6 +54,7 @@ O projeto segue versionamento semântico.
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
+- CI #114 validou o catálogo WPF de Materiais e preservou todo o baseline;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -101,11 +103,12 @@ O projeto segue versionamento semântico.
 - `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException` recebem logging final;
 - CI #109 preservou 148/148 testes e 8 migrations.
 
-## Marco do núcleo de Materiais — 2026-10-18
+## Marco de Materiais — 2026-10-18
 
 - `Material` adicionado como conceito separado de Produto, com identidade, nome e status;
 - `materials.read` e `materials.manage` adicionados ao catálogo de permissões;
 - `MaterialService`, repositório EF e migration `20261018222000_AddMaterials` integrados;
 - baseline subiu para 158 testes e 9 migrations;
 - CI #112 validou build, testes, snapshot e ciclo completo de migrations;
-- catálogo WPF de Materiais permanece como próximo slice.
+- catálogo WPF de Materiais integrado ao módulo `Cadastros`;
+- CI #114 recompilou o Desktop e preservou 158/158 testes e 9 migrations.

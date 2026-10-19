@@ -51,7 +51,7 @@
 - [x] material: serviço/repositório com listagem, criação, renomeação e status;
 - [x] material: migration `20261018222000_AddMaterials` validada em apply/rollback/reapply;
 - [x] material: domínio, autorização e persistência cobertos por testes;
-- [ ] material: catálogo WPF operacional em `Cadastros`;
+- [x] material: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] material: não adicionar código/SKU, unidade, categoria, estoque, preço ou vínculo comercial sem requisito explícito;
 - [ ] produto: modelar separadamente de `Material`, conforme especificação mestre;
 - [ ] unidades/categorias;
@@ -80,10 +80,12 @@
 
 ## Baseline atual — 2026-10-18
 
-Empresa, filial e fornecedor estão operacionais nos cadastros-base. O núcleo de Material também está implementado em Domain/Application/Persistence, mas ainda não possui catálogo WPF.
+Empresa, filial, fornecedor e material estão operacionais nos cadastros-base. `Material` permanece um conceito separado de Produto e possui somente identidade, nome e status.
 
-`Material` possui somente identidade, nome e status. `MaterialService` exige `materials.read` para consulta e `materials.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente e devem ser atualizadas explicitamente por operador com `roles.manage` quando necessário.
+`MaterialService` exige `materials.read` para consulta e `materials.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente e devem ser atualizadas explicitamente por operador com `roles.manage` quando necessário.
 
-Baseline automatizado: 158/158 testes (Domain 30, Application 79, Persistence 43, Infrastructure 6), 9 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #112.
+O catálogo WPF de Materiais possui estados loading/erro/vazio, criação, renomeação com Enter/Escape e ativação/desativação com confirmação. A autorização permanece na Application.
 
-Próxima tarefa funcional: **catálogo WPF de Materiais**. Produto permanece um conceito separado a modelar depois. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Baseline automatizado: 158/158 testes (Domain 30, Application 79, Persistence 43, Infrastructure 6), 9 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #114.
+
+Próxima tarefa funcional: **modelar Produto separadamente de Material**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

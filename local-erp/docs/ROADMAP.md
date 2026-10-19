@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais e Fornecedores, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores e Materiais, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -51,7 +51,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] filial: `CompanyBranch` vinculada obrigatoriamente à empresa;
 - [x] filial: persistência, migration, autorização e UI operacional;
 - [x] fornecedor: domínio, persistência, migration, permissões e UI operacional;
-- [-] material: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
+- [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
 - [ ] produto: modelar separadamente de Material;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
@@ -93,7 +93,7 @@ O `App` passou a registrar tratamento central para `DispatcherUnhandledException
 
 O CI #109 recompilou o WPF e manteve 148/148 testes, snapshot EF e as 8 migrations verdes. O tratamento global é uma última barreira de observabilidade/encerramento seguro e não substitui tratamento local de erros recuperáveis.
 
-## Marco do núcleo de Materiais — 2026-10-18
+## Marco de Materiais — 2026-10-18
 
 `Material` foi modelado como conceito independente de Produto, conforme a especificação mestre. O modelo atual contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo; código/SKU, unidade, categoria, estoque, preço e vínculos comerciais permanecem fora do escopo até existir requisito explícito.
 
@@ -101,4 +101,6 @@ O CI #109 recompilou o WPF e manteve 148/148 testes, snapshot EF e as 8 migratio
 
 `EfMaterialRepository` persiste `Materials`. A migration `20261018222000_AddMaterials` é a nona migration. O CI #112 validou 158/158 testes (Domain 30, Application 79, Persistence 43, Infrastructure 6), snapshot EF consistente e 9 migrations em apply -> rollback 0 -> reapply.
 
-Próxima prioridade funcional: **catálogo WPF de Materiais**. Produto permanece separado e será modelado depois.
+O catálogo WPF de Materiais foi integrado ao módulo `Cadastros` com estados loading/erro/vazio, criação, renomeação e ativação/desativação. O CI #114 recompilou o Desktop no Windows e preservou 158/158 testes, snapshot EF e o ciclo das 9 migrations.
+
+Próxima prioridade funcional: **Produto**, mantendo separação explícita de Material.

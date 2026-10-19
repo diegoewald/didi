@@ -42,9 +42,11 @@ O modelo de fornecedor ainda não presume CNPJ/CPF, endereço, contatos, condiç
 
 `Material` é um conceito separado de Produto e contém, nesta etapa, apenas identidade, nome e status. `MaterialService` exige `materials.read` para consulta e `materials.manage` para criação, renomeação e status. `EfMaterialRepository` persiste o cadastro em `Materials`, criado pela migration `20261018222000_AddMaterials`.
 
+O catálogo WPF de Materiais está disponível em `Cadastros`, com listagem de ativos/inativos, estados loading/erro/vazio, criação, renomeação e ativação/desativação. A UI apenas apresenta e orquestra interação; autorização e regras continuam na Application.
+
 Código/SKU, unidade, categoria, estoque, preço e vínculos comerciais não foram presumidos. Instalações novas incluem `materials.read/manage` no bootstrap do primeiro administrador; roles já existentes mantêm grants explícitos e precisam receber novas permissões deliberadamente por um operador com `roles.manage`.
 
-O backend de Materiais está concluído; o próximo slice é seu catálogo WPF. Produto permanece um cadastro separado a modelar posteriormente. Unidades/categorias e centros de custo seguem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Próxima frente funcional: **Produto**, modelado separadamente de Material. Unidades/categorias e centros de custo seguem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

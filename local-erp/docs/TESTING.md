@@ -58,9 +58,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
 - `PermissionCatalog` inclui `materials.read` e `materials.manage`, que entram no bootstrap de instalações novas;
 - migration `20261018222000_AddMaterials` integra o snapshot e o ciclo completo de migration smoke;
-- CI #112 validou o núcleo de Materiais com 158/158 testes e 9 migrations.
+- CI #112 validou o núcleo de Materiais com 158/158 testes e 9 migrations;
+- CI #114 recompilou `MaterialsCatalogView`, integração no `MainWindow` e DI, mantendo 158/158 testes e as 9 migrations verdes.
 
-A UI WPF de Materiais ainda não existe e, portanto, não deve ser considerada coberta por build/smoke de Desktop neste baseline.
+A compilação WPF valida XAML, bindings compiláveis e composição de tipos, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -89,7 +90,7 @@ Executar smoke manual em Windows incluindo:
 - troca própria de senha e limpeza dos `PasswordBox`;
 - catálogo de Empresas e janela de Filiais;
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
-- catálogo de Materiais após sua implementação WPF, incluindo `materials.read/manage`;
+- catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;
