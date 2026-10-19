@@ -2,6 +2,7 @@ using System.Windows;
 using LocalErp.Application.Account;
 using LocalErp.Application.Companies;
 using LocalErp.Application.Materials;
+using LocalErp.Application.Products;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
@@ -24,6 +25,7 @@ public partial class MainWindow : Window
         CompanyBranchService companyBranchService,
         SupplierService supplierService,
         MaterialService materialService,
+        ProductService productService,
         UserService userService,
         RoleService roleService)
     {
@@ -34,6 +36,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(companyBranchService);
         ArgumentNullException.ThrowIfNull(supplierService);
         ArgumentNullException.ThrowIfNull(materialService);
+        ArgumentNullException.ThrowIfNull(productService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -41,6 +44,7 @@ public partial class MainWindow : Window
         CompaniesCatalogPanel.Configure(companyService, companyBranchService);
         SuppliersCatalogPanel.Configure(supplierService);
         MaterialsCatalogPanel.Configure(materialService);
+        ProductsCatalogPanel.Configure(productService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
@@ -61,6 +65,10 @@ public partial class MainWindow : Window
         else if (CatalogsTabControl.SelectedIndex == 2 && !viewModel.MaterialsCatalog.HasLoaded)
         {
             await viewModel.MaterialsCatalog.LoadAsync();
+        }
+        else if (CatalogsTabControl.SelectedIndex == 3 && !viewModel.ProductsCatalog.HasLoaded)
+        {
+            await viewModel.ProductsCatalog.LoadAsync();
         }
     }
 
