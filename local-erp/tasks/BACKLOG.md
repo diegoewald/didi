@@ -58,7 +58,7 @@
 - [x] produto: serviço/repositório com listagem, criação, renomeação e status;
 - [x] produto: migration `20261019005000_AddProducts` validada em apply/rollback/reapply;
 - [x] produto: domínio, autorização e persistência cobertos por testes;
-- [ ] produto: catálogo WPF operacional em `Cadastros`;
+- [x] produto: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] produto: não adicionar código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM ou vínculo comercial sem requisito explícito;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
@@ -87,10 +87,10 @@
 
 ## Baseline atual — 2026-10-18
 
-Empresa, filial, fornecedor e material estão operacionais nos cadastros-base. O núcleo de Produto também está implementado e validado, mas ainda não possui catálogo WPF.
+Empresa, filial, fornecedor, material e produto estão operacionais nos cadastros-base. `Product` permanece separado de `Material` e possui somente identidade, nome e status. `ProductService` exige `products.read` para consulta e `products.manage` para mutações; a UI apenas orquestra a interação e mantém autorização/regras na Application.
 
-`Product` permanece separado de `Material` e possui somente identidade, nome e status. `ProductService` exige `products.read` para consulta e `products.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+Instalações novas recebem `products.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 168/168 testes (Domain 34, Application 84, Persistence 44, Infrastructure 6), 10 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #116.
+Baseline automatizado: 168/168 testes (Domain 34, Application 84, Persistence 44, Infrastructure 6), 10 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #118 recompilou o catálogo WPF de Produtos e preservou todo esse baseline.
 
-Próxima tarefa funcional: **catálogo WPF de Produtos**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Próxima tarefa funcional: **unidades/categorias**, com modelagem mínima orientada a requisitos reais. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

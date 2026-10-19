@@ -31,6 +31,7 @@ O projeto segue versionamento semântico.
 - permissões `products.read` e `products.manage` no `PermissionCatalog`;
 - migration `20261019005000_AddProducts`;
 - testes de domínio, Application, repositório e migration smoke para Produtos;
+- catálogo WPF de Produtos com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -62,6 +63,7 @@ O projeto segue versionamento semântico.
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
 - CI #114 validou o catálogo WPF de Materiais e preservou todo o baseline;
 - CI #116 validou o núcleo de Produto, snapshot EF e a décima migration;
+- CI #118 validou o catálogo WPF de Produtos e preservou 168/168 testes, snapshot EF e as 10 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -120,11 +122,13 @@ O projeto segue versionamento semântico.
 - catálogo WPF de Materiais integrado ao módulo `Cadastros`;
 - CI #114 recompilou o Desktop e preservou 158/158 testes e 9 migrations.
 
-## Marco do núcleo de Produto — 2026-10-18
+## Marco de Produto — 2026-10-18
 
 - `Product` adicionado como conceito separado de `Material`, com identidade, nome e status;
 - `products.read` e `products.manage` adicionados ao catálogo de permissões;
 - `ProductService`, repositório EF e migration `20261019005000_AddProducts` integrados;
 - baseline subiu para 168 testes e 10 migrations;
 - CI #116 validou build, 168/168 testes, snapshot EF e ciclo completo das 10 migrations;
-- catálogo WPF de Produtos permanece como próximo slice.
+- catálogo WPF de Produtos integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
+- CI #118 recompilou o Desktop/XAML e preservou 168/168 testes e 10 migrations;
+- próxima frente funcional: unidades/categorias.

@@ -48,11 +48,13 @@ Código/SKU, unidade, categoria, estoque, preço e vínculos comerciais não for
 
 ### Produtos
 
-`Product` é um cadastro próprio e permanece separado de `Material`. O núcleo atual contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `ProductService` exige `products.read` para consulta e `products.manage` para criação, renomeação e status. `EfProductRepository` persiste o cadastro em `Products`, criado pela migration `20261019005000_AddProducts`.
+`Product` é um cadastro próprio e permanece separado de `Material`. O modelo contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `ProductService` exige `products.read` para consulta e `products.manage` para criação, renomeação e status. `EfProductRepository` persiste o cadastro em `Products`, criado pela migration `20261019005000_AddProducts`.
+
+O catálogo WPF de Produtos está disponível em `Cadastros`, com estados loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. A UI não replica regras de autorização: todas as demandas continuam na Application.
 
 Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM e vínculos comerciais não foram presumidos. Instalações novas recebem `products.read/manage` pelo catálogo de permissões do bootstrap; roles existentes não recebem elevação automática e devem receber grants explicitamente quando necessário.
 
-O núcleo de Produto está concluído e validado. A próxima frente funcional é o **catálogo WPF de Produtos**. Unidades/categorias e centros de custo seguem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Empresa, filial, fornecedor, material e produto formam agora o conjunto operacional de cadastros-base já implementado. A próxima frente funcional é **unidades/categorias**; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

@@ -69,9 +69,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
 - `PermissionCatalog` inclui `products.read` e `products.manage`, incorporados ao bootstrap de instalações novas;
 - migration `20261019005000_AddProducts` integra o snapshot e o migration smoke;
-- CI #116 validou o núcleo de Produto com 168/168 testes e 10 migrations.
+- CI #116 validou o núcleo de Produto com 168/168 testes e 10 migrations;
+- CI #118 recompilou `ProductsCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 168/168 testes e as 10 migrations verdes.
 
-O catálogo WPF de Produtos ainda não existe. A compilação WPF valida XAML e composição atuais, mas não substitui smoke visual/interativo em Windows real.
+A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -101,7 +102,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Empresas e janela de Filiais;
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
-- catálogo de Produtos após sua implementação WPF, incluindo `products.read/manage`;
+- catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

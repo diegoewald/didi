@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores e Materiais, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais e Produtos, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -52,7 +52,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] filial: persistência, migration, autorização e UI operacional;
 - [x] fornecedor: domínio, persistência, migration, permissões e UI operacional;
 - [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
-- [-] produto: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
+- [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
@@ -103,7 +103,7 @@ O CI #109 recompilou o WPF e manteve 148/148 testes, snapshot EF e as 8 migratio
 
 O catálogo WPF de Materiais foi integrado ao módulo `Cadastros` com estados loading/erro/vazio, criação, renomeação e ativação/desativação. O CI #114 recompilou o Desktop no Windows e preservou 158/158 testes, snapshot EF e o ciclo das 9 migrations.
 
-## Marco do núcleo de Produto — 2026-10-18
+## Marco de Produto — 2026-10-18
 
 `Product` foi introduzido como conceito independente de `Material`, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe relação Produto-Material, composição/BOM, código/SKU, unidade, categoria, estoque, preço ou regra fiscal/comercial nesta etapa.
 
@@ -111,4 +111,6 @@ O catálogo WPF de Materiais foi integrado ao módulo `Cadastros` com estados lo
 
 `EfProductRepository` persiste `Products`. A migration `20261019005000_AddProducts` é a décima migration. O CI #116 validou 168/168 testes (Domain 34, Application 84, Persistence 44, Infrastructure 6), snapshot EF sem mudanças pendentes e 10 migrations em apply -> rollback 0 -> reapply.
 
-Próxima prioridade funcional: **catálogo WPF de Produtos**. Unidades/categorias e centros de custo permanecem posteriores.
+O catálogo WPF de Produtos foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #118 recompilou o Desktop/XAML e preservou 168/168 testes, snapshot EF e o ciclo completo das 10 migrations.
+
+Próxima prioridade funcional: **unidades/categorias**. Centros de custo permanecem posteriores.
