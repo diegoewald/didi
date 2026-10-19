@@ -22,15 +22,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 
 ## Baseline atual — 2026-10-18
 
-- Domain: 30/30;
-- Application: 79/79;
-- Persistence: 43/43;
+- Domain: 34/34;
+- Application: 84/84;
+- Persistence: 44/44;
 - Infrastructure: 6/6;
-- Total automatizado: 158/158;
+- Total automatizado: 168/168;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 9; apply -> rollback 0 -> reapply passando.
+- Migrations: 10; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -61,7 +61,17 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #112 validou o núcleo de Materiais com 158/158 testes e 9 migrations;
 - CI #114 recompilou `MaterialsCatalogView`, integração no `MainWindow` e DI, mantendo 158/158 testes e as 9 migrations verdes.
 
-A compilação WPF valida XAML, bindings compiláveis e composição de tipos, mas não substitui smoke visual/interativo em Windows real.
+### Cobertura de Produtos
+
+- domínio de `Product`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `products.read`; criação, rename e status exigem `products.manage`;
+- Application rejeita identificador inexistente sem persistir mutação;
+- Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `products.read` e `products.manage`, incorporados ao bootstrap de instalações novas;
+- migration `20261019005000_AddProducts` integra o snapshot e o migration smoke;
+- CI #116 validou o núcleo de Produto com 168/168 testes e 10 migrations.
+
+O catálogo WPF de Produtos ainda não existe. A compilação WPF valida XAML e composição atuais, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -91,6 +101,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Empresas e janela de Filiais;
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
+- catálogo de Produtos após sua implementação WPF, incluindo `products.read/manage`;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

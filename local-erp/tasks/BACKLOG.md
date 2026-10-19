@@ -53,7 +53,13 @@
 - [x] material: domínio, autorização e persistência cobertos por testes;
 - [x] material: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] material: não adicionar código/SKU, unidade, categoria, estoque, preço ou vínculo comercial sem requisito explícito;
-- [ ] produto: modelar separadamente de `Material`, conforme especificação mestre;
+- [x] produto: entidade `Product` separada de `Material`, com identidade, nome e status;
+- [x] produto: `products.read` e `products.manage` registrados no `PermissionCatalog`;
+- [x] produto: serviço/repositório com listagem, criação, renomeação e status;
+- [x] produto: migration `20261019005000_AddProducts` validada em apply/rollback/reapply;
+- [x] produto: domínio, autorização e persistência cobertos por testes;
+- [ ] produto: catálogo WPF operacional em `Cadastros`;
+- [ ] produto: não adicionar código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM ou vínculo comercial sem requisito explícito;
 - [ ] unidades/categorias;
 - [ ] centros de custo.
 
@@ -66,6 +72,7 @@
 - [x] `CompanyBranches` com integridade referencial para `Companies`;
 - [x] `Suppliers` integrado ao snapshot EF e migration smoke;
 - [x] `Materials` integrado ao snapshot EF e migration smoke;
+- [x] `Products` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
@@ -80,12 +87,10 @@
 
 ## Baseline atual — 2026-10-18
 
-Empresa, filial, fornecedor e material estão operacionais nos cadastros-base. `Material` permanece um conceito separado de Produto e possui somente identidade, nome e status.
+Empresa, filial, fornecedor e material estão operacionais nos cadastros-base. O núcleo de Produto também está implementado e validado, mas ainda não possui catálogo WPF.
 
-`MaterialService` exige `materials.read` para consulta e `materials.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente e devem ser atualizadas explicitamente por operador com `roles.manage` quando necessário.
+`Product` permanece separado de `Material` e possui somente identidade, nome e status. `ProductService` exige `products.read` para consulta e `products.manage` para mutações. Instalações novas recebem essas permissões pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-O catálogo WPF de Materiais possui estados loading/erro/vazio, criação, renomeação com Enter/Escape e ativação/desativação com confirmação. A autorização permanece na Application.
+Baseline automatizado: 168/168 testes (Domain 34, Application 84, Persistence 44, Infrastructure 6), 10 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #116.
 
-Baseline automatizado: 158/158 testes (Domain 30, Application 79, Persistence 43, Infrastructure 6), 9 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #114.
-
-Próxima tarefa funcional: **modelar Produto separadamente de Material**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Próxima tarefa funcional: **catálogo WPF de Produtos**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

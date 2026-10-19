@@ -9,8 +9,8 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 158/158 testes passando
-- Migrations: 9 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 168/168 testes passando
+- Migrations: 10 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -46,7 +46,13 @@ O catálogo WPF de Materiais está disponível em `Cadastros`, com listagem de a
 
 Código/SKU, unidade, categoria, estoque, preço e vínculos comerciais não foram presumidos. Instalações novas incluem `materials.read/manage` no bootstrap do primeiro administrador; roles já existentes mantêm grants explícitos e precisam receber novas permissões deliberadamente por um operador com `roles.manage`.
 
-Próxima frente funcional: **Produto**, modelado separadamente de Material. Unidades/categorias e centros de custo seguem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+### Produtos
+
+`Product` é um cadastro próprio e permanece separado de `Material`. O núcleo atual contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `ProductService` exige `products.read` para consulta e `products.manage` para criação, renomeação e status. `EfProductRepository` persiste o cadastro em `Products`, criado pela migration `20261019005000_AddProducts`.
+
+Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM e vínculos comerciais não foram presumidos. Instalações novas recebem `products.read/manage` pelo catálogo de permissões do bootstrap; roles existentes não recebem elevação automática e devem receber grants explicitamente quando necessário.
+
+O núcleo de Produto está concluído e validado. A próxima frente funcional é o **catálogo WPF de Produtos**. Unidades/categorias e centros de custo seguem depois no roadmap. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

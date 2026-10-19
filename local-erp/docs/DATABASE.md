@@ -54,6 +54,16 @@ A migration `20261018142500_AddSuppliers` cria a tabela `Suppliers`. Nesta etapa
 
 A migration `20261018222000_AddMaterials` cria a tabela `Materials`. Material e Produto permanecem conceitos distintos. Código/SKU, unidade, categoria, estoque, preço, fornecedor padrão e demais vínculos comerciais não fazem parte do schema atual e só devem ser adicionados quando houver requisito explícito.
 
+## Produtos
+
+`Product` contém:
+
+- `Id` — `Guid`, chave primária criada pelo domínio;
+- `Name` — obrigatório, normalizado e limitado a 200 caracteres;
+- `IsActive` — obrigatório.
+
+A migration `20261019005000_AddProducts` cria a tabela `Products`. Produto não possui FK ou associação implícita com `Material`. Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM e vínculos comerciais permanecem fora do schema até existir requisito explícito.
+
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -66,7 +76,7 @@ A migration `20261018222000_AddMaterials` cria a tabela `Materials`. Material e 
 
 ## Baseline de migrations — 2026-10-18
 
-Nove migrations validadas no CI:
+Dez migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -76,7 +86,8 @@ Nove migrations validadas no CI:
 6. `20261017234500_AddAdministrativeAuditContext`;
 7. `20261018105000_AddCompanyBranches`;
 8. `20261018142500_AddSuppliers`;
-9. `20261018222000_AddMaterials`.
+9. `20261018222000_AddMaterials`;
+10. `20261019005000_AddProducts`.
 
 O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 
