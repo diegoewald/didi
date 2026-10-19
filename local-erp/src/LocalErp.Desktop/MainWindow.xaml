@@ -164,6 +164,9 @@
           <TabItem Header="Fornecedores">
             <views:SuppliersCatalogView x:Name="SuppliersCatalogPanel" DataContext="{Binding SuppliersCatalog}" />
           </TabItem>
+          <TabItem Header="Materiais">
+            <views:MaterialsCatalogView x:Name="MaterialsCatalogPanel" DataContext="{Binding MaterialsCatalog}" />
+          </TabItem>
         </TabControl>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">

@@ -1,6 +1,7 @@
 using System.Windows;
 using LocalErp.Application.Account;
 using LocalErp.Application.Companies;
+using LocalErp.Application.Materials;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
@@ -22,6 +23,7 @@ public partial class MainWindow : Window
         CompanyService companyService,
         CompanyBranchService companyBranchService,
         SupplierService supplierService,
+        MaterialService materialService,
         UserService userService,
         RoleService roleService)
     {
@@ -31,12 +33,14 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(companyService);
         ArgumentNullException.ThrowIfNull(companyBranchService);
         ArgumentNullException.ThrowIfNull(supplierService);
+        ArgumentNullException.ThrowIfNull(materialService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
         InitializeComponent();
         CompaniesCatalogPanel.Configure(companyService, companyBranchService);
         SuppliersCatalogPanel.Configure(supplierService);
+        MaterialsCatalogPanel.Configure(materialService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
@@ -45,14 +49,18 @@ public partial class MainWindow : Window
 
     private async void CatalogsTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (!ReferenceEquals(e.Source, CatalogsTabControl) || CatalogsTabControl.SelectedIndex != 1)
+        if (!ReferenceEquals(e.Source, CatalogsTabControl) || DataContext is not MainWindowViewModel viewModel)
         {
             return;
         }
 
-        if (DataContext is MainWindowViewModel viewModel && !viewModel.SuppliersCatalog.HasLoaded)
+        if (CatalogsTabControl.SelectedIndex == 1 && !viewModel.SuppliersCatalog.HasLoaded)
         {
             await viewModel.SuppliersCatalog.LoadAsync();
+        }
+        else if (CatalogsTabControl.SelectedIndex == 2 && !viewModel.MaterialsCatalog.HasLoaded)
+        {
+            await viewModel.MaterialsCatalog.LoadAsync();
         }
     }
 
