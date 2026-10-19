@@ -60,7 +60,14 @@
 - [x] produto: domínio, autorização e persistência cobertos por testes;
 - [x] produto: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] produto: não adicionar código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM ou vínculo comercial sem requisito explícito;
-- [ ] unidades/categorias;
+- [x] unidade de medida: entidade `MeasurementUnit` independente, com identidade, nome e status;
+- [x] unidade de medida: `units.read` e `units.manage` registrados no `PermissionCatalog`;
+- [x] unidade de medida: serviço/repositório com listagem, criação, renomeação e status;
+- [x] unidade de medida: migration `20261019093000_AddMeasurementUnits` validada em apply/rollback/reapply;
+- [x] unidade de medida: domínio, autorização e persistência cobertos por testes;
+- [ ] unidade de medida: catálogo WPF operacional em `Cadastros`;
+- [ ] unidade de medida: não adicionar sigla/símbolo, precisão, fatores de conversão ou vínculo com Produto/Material sem requisito explícito;
+- [ ] categorias: modelar separadamente somente após definir semântica mínima do cadastro-base;
 - [ ] centros de custo.
 
 ## P1 — Persistência
@@ -73,6 +80,7 @@
 - [x] `Suppliers` integrado ao snapshot EF e migration smoke;
 - [x] `Materials` integrado ao snapshot EF e migration smoke;
 - [x] `Products` integrado ao snapshot EF e migration smoke;
+- [x] `MeasurementUnits` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
@@ -85,12 +93,14 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline atual — 2026-10-18
+## Baseline atual — 2026-10-19
 
-Empresa, filial, fornecedor, material e produto estão operacionais nos cadastros-base. `Product` permanece separado de `Material` e possui somente identidade, nome e status. `ProductService` exige `products.read` para consulta e `products.manage` para mutações; a UI apenas orquestra a interação e mantém autorização/regras na Application.
+Empresa, filial, fornecedor, material e produto estão operacionais nos cadastros-base. O núcleo de unidade de medida também está implementado e validado, mas ainda não possui catálogo WPF.
 
-Instalações novas recebem `products.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+`MeasurementUnit` é um cadastro global independente com somente identidade, nome e status. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para mutações. Não existe vínculo automático com Produto ou Material, nem sigla/símbolo, precisão ou conversão nesta etapa.
 
-Baseline automatizado: 168/168 testes (Domain 34, Application 84, Persistence 44, Infrastructure 6), 10 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #118 recompilou o catálogo WPF de Produtos e preservou todo esse baseline.
+Instalações novas recebem `units.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Próxima tarefa funcional: **unidades/categorias**, com modelagem mínima orientada a requisitos reais. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+Baseline automatizado: 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), 11 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #120.
+
+Próxima tarefa funcional: **catálogo WPF de unidades de medida**. Categorias permanece uma frente separada. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.

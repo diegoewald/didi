@@ -20,17 +20,17 @@
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline atual — 2026-10-18
+## Baseline atual — 2026-10-19
 
-- Domain: 34/34;
-- Application: 84/84;
-- Persistence: 44/44;
+- Domain: 38/38;
+- Application: 89/89;
+- Persistence: 45/45;
 - Infrastructure: 6/6;
-- Total automatizado: 168/168;
+- Total automatizado: 178/178;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 10; apply -> rollback 0 -> reapply passando.
+- Migrations: 11; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -72,7 +72,17 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #116 validou o núcleo de Produto com 168/168 testes e 10 migrations;
 - CI #118 recompilou `ProductsCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 168/168 testes e as 10 migrations verdes.
 
-A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
+### Cobertura de unidades de medida
+
+- domínio de `MeasurementUnit`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `units.read`; criação, rename e status exigem `units.manage`;
+- Application rejeita identificador inexistente sem persistir mutação;
+- Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `units.read` e `units.manage`, incorporados ao bootstrap de instalações novas;
+- migration `20261019093000_AddMeasurementUnits` integra o snapshot e o migration smoke;
+- CI #120 validou o núcleo de unidade de medida com 178/178 testes e 11 migrations.
+
+O catálogo WPF de unidades de medida ainda não existe. A compilação WPF valida os componentes Desktop atuais, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -103,6 +113,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
 - catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
+- catálogo de Unidades de Medida após sua implementação WPF, incluindo `units.read/manage`;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

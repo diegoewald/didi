@@ -53,7 +53,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] fornecedor: domínio, persistência, migration, permissões e UI operacional;
 - [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
-- [ ] unidades/categorias;
+- [-] unidade de medida: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
+- [ ] categorias;
 - [ ] centros de custo.
 
 ## Fase 7 — Primeiro módulo operacional
@@ -113,4 +114,12 @@ O catálogo WPF de Materiais foi integrado ao módulo `Cadastros` com estados lo
 
 O catálogo WPF de Produtos foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #118 recompilou o Desktop/XAML e preservou 168/168 testes, snapshot EF e o ciclo completo das 10 migrations.
 
-Próxima prioridade funcional: **unidades/categorias**. Centros de custo permanecem posteriores.
+## Marco do núcleo de unidades de medida — 2026-10-19
+
+`MeasurementUnit` foi introduzido como cadastro global independente, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe, nesta etapa, sigla/símbolo, precisão decimal, fator de conversão ou relação automática com `Product` ou `Material`.
+
+`MeasurementUnitService` exige `units.read` para consulta e `units.manage` para criação, renomeação e status. As permissões entram no `PermissionCatalog` e no bootstrap de instalações novas; roles existentes não recebem grants adicionais automaticamente.
+
+`EfMeasurementUnitRepository` persiste `MeasurementUnits`. A migration `20261019093000_AddMeasurementUnits` é a décima primeira migration. O CI #120 validou 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), snapshot EF sem mudanças pendentes e 11 migrations em apply -> rollback 0 -> reapply.
+
+Próxima prioridade funcional: **catálogo WPF de unidades de medida**. Categorias permanece uma frente separada e centros de custo continuam posteriores.

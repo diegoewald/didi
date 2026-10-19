@@ -9,8 +9,8 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 168/168 testes passando
-- Migrations: 10 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 178/178 testes passando
+- Migrations: 11 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -54,7 +54,13 @@ O catálogo WPF de Produtos está disponível em `Cadastros`, com estados loadin
 
 Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM e vínculos comerciais não foram presumidos. Instalações novas recebem `products.read/manage` pelo catálogo de permissões do bootstrap; roles existentes não recebem elevação automática e devem receber grants explicitamente quando necessário.
 
-Empresa, filial, fornecedor, material e produto formam agora o conjunto operacional de cadastros-base já implementado. A próxima frente funcional é **unidades/categorias**; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+### Unidades de medida
+
+`MeasurementUnit` é um cadastro global independente e contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para criação, renomeação e status. `EfMeasurementUnitRepository` persiste o cadastro em `MeasurementUnits`, criado pela migration `20261019093000_AddMeasurementUnits`.
+
+O núcleo de unidades de medida está concluído, mas o catálogo WPF ainda não existe. Sigla/símbolo, precisão, fatores de conversão e vínculos automáticos com Produto ou Material não foram presumidos. Instalações novas recebem `units.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+
+Empresa, filial, fornecedor, material e produto estão operacionais na UI. O núcleo de unidade de medida está validado e a próxima frente funcional é seu **catálogo WPF**. Categorias permanece uma frente separada; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 
