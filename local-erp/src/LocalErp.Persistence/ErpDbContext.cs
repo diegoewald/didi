@@ -3,6 +3,7 @@ using LocalErp.Domain.Materials;
 using LocalErp.Domain.Products;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Suppliers;
+using LocalErp.Domain.Units;
 using LocalErp.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,6 +20,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
     public DbSet<Product> Products => Set<Product>();
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
+
+    public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
 
     public DbSet<User> Users => Set<User>();
 

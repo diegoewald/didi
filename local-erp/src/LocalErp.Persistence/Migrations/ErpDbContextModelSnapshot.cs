@@ -112,6 +112,24 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("Suppliers", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Units.MeasurementUnit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MeasurementUnits", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Security.Role", b =>
                 {
                     b.Property<Guid>("Id")
