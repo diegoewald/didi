@@ -72,7 +72,7 @@
 - [x] categoria: serviço/repositório com listagem, criação, renomeação e status;
 - [x] categoria: migration `20261020113000_AddCategories` validada em apply/rollback/reapply;
 - [x] categoria: domínio, autorização e persistência cobertos por testes;
-- [ ] categoria: catálogo WPF operacional em `Cadastros`;
+- [x] categoria: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] categoria: não adicionar hierarquia, categoria-pai, código ou vínculo com Produto/Material sem requisito explícito;
 - [ ] centros de custo.
 
@@ -102,12 +102,12 @@
 
 ## Baseline atual — 2026-10-20
 
-Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais nos cadastros-base. O núcleo de Categoria também está implementado e validado, mas ainda não possui catálogo WPF.
+Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais nos cadastros-base.
 
-`Category` é um cadastro global independente com somente identidade, nome e status. `CategoryService` exige `categories.read` para consulta e `categories.manage` para mutações. Não existe hierarquia, categoria-pai, código nem vínculo automático com Produto ou Material nesta etapa.
+`Category` permanece um cadastro global independente com somente identidade, nome e status. `CategoryService` exige `categories.read` para consulta e `categories.manage` para mutações. O catálogo WPF lista ativos/inativos e permite criação, renomeação e mudança de status sem mover autorização para a UI. Não existe hierarquia, categoria-pai, código nem vínculo automático com Produto ou Material nesta etapa.
 
 Instalações novas recebem `categories.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), 12 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #124.
+Baseline automatizado: 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), 12 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #126 recompilou o catálogo WPF de Categorias e preservou todo esse baseline.
 
-Próxima tarefa funcional: **catálogo WPF de Categorias**. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
+Próxima tarefa funcional: **centros de custo**, começando pela modelagem mínima antes de UI ou relacionamentos adicionais. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.

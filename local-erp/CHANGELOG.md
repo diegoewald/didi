@@ -43,6 +43,7 @@ O projeto segue versionamento semântico.
 - permissões `categories.read` e `categories.manage` no `PermissionCatalog`;
 - migration `20261020113000_AddCategories`;
 - testes de domínio, Application, repositório e migration smoke para Categorias;
+- catálogo WPF de Categorias com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -82,6 +83,7 @@ O projeto segue versionamento semântico.
 - CI #120 validou o núcleo de unidades de medida com 178/178 testes, snapshot EF e a décima primeira migration;
 - CI #122 validou o catálogo WPF de Unidades de Medida e preservou 178/178 testes, snapshot EF e as 11 migrations;
 - CI #124 validou o núcleo de Categorias com 188/188 testes, snapshot EF e a décima segunda migration;
+- CI #126 validou o catálogo WPF de Categorias e preservou 188/188 testes, snapshot EF e as 12 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -161,7 +163,7 @@ O projeto segue versionamento semântico.
 - catálogo WPF de Unidades de Medida integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
 - CI #122 recompilou o Desktop/XAML e preservou 178/178 testes e 11 migrations.
 
-## Marco do núcleo de Categorias — 2026-10-20
+## Marco de Categorias — 2026-10-20
 
 - `Category` adicionada como cadastro global independente, com identidade, nome e status;
 - `categories.read` e `categories.manage` adicionados ao catálogo de permissões;
@@ -169,4 +171,5 @@ O projeto segue versionamento semântico.
 - sem hierarquia, categoria-pai, código ou relacionamento automático com Produto/Material;
 - baseline subiu para 188 testes e 12 migrations;
 - CI #124 validou build, 188/188 testes, snapshot EF e ciclo completo das 12 migrations;
-- catálogo WPF de Categorias permanece como próximo slice.
+- catálogo WPF de Categorias integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
+- CI #126 recompilou o Desktop/XAML e preservou 188/188 testes e 12 migrations.

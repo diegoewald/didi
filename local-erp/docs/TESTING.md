@@ -91,9 +91,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
 - `PermissionCatalog` inclui `categories.read` e `categories.manage`, incorporados ao bootstrap de instalações novas;
 - migration `20261020113000_AddCategories` integra o snapshot e o migration smoke;
-- CI #124 validou o núcleo de Categorias com 188/188 testes e 12 migrations.
+- CI #124 validou o núcleo de Categorias com 188/188 testes e 12 migrations;
+- CI #126 recompilou `CategoriesCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 188/188 testes e as 12 migrations verdes.
 
-O catálogo WPF de Categorias ainda não existe. A compilação WPF valida o shell e os catálogos atuais, mas não substitui smoke visual/interativo em Windows real nem valida uma UI de Categoria ainda inexistente.
+A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -125,7 +126,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
 - catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
 - catálogo de Unidades de Medida: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `units.read/manage` insuficientes;
-- catálogo de Categorias após sua implementação WPF, incluindo `categories.read/manage`;
+- catálogo de Categorias: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `categories.read/manage` insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

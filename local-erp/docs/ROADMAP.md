@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos e Unidades de Medida, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida e Categorias, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -54,7 +54,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] unidade de medida: domínio, Application, persistência, migration, permissões e UI operacional;
-- [-] categoria: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
+- [x] categoria: domínio, Application, persistência, migration, permissões e UI operacional;
 - [ ] centros de custo.
 
 ## Fase 7 — Primeiro módulo operacional
@@ -124,7 +124,7 @@ O catálogo WPF de Produtos foi integrado ao módulo `Cadastros` com loading/err
 
 O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #122 recompilou o Desktop/XAML e preservou 178/178 testes, snapshot EF e o ciclo completo das 11 migrations.
 
-## Marco do núcleo de Categorias — 2026-10-20
+## Marco de Categorias — 2026-10-20
 
 `Category` foi introduzida como cadastro global independente, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe hierarquia, categoria-pai, código ou relacionamento automático com `Product` ou `Material` nesta etapa.
 
@@ -132,4 +132,6 @@ O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com l
 
 `EfCategoryRepository` persiste `Categories`. A migration `20261020113000_AddCategories` é a décima segunda migration. O CI #124 validou o núcleo com 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), snapshot EF sem mudanças pendentes e 12 migrations em apply -> rollback 0 -> reapply.
 
-Próxima prioridade funcional: **catálogo WPF de Categorias**. Centros de custo permanecem posteriores, e relacionamentos de Categoria com Produto/Material só devem ser introduzidos mediante requisito explícito.
+O catálogo WPF de Categorias foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #126 recompilou o Desktop/XAML e preservou 188/188 testes, snapshot EF e o ciclo completo das 12 migrations.
+
+Próxima prioridade funcional: **centros de custo**. Qualquer hierarquia ou relacionamento entre Categoria, Produto e Material continua dependente de requisito explícito.

@@ -66,9 +66,11 @@ Sigla/símbolo, precisão, fatores de conversão e vínculos automáticos com Pr
 
 `Category` é um cadastro global independente e contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `CategoryService` exige `categories.read` para consulta e `categories.manage` para criação, renomeação e status. `EfCategoryRepository` persiste o cadastro em `Categories`, criado pela migration `20261020113000_AddCategories`.
 
-O núcleo de Categoria está concluído e validado, mas ainda não possui catálogo WPF. Não existe hierarquia, categoria-pai, código ou vínculo automático com Produto ou Material. Instalações novas recebem `categories.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+O catálogo WPF de Categorias está disponível em `Cadastros`, com estados loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. A UI apenas orquestra a interação; autorização e regras permanecem na Application.
 
-Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais na UI. A próxima frente funcional é o **catálogo WPF de Categorias**; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Não existe hierarquia, categoria-pai, código ou vínculo automático com Produto ou Material. Instalações novas recebem `categories.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+
+Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais na UI. A próxima frente funcional é **centros de custo**, começando por modelagem mínima antes de UI ou relacionamentos adicionais. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 
