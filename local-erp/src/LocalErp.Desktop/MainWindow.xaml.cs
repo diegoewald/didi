@@ -1,5 +1,6 @@
 using System.Windows;
 using LocalErp.Application.Account;
+using LocalErp.Application.Categories;
 using LocalErp.Application.Companies;
 using LocalErp.Application.Materials;
 using LocalErp.Application.Products;
@@ -28,6 +29,7 @@ public partial class MainWindow : Window
         MaterialService materialService,
         ProductService productService,
         MeasurementUnitService measurementUnitService,
+        CategoryService categoryService,
         UserService userService,
         RoleService roleService)
     {
@@ -40,6 +42,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(materialService);
         ArgumentNullException.ThrowIfNull(productService);
         ArgumentNullException.ThrowIfNull(measurementUnitService);
+        ArgumentNullException.ThrowIfNull(categoryService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -49,6 +52,7 @@ public partial class MainWindow : Window
         MaterialsCatalogPanel.Configure(materialService);
         ProductsCatalogPanel.Configure(productService);
         MeasurementUnitsCatalogPanel.Configure(measurementUnitService);
+        CategoriesCatalogPanel.Configure(categoryService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
@@ -77,6 +81,10 @@ public partial class MainWindow : Window
         else if (CatalogsTabControl.SelectedIndex == 4 && !viewModel.MeasurementUnitsCatalog.HasLoaded)
         {
             await viewModel.MeasurementUnitsCatalog.LoadAsync();
+        }
+        else if (CatalogsTabControl.SelectedIndex == 5 && !viewModel.CategoriesCatalog.HasLoaded)
+        {
+            await viewModel.CategoriesCatalog.LoadAsync();
         }
     }
 

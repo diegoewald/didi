@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using LocalErp.Application.Abstractions.Time;
 using LocalErp.Application.Account;
+using LocalErp.Application.Categories;
 using LocalErp.Application.Companies;
 using LocalErp.Application.Materials;
 using LocalErp.Application.Products;
@@ -70,6 +71,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<MaterialService>();
                 services.AddTransient<ProductService>();
                 services.AddTransient<MeasurementUnitService>();
+                services.AddTransient<CategoryService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
@@ -84,6 +86,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<MaterialsCatalogViewModel>();
                 services.AddTransient<ProductsCatalogViewModel>();
                 services.AddTransient<MeasurementUnitsCatalogViewModel>();
+                services.AddTransient<CategoriesCatalogViewModel>();
                 services.AddTransient<UsersAdministrationViewModel>();
                 services.AddTransient<MainWindowViewModel>();
                 services.AddTransient<MainWindow>();
