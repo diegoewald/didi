@@ -13,7 +13,8 @@ public partial class MainWindowViewModel : ObservableObject
         CompaniesCatalogViewModel companiesCatalog,
         SuppliersCatalogViewModel suppliersCatalog,
         MaterialsCatalogViewModel materialsCatalog,
-        ProductsCatalogViewModel productsCatalog)
+        ProductsCatalogViewModel productsCatalog,
+        MeasurementUnitsCatalogViewModel measurementUnitsCatalog)
     {
         ArgumentNullException.ThrowIfNull(session);
         UsersAdministration = usersAdministration
@@ -26,6 +27,8 @@ public partial class MainWindowViewModel : ObservableObject
             ?? throw new ArgumentNullException(nameof(materialsCatalog));
         ProductsCatalog = productsCatalog
             ?? throw new ArgumentNullException(nameof(productsCatalog));
+        MeasurementUnitsCatalog = measurementUnitsCatalog
+            ?? throw new ArgumentNullException(nameof(measurementUnitsCatalog));
 
         NavigationItems =
         [
@@ -55,6 +58,8 @@ public partial class MainWindowViewModel : ObservableObject
     public MaterialsCatalogViewModel MaterialsCatalog { get; }
 
     public ProductsCatalogViewModel ProductsCatalog { get; }
+
+    public MeasurementUnitsCatalogViewModel MeasurementUnitsCatalog { get; }
 
     public string VersionLabel { get; }
 

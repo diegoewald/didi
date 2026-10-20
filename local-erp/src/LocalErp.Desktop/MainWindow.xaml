@@ -170,6 +170,9 @@
           <TabItem Header="Produtos">
             <views:ProductsCatalogView x:Name="ProductsCatalogPanel" DataContext="{Binding ProductsCatalog}" />
           </TabItem>
+          <TabItem Header="Unidades">
+            <views:MeasurementUnitsCatalogView x:Name="MeasurementUnitsCatalogPanel" DataContext="{Binding MeasurementUnitsCatalog}" />
+          </TabItem>
         </TabControl>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">

@@ -10,6 +10,7 @@ using LocalErp.Application.Products;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
+using LocalErp.Application.Units;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
 using LocalErp.Infrastructure.Paths;
@@ -68,6 +69,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<SupplierService>();
                 services.AddTransient<MaterialService>();
                 services.AddTransient<ProductService>();
+                services.AddTransient<MeasurementUnitService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
@@ -81,6 +83,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<SuppliersCatalogViewModel>();
                 services.AddTransient<MaterialsCatalogViewModel>();
                 services.AddTransient<ProductsCatalogViewModel>();
+                services.AddTransient<MeasurementUnitsCatalogViewModel>();
                 services.AddTransient<UsersAdministrationViewModel>();
                 services.AddTransient<MainWindowViewModel>();
                 services.AddTransient<MainWindow>();

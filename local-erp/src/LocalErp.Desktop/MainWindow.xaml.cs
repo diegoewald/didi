@@ -6,6 +6,7 @@ using LocalErp.Application.Products;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
+using LocalErp.Application.Units;
 using LocalErp.Application.Users;
 using LocalErp.Desktop.ViewModels;
 using Serilog;
@@ -26,6 +27,7 @@ public partial class MainWindow : Window
         SupplierService supplierService,
         MaterialService materialService,
         ProductService productService,
+        MeasurementUnitService measurementUnitService,
         UserService userService,
         RoleService roleService)
     {
@@ -37,6 +39,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(supplierService);
         ArgumentNullException.ThrowIfNull(materialService);
         ArgumentNullException.ThrowIfNull(productService);
+        ArgumentNullException.ThrowIfNull(measurementUnitService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -45,6 +48,7 @@ public partial class MainWindow : Window
         SuppliersCatalogPanel.Configure(supplierService);
         MaterialsCatalogPanel.Configure(materialService);
         ProductsCatalogPanel.Configure(productService);
+        MeasurementUnitsCatalogPanel.Configure(measurementUnitService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
@@ -69,6 +73,10 @@ public partial class MainWindow : Window
         else if (CatalogsTabControl.SelectedIndex == 3 && !viewModel.ProductsCatalog.HasLoaded)
         {
             await viewModel.ProductsCatalog.LoadAsync();
+        }
+        else if (CatalogsTabControl.SelectedIndex == 4 && !viewModel.MeasurementUnitsCatalog.HasLoaded)
+        {
+            await viewModel.MeasurementUnitsCatalog.LoadAsync();
         }
     }
 
