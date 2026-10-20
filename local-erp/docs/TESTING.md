@@ -22,15 +22,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 
 ## Baseline atual — 2026-10-20
 
-- Domain: 38/38;
-- Application: 89/89;
-- Persistence: 45/45;
+- Domain: 42/42;
+- Application: 94/94;
+- Persistence: 46/46;
 - Infrastructure: 6/6;
-- Total automatizado: 178/178;
+- Total automatizado: 188/188;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 11; apply -> rollback 0 -> reapply passando.
+- Migrations: 12; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -83,7 +83,17 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #120 validou o núcleo de unidade de medida com 178/178 testes e 11 migrations;
 - CI #122 recompilou `MeasurementUnitsCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 178/178 testes e as 11 migrations verdes.
 
-A compilação WPF valida XAML, handlers e composição de tipos, mas não substitui smoke visual/interativo em Windows real.
+### Cobertura de Categorias
+
+- domínio de `Category`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `categories.read`; criação, rename e status exigem `categories.manage`;
+- Application rejeita identificador inexistente sem persistir mutação;
+- Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `categories.read` e `categories.manage`, incorporados ao bootstrap de instalações novas;
+- migration `20261020113000_AddCategories` integra o snapshot e o migration smoke;
+- CI #124 validou o núcleo de Categorias com 188/188 testes e 12 migrations.
+
+O catálogo WPF de Categorias ainda não existe. A compilação WPF valida o shell e os catálogos atuais, mas não substitui smoke visual/interativo em Windows real nem valida uma UI de Categoria ainda inexistente.
 
 ### Cobertura de robustez do shell
 
@@ -115,6 +125,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
 - catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
 - catálogo de Unidades de Medida: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `units.read/manage` insuficientes;
+- catálogo de Categorias após sua implementação WPF, incluindo `categories.read/manage`;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

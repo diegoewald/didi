@@ -74,6 +74,16 @@ A migration `20261019005000_AddProducts` cria a tabela `Products`. Produto não 
 
 A migration `20261019093000_AddMeasurementUnits` cria a tabela `MeasurementUnits`. O schema não possui sigla/símbolo, precisão decimal, fatores de conversão ou FKs para `Product`/`Material`. Esses conceitos só devem ser introduzidos quando suas regras de negócio forem explicitamente definidas.
 
+## Categorias
+
+`Category` contém:
+
+- `Id` — `Guid`, chave primária criada pelo domínio;
+- `Name` — obrigatório, normalizado e limitado a 200 caracteres;
+- `IsActive` — obrigatório.
+
+A migration `20261020113000_AddCategories` cria a tabela `Categories`. O schema atual não possui hierarquia, categoria-pai, código ou FKs para `Product`/`Material`. Esses relacionamentos só devem ser adicionados quando houver regra de negócio explicitamente definida.
+
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -84,9 +94,9 @@ A migration `20261019093000_AddMeasurementUnits` cria a tabela `MeasurementUnits
 - valores monetários seguem ADR-0005: inteiro de 64 bits com escala fixa de 6 casas quando participarem de consultas relacionais;
 - nunca usar `double` para valores financeiros apenas para contornar limitação do provider.
 
-## Baseline de migrations — 2026-10-19
+## Baseline de migrations — 2026-10-20
 
-Onze migrations validadas no CI:
+Doze migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -98,7 +108,8 @@ Onze migrations validadas no CI:
 8. `20261018142500_AddSuppliers`;
 9. `20261018222000_AddMaterials`;
 10. `20261019005000_AddProducts`;
-11. `20261019093000_AddMeasurementUnits`.
+11. `20261019093000_AddMeasurementUnits`;
+12. `20261020113000_AddCategories`.
 
 O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 

@@ -4,11 +4,11 @@ Nenhum bug funcional confirmado no baseline atual.
 
 ## Validação atual
 
-O ERP é validado pelo `ERP Permanent CI` em Windows Server 2025 com .NET 10. O HEAD funcional mais recente concluiu com sucesso build Release, build da ferramenta de benchmark, 178/178 testes, verificação de snapshot EF e ciclo apply -> rollback 0 -> reapply das onze migrations.
+O ERP é validado pelo `ERP Permanent CI` em Windows Server 2025 com .NET 10. O HEAD funcional mais recente concluiu com sucesso build Release, build da ferramenta de benchmark, 188/188 testes, verificação de snapshot EF e ciclo apply -> rollback 0 -> reapply das doze migrations.
 
-O cadastro de Unidade de Medida está integrado com `units.read/manage` na Application, persistência EF, migration `20261019093000_AddMeasurementUnits` e catálogo WPF no módulo `Cadastros`. O CI #122 recompilou o Desktop/XAML e preservou o baseline de 178/178 testes e 11 migrations.
+O núcleo de Categoria está integrado com `categories.read/manage` na Application, persistência EF e migration `20261020113000_AddCategories`. O CI #124 validou domínio, serviço, repositório, snapshot e migration smoke; a UI WPF de Categorias ainda não faz parte deste baseline.
 
-Os cadastros de Produto e Material permanecem integrados com suas permissões próprias, persistência EF, migrations e catálogos WPF. Nenhum vínculo automático entre Material, Produto e Unidade de Medida foi introduzido.
+O cadastro de Unidade de Medida permanece integrado com `units.read/manage`, persistência EF, migration `20261019093000_AddMeasurementUnits` e catálogo WPF no módulo `Cadastros`. Produto e Material também permanecem integrados com suas permissões próprias, persistência EF, migrations e catálogos WPF. Nenhum vínculo automático entre Categoria, Material, Produto e Unidade de Medida foi introduzido.
 
 As salvaguardas de segurança anteriores permanecem cobertas: preservação da última capacidade efetiva de `roles.manage`, rollback conjunto da auditoria administrativa e compare-and-set de credencial na troca própria de senha.
 

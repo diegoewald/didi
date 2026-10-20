@@ -9,8 +9,8 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 178/178 testes passando
-- Migrations: 11 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 188/188 testes passando
+- Migrations: 12 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -62,7 +62,13 @@ O catálogo WPF de Unidades de Medida está disponível em `Cadastros`, com esta
 
 Sigla/símbolo, precisão, fatores de conversão e vínculos automáticos com Produto ou Material não foram presumidos. Instalações novas recebem `units.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais na UI. A próxima frente funcional é **Categorias**, começando pela semântica mínima do cadastro; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+### Categorias
+
+`Category` é um cadastro global independente e contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `CategoryService` exige `categories.read` para consulta e `categories.manage` para criação, renomeação e status. `EfCategoryRepository` persiste o cadastro em `Categories`, criado pela migration `20261020113000_AddCategories`.
+
+O núcleo de Categoria está concluído e validado, mas ainda não possui catálogo WPF. Não existe hierarquia, categoria-pai, código ou vínculo automático com Produto ou Material. Instalações novas recebem `categories.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+
+Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais na UI. A próxima frente funcional é o **catálogo WPF de Categorias**; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

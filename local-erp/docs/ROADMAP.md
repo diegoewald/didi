@@ -54,7 +54,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] unidade de medida: domínio, Application, persistência, migration, permissões e UI operacional;
-- [ ] categorias;
+- [-] categoria: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
 - [ ] centros de custo.
 
 ## Fase 7 — Primeiro módulo operacional
@@ -124,4 +124,12 @@ O catálogo WPF de Produtos foi integrado ao módulo `Cadastros` com loading/err
 
 O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #122 recompilou o Desktop/XAML e preservou 178/178 testes, snapshot EF e o ciclo completo das 11 migrations.
 
-Próxima prioridade funcional: **Categorias**, começando pela semântica mínima do cadastro. Não presumir hierarquia nem relacionamento com Produto/Material antes de requisito explícito. Centros de custo permanecem posteriores.
+## Marco do núcleo de Categorias — 2026-10-20
+
+`Category` foi introduzida como cadastro global independente, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe hierarquia, categoria-pai, código ou relacionamento automático com `Product` ou `Material` nesta etapa.
+
+`CategoryService` exige `categories.read` para consulta e `categories.manage` para criação, renomeação e status. As permissões entram no `PermissionCatalog` e no bootstrap de instalações novas; roles existentes não recebem grants adicionais automaticamente.
+
+`EfCategoryRepository` persiste `Categories`. A migration `20261020113000_AddCategories` é a décima segunda migration. O CI #124 validou o núcleo com 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), snapshot EF sem mudanças pendentes e 12 migrations em apply -> rollback 0 -> reapply.
+
+Próxima prioridade funcional: **catálogo WPF de Categorias**. Centros de custo permanecem posteriores, e relacionamentos de Categoria com Produto/Material só devem ser introduzidos mediante requisito explícito.

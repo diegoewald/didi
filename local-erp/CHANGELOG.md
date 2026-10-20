@@ -38,6 +38,11 @@ O projeto segue versionamento semântico.
 - migration `20261019093000_AddMeasurementUnits`;
 - testes de domínio, Application, repositório e migration smoke para unidades de medida;
 - catálogo WPF de Unidades de Medida com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
+- entidade `Category` global independente, com identidade, nome e status;
+- `CategoryService`, `ICategoryRepository` e `EfCategoryRepository`;
+- permissões `categories.read` e `categories.manage` no `PermissionCatalog`;
+- migration `20261020113000_AddCategories`;
+- testes de domínio, Application, repositório e migration smoke para Categorias;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -49,8 +54,10 @@ O projeto segue versionamento semântico.
 - Materiais usam autorização própria `materials.read/manage` na Application;
 - Produtos usam autorização própria `products.read/manage` na Application;
 - Unidades de medida usam autorização própria `units.read/manage` na Application;
+- Categorias usam autorização própria `categories.read/manage` na Application;
 - `Material` e `Product` permanecem conceitos separados e não presumem código/SKU, unidade, categoria, estoque, preço, composição/BOM ou vínculo comercial;
 - `MeasurementUnit` permanece independente e não presume sigla/símbolo, precisão, conversões ou vínculo automático com Produto/Material;
+- `Category` permanece independente e não presume hierarquia, categoria-pai, código ou vínculo automático com Produto/Material;
 - novas instalações recebem todo o catálogo de permissões no bootstrap; instalações existentes não recebem grants novos automaticamente;
 - dados fiscais/endereço de filial e campos fiscais, bancários ou comerciais de fornecedor permanecem fora do modelo até requisito explícito;
 - falha não tratada no dispatcher WPF agora é logada como fatal, mostra mensagem genérica e encerra a aplicação para evitar continuidade em estado incerto;
@@ -62,10 +69,10 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 178/178;
-- Domain 38/38, Application 89/89, Persistence 45/45, Infrastructure 6/6;
+- suíte automatizada: 188/188;
+- Domain 42/42, Application 94/94, Persistence 46/46, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 11 migrations: apply -> rollback 0 -> reapply passando;
+- 12 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
@@ -74,6 +81,7 @@ O projeto segue versionamento semântico.
 - CI #118 validou o catálogo WPF de Produtos e preservou 168/168 testes, snapshot EF e as 10 migrations;
 - CI #120 validou o núcleo de unidades de medida com 178/178 testes, snapshot EF e a décima primeira migration;
 - CI #122 validou o catálogo WPF de Unidades de Medida e preservou 178/178 testes, snapshot EF e as 11 migrations;
+- CI #124 validou o núcleo de Categorias com 188/188 testes, snapshot EF e a décima segunda migration;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -151,5 +159,14 @@ O projeto segue versionamento semântico.
 - baseline subiu para 178 testes e 11 migrations;
 - CI #120 validou build, 178/178 testes, snapshot EF e ciclo completo das 11 migrations;
 - catálogo WPF de Unidades de Medida integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
-- CI #122 recompilou o Desktop/XAML e preservou 178/178 testes e 11 migrations;
-- próxima frente funcional: Categorias, mantendo modelagem separada e sem hierarquia presumida.
+- CI #122 recompilou o Desktop/XAML e preservou 178/178 testes e 11 migrations.
+
+## Marco do núcleo de Categorias — 2026-10-20
+
+- `Category` adicionada como cadastro global independente, com identidade, nome e status;
+- `categories.read` e `categories.manage` adicionados ao catálogo de permissões;
+- `CategoryService`, repositório EF e migration `20261020113000_AddCategories` integrados;
+- sem hierarquia, categoria-pai, código ou relacionamento automático com Produto/Material;
+- baseline subiu para 188 testes e 12 migrations;
+- CI #124 validou build, 188/188 testes, snapshot EF e ciclo completo das 12 migrations;
+- catálogo WPF de Categorias permanece como próximo slice.

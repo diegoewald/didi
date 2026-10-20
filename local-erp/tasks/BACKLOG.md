@@ -67,7 +67,13 @@
 - [x] unidade de medida: domínio, autorização e persistência cobertos por testes;
 - [x] unidade de medida: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] unidade de medida: não adicionar sigla/símbolo, precisão, fatores de conversão ou vínculo com Produto/Material sem requisito explícito;
-- [ ] categorias: modelar separadamente somente após definir semântica mínima do cadastro-base;
+- [x] categoria: entidade `Category` global independente, com identidade, nome e status;
+- [x] categoria: `categories.read` e `categories.manage` registrados no `PermissionCatalog`;
+- [x] categoria: serviço/repositório com listagem, criação, renomeação e status;
+- [x] categoria: migration `20261020113000_AddCategories` validada em apply/rollback/reapply;
+- [x] categoria: domínio, autorização e persistência cobertos por testes;
+- [ ] categoria: catálogo WPF operacional em `Cadastros`;
+- [ ] categoria: não adicionar hierarquia, categoria-pai, código ou vínculo com Produto/Material sem requisito explícito;
 - [ ] centros de custo.
 
 ## P1 — Persistência
@@ -81,6 +87,7 @@
 - [x] `Materials` integrado ao snapshot EF e migration smoke;
 - [x] `Products` integrado ao snapshot EF e migration smoke;
 - [x] `MeasurementUnits` integrado ao snapshot EF e migration smoke;
+- [x] `Categories` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
@@ -95,12 +102,12 @@
 
 ## Baseline atual — 2026-10-20
 
-Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais nos cadastros-base.
+Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais nos cadastros-base. O núcleo de Categoria também está implementado e validado, mas ainda não possui catálogo WPF.
 
-`MeasurementUnit` permanece um cadastro global independente com somente identidade, nome e status. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para mutações. O catálogo WPF possui loading/erro/vazio, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. Não existe vínculo automático com Produto ou Material, nem sigla/símbolo, precisão ou conversão nesta etapa.
+`Category` é um cadastro global independente com somente identidade, nome e status. `CategoryService` exige `categories.read` para consulta e `categories.manage` para mutações. Não existe hierarquia, categoria-pai, código nem vínculo automático com Produto ou Material nesta etapa.
 
-Instalações novas recebem `units.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+Instalações novas recebem `categories.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), 11 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #122 recompilou o catálogo WPF de unidades de medida e preservou todo esse baseline.
+Baseline automatizado: 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), 12 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #124.
 
-Próxima tarefa funcional: **Categorias**, começando pela definição/modelagem mínima do cadastro sem presumir hierarquia ou vínculo com Produto/Material. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
+Próxima tarefa funcional: **catálogo WPF de Categorias**. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
