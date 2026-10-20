@@ -21,6 +21,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddDbContextFactory<ErpDbContext>(options =>
             options.UseSqlite(connectionString));
 
+        services.AddTransient<ICategoryRepository, EfCategoryRepository>();
         services.AddTransient<ICompanyRepository, EfCompanyRepository>();
         services.AddTransient<ICompanyBranchRepository, EfCompanyBranchRepository>();
         services.AddTransient<IMaterialRepository, EfMaterialRepository>();

@@ -20,6 +20,7 @@ public sealed class MigrationSmokeTests
     private const string AddMaterialsMigration = "20261018222000_AddMaterials";
     private const string AddProductsMigration = "20261019005000_AddProducts";
     private const string AddMeasurementUnitsMigration = "20261019093000_AddMeasurementUnits";
+    private const string AddCategoriesMigration = "20261020113000_AddCategories";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -38,6 +39,7 @@ public sealed class MigrationSmokeTests
             {
                 context.Database.Migrate();
                 AssertExpectedMigrationsApplied(context);
+                AssertTableExists(context, "Categories", expected: true);
                 AssertTableExists(context, "Companies", expected: true);
                 AssertTableExists(context, "CompanyBranches", expected: true);
                 AssertTableExists(context, "Materials", expected: true);
@@ -54,6 +56,7 @@ public sealed class MigrationSmokeTests
 
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
+                AssertTableExists(context, "Categories", expected: false);
                 AssertTableExists(context, "Companies", expected: false);
                 AssertTableExists(context, "CompanyBranches", expected: false);
                 AssertTableExists(context, "Materials", expected: false);
@@ -66,6 +69,7 @@ public sealed class MigrationSmokeTests
 
                 migrator.Migrate();
                 AssertExpectedMigrationsApplied(context);
+                AssertTableExists(context, "Categories", expected: true);
                 AssertTableExists(context, "Companies", expected: true);
                 AssertTableExists(context, "CompanyBranches", expected: true);
                 AssertTableExists(context, "Materials", expected: true);
@@ -104,6 +108,7 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddMaterialsMigration);
         CollectionAssert.Contains(appliedMigrations, AddProductsMigration);
         CollectionAssert.Contains(appliedMigrations, AddMeasurementUnitsMigration);
+        CollectionAssert.Contains(appliedMigrations, AddCategoriesMigration);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)

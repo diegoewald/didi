@@ -4,6 +4,8 @@ public static class PermissionCatalog
 {
     public const int CodeMaxLength = 100;
 
+    public const string CategoriesRead = "categories.read";
+    public const string CategoriesManage = "categories.manage";
     public const string CompaniesRead = "companies.read";
     public const string CompaniesManage = "companies.manage";
     public const string MaterialsRead = "materials.read";
@@ -21,6 +23,8 @@ public static class PermissionCatalog
 
     private static readonly HashSet<string> KnownPermissions =
     [
+        CategoriesRead,
+        CategoriesManage,
         CompaniesRead,
         CompaniesManage,
         MaterialsRead,

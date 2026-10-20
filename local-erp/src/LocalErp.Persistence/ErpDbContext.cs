@@ -1,3 +1,4 @@
+using LocalErp.Domain.Categories;
 using LocalErp.Domain.Companies;
 using LocalErp.Domain.Materials;
 using LocalErp.Domain.Products;
@@ -11,6 +12,8 @@ namespace LocalErp.Persistence;
 
 public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbContext(options)
 {
+    public DbSet<Category> Categories => Set<Category>();
+
     public DbSet<Company> Companies => Set<Company>();
 
     public DbSet<CompanyBranch> CompanyBranches => Set<CompanyBranch>();
