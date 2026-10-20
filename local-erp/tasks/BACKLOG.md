@@ -65,7 +65,7 @@
 - [x] unidade de medida: serviço/repositório com listagem, criação, renomeação e status;
 - [x] unidade de medida: migration `20261019093000_AddMeasurementUnits` validada em apply/rollback/reapply;
 - [x] unidade de medida: domínio, autorização e persistência cobertos por testes;
-- [ ] unidade de medida: catálogo WPF operacional em `Cadastros`;
+- [x] unidade de medida: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] unidade de medida: não adicionar sigla/símbolo, precisão, fatores de conversão ou vínculo com Produto/Material sem requisito explícito;
 - [ ] categorias: modelar separadamente somente após definir semântica mínima do cadastro-base;
 - [ ] centros de custo.
@@ -93,14 +93,14 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline atual — 2026-10-19
+## Baseline atual — 2026-10-20
 
-Empresa, filial, fornecedor, material e produto estão operacionais nos cadastros-base. O núcleo de unidade de medida também está implementado e validado, mas ainda não possui catálogo WPF.
+Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais nos cadastros-base.
 
-`MeasurementUnit` é um cadastro global independente com somente identidade, nome e status. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para mutações. Não existe vínculo automático com Produto ou Material, nem sigla/símbolo, precisão ou conversão nesta etapa.
+`MeasurementUnit` permanece um cadastro global independente com somente identidade, nome e status. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para mutações. O catálogo WPF possui loading/erro/vazio, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. Não existe vínculo automático com Produto ou Material, nem sigla/símbolo, precisão ou conversão nesta etapa.
 
 Instalações novas recebem `units.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), 11 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado no CI #120.
+Baseline automatizado: 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), 11 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #122 recompilou o catálogo WPF de unidades de medida e preservou todo esse baseline.
 
-Próxima tarefa funcional: **catálogo WPF de unidades de medida**. Categorias permanece uma frente separada. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
+Próxima tarefa funcional: **Categorias**, começando pela definição/modelagem mínima do cadastro sem presumir hierarquia ou vínculo com Produto/Material. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.

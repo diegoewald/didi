@@ -20,7 +20,7 @@
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline atual — 2026-10-19
+## Baseline atual — 2026-10-20
 
 - Domain: 38/38;
 - Application: 89/89;
@@ -80,9 +80,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
 - `PermissionCatalog` inclui `units.read` e `units.manage`, incorporados ao bootstrap de instalações novas;
 - migration `20261019093000_AddMeasurementUnits` integra o snapshot e o migration smoke;
-- CI #120 validou o núcleo de unidade de medida com 178/178 testes e 11 migrations.
+- CI #120 validou o núcleo de unidade de medida com 178/178 testes e 11 migrations;
+- CI #122 recompilou `MeasurementUnitsCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 178/178 testes e as 11 migrations verdes.
 
-O catálogo WPF de unidades de medida ainda não existe. A compilação WPF valida os componentes Desktop atuais, mas não substitui smoke visual/interativo em Windows real.
+A compilação WPF valida XAML, handlers e composição de tipos, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -113,7 +114,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Fornecedores: loading/erro/vazio, criação, rename, ativação/desativação e permissões insuficientes;
 - catálogo de Materiais: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `materials.read/manage` insuficientes;
 - catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
-- catálogo de Unidades de Medida após sua implementação WPF, incluindo `units.read/manage`;
+- catálogo de Unidades de Medida: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `units.read/manage` insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

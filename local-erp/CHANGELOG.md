@@ -37,6 +37,7 @@ O projeto segue versionamento semântico.
 - permissões `units.read` e `units.manage` no `PermissionCatalog`;
 - migration `20261019093000_AddMeasurementUnits`;
 - testes de domínio, Application, repositório e migration smoke para unidades de medida;
+- catálogo WPF de Unidades de Medida com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -72,6 +73,7 @@ O projeto segue versionamento semântico.
 - CI #116 validou o núcleo de Produto, snapshot EF e a décima migration;
 - CI #118 validou o catálogo WPF de Produtos e preservou 168/168 testes, snapshot EF e as 10 migrations;
 - CI #120 validou o núcleo de unidades de medida com 178/178 testes, snapshot EF e a décima primeira migration;
+- CI #122 validou o catálogo WPF de Unidades de Medida e preservou 178/178 testes, snapshot EF e as 11 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -140,7 +142,7 @@ O projeto segue versionamento semântico.
 - catálogo WPF de Produtos integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
 - CI #118 recompilou o Desktop/XAML e preservou 168/168 testes e 10 migrations.
 
-## Marco do núcleo de unidades de medida — 2026-10-19
+## Marco de unidades de medida — 2026-10-20
 
 - `MeasurementUnit` adicionado como cadastro global independente, com identidade, nome e status;
 - `units.read` e `units.manage` adicionados ao catálogo de permissões;
@@ -148,4 +150,6 @@ O projeto segue versionamento semântico.
 - sem sigla/símbolo, precisão, conversão ou relacionamento automático com Produto/Material;
 - baseline subiu para 178 testes e 11 migrations;
 - CI #120 validou build, 178/178 testes, snapshot EF e ciclo completo das 11 migrations;
-- próxima frente funcional: catálogo WPF de unidades de medida; Categorias permanece separada.
+- catálogo WPF de Unidades de Medida integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
+- CI #122 recompilou o Desktop/XAML e preservou 178/178 testes e 11 migrations;
+- próxima frente funcional: Categorias, mantendo modelagem separada e sem hierarquia presumida.

@@ -58,9 +58,11 @@ Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM
 
 `MeasurementUnit` é um cadastro global independente e contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para criação, renomeação e status. `EfMeasurementUnitRepository` persiste o cadastro em `MeasurementUnits`, criado pela migration `20261019093000_AddMeasurementUnits`.
 
-O núcleo de unidades de medida está concluído, mas o catálogo WPF ainda não existe. Sigla/símbolo, precisão, fatores de conversão e vínculos automáticos com Produto ou Material não foram presumidos. Instalações novas recebem `units.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+O catálogo WPF de Unidades de Medida está disponível em `Cadastros`, com estados loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. A UI apenas orquestra a interação e mantém autorização e regras na Application.
 
-Empresa, filial, fornecedor, material e produto estão operacionais na UI. O núcleo de unidade de medida está validado e a próxima frente funcional é seu **catálogo WPF**. Categorias permanece uma frente separada; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Sigla/símbolo, precisão, fatores de conversão e vínculos automáticos com Produto ou Material não foram presumidos. Instalações novas recebem `units.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+
+Empresa, filial, fornecedor, material, produto e unidade de medida estão operacionais na UI. A próxima frente funcional é **Categorias**, começando pela semântica mínima do cadastro; centros de custo seguem depois. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

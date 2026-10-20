@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais e Produtos, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos e Unidades de Medida, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -53,7 +53,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] fornecedor: domínio, persistência, migration, permissões e UI operacional;
 - [x] material: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
-- [-] unidade de medida: domínio, Application, persistência, migration e permissões concluídos; UI WPF pendente;
+- [x] unidade de medida: domínio, Application, persistência, migration, permissões e UI operacional;
 - [ ] categorias;
 - [ ] centros de custo.
 
@@ -114,12 +114,14 @@ O catálogo WPF de Materiais foi integrado ao módulo `Cadastros` com estados lo
 
 O catálogo WPF de Produtos foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #118 recompilou o Desktop/XAML e preservou 168/168 testes, snapshot EF e o ciclo completo das 10 migrations.
 
-## Marco do núcleo de unidades de medida — 2026-10-19
+## Marco de unidades de medida — 2026-10-20
 
-`MeasurementUnit` foi introduzido como cadastro global independente, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe, nesta etapa, sigla/símbolo, precisão decimal, fator de conversão ou relação automática com `Product` ou `Material`.
+`MeasurementUnit` é um cadastro global independente, contendo somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Não existe, nesta etapa, sigla/símbolo, precisão decimal, fator de conversão ou relação automática com `Product` ou `Material`.
 
 `MeasurementUnitService` exige `units.read` para consulta e `units.manage` para criação, renomeação e status. As permissões entram no `PermissionCatalog` e no bootstrap de instalações novas; roles existentes não recebem grants adicionais automaticamente.
 
-`EfMeasurementUnitRepository` persiste `MeasurementUnits`. A migration `20261019093000_AddMeasurementUnits` é a décima primeira migration. O CI #120 validou 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), snapshot EF sem mudanças pendentes e 11 migrations em apply -> rollback 0 -> reapply.
+`EfMeasurementUnitRepository` persiste `MeasurementUnits`. A migration `20261019093000_AddMeasurementUnits` é a décima primeira migration. O CI #120 validou o núcleo com 178/178 testes (Domain 38, Application 89, Persistence 45, Infrastructure 6), snapshot EF sem mudanças pendentes e 11 migrations em apply -> rollback 0 -> reapply.
 
-Próxima prioridade funcional: **catálogo WPF de unidades de medida**. Categorias permanece uma frente separada e centros de custo continuam posteriores.
+O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #122 recompilou o Desktop/XAML e preservou 178/178 testes, snapshot EF e o ciclo completo das 11 migrations.
+
+Próxima prioridade funcional: **Categorias**, começando pela semântica mínima do cadastro. Não presumir hierarquia nem relacionamento com Produto/Material antes de requisito explícito. Centros de custo permanecem posteriores.
