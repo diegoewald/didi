@@ -8,6 +8,8 @@ public static class PermissionCatalog
     public const string CategoriesManage = "categories.manage";
     public const string CompaniesRead = "companies.read";
     public const string CompaniesManage = "companies.manage";
+    public const string CostCentersRead = "cost-centers.read";
+    public const string CostCentersManage = "cost-centers.manage";
     public const string MaterialsRead = "materials.read";
     public const string MaterialsManage = "materials.manage";
     public const string ProductsRead = "products.read";
@@ -27,6 +29,8 @@ public static class PermissionCatalog
         CategoriesManage,
         CompaniesRead,
         CompaniesManage,
+        CostCentersRead,
+        CostCentersManage,
         MaterialsRead,
         MaterialsManage,
         ProductsRead,

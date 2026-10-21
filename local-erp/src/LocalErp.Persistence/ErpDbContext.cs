@@ -1,5 +1,6 @@
 using LocalErp.Domain.Categories;
 using LocalErp.Domain.Companies;
+using LocalErp.Domain.CostCenters;
 using LocalErp.Domain.Materials;
 using LocalErp.Domain.Products;
 using LocalErp.Domain.Security;
@@ -17,6 +18,8 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
     public DbSet<Company> Companies => Set<Company>();
 
     public DbSet<CompanyBranch> CompanyBranches => Set<CompanyBranch>();
+
+    public DbSet<CostCenter> CostCenters => Set<CostCenter>();
 
     public DbSet<Material> Materials => Set<Material>();
 
