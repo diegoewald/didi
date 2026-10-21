@@ -1,6 +1,6 @@
 # Comparação de cotações — especificação do terceiro slice de Compras
 
-Status: **especificado; implementação pendente**.
+Status: **Application validada no CI #165; UI WPF implementada e aguardando validação completa**.
 
 Este documento define o terceiro slice vertical de Compras. Ele usa os RFQs e respostas já registrados para oferecer uma comparação operacional somente leitura, sem transformar comparação em adjudicação, aprovação ou geração de Pedido de Compra.
 
