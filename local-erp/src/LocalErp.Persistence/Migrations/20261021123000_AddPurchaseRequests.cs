@@ -1,10 +1,14 @@
 using System;
+using LocalErp.Persistence;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace LocalErp.Persistence.Migrations
 {
+    [DbContext(typeof(ErpDbContext))]
+    [Migration("20261021123000_AddPurchaseRequests")]
     public partial class AddPurchaseRequests : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
