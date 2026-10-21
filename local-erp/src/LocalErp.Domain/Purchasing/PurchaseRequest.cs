@@ -98,21 +98,28 @@ public sealed class PurchaseRequest : Entity
             throw new InvalidOperationException("A purchase request must contain at least one line before submission.");
         }
 
-        SubmittedByUserId = ValidateIdentifier(actorUserId, nameof(actorUserId));
-        SubmittedAtUtc = ValidateUtc(submittedAtUtc, nameof(submittedAtUtc));
+        var validatedActorUserId = ValidateIdentifier(actorUserId, nameof(actorUserId));
+        var validatedSubmittedAtUtc = ValidateUtc(submittedAtUtc, nameof(submittedAtUtc));
+
+        SubmittedByUserId = validatedActorUserId;
+        SubmittedAtUtc = validatedSubmittedAtUtc;
         Status = PurchaseRequestStatus.Submitted;
     }
 
     public void Cancel(Guid actorUserId, DateTime cancelledAtUtc, string reason)
     {
-        if (Status == PurchaseRequestStatus.Cancelled)
+        if (Status is not PurchaseRequestStatus.Draft and not PurchaseRequestStatus.Submitted)
         {
-            throw new InvalidOperationException("A cancelled purchase request is terminal.");
+            throw new InvalidOperationException("Only draft or submitted purchase requests can be cancelled.");
         }
 
-        CancelledByUserId = ValidateIdentifier(actorUserId, nameof(actorUserId));
-        CancelledAtUtc = ValidateUtc(cancelledAtUtc, nameof(cancelledAtUtc));
-        CancellationReason = NormalizeRequired(reason, CancellationReasonMaxLength, nameof(reason));
+        var validatedActorUserId = ValidateIdentifier(actorUserId, nameof(actorUserId));
+        var validatedCancelledAtUtc = ValidateUtc(cancelledAtUtc, nameof(cancelledAtUtc));
+        var normalizedReason = NormalizeRequired(reason, CancellationReasonMaxLength, nameof(reason));
+
+        CancelledByUserId = validatedActorUserId;
+        CancelledAtUtc = validatedCancelledAtUtc;
+        CancellationReason = normalizedReason;
         Status = PurchaseRequestStatus.Cancelled;
     }
 

@@ -60,6 +60,24 @@ public sealed class PurchaseRequestTests
     }
 
     [TestMethod]
+    public void FailedLineUpdateDoesNotPartiallyMutateLine()
+    {
+        var request = NewRequest();
+        var originalUnitId = Guid.NewGuid();
+        var line = request.AddLine("Original", 2m, originalUnitId);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => request.UpdateLine(
+            line.Id,
+            "Alterado",
+            0m,
+            Guid.NewGuid()));
+
+        Assert.AreEqual("Original", line.Description);
+        Assert.AreEqual(2m, line.Quantity);
+        Assert.AreEqual(originalUnitId, line.MeasurementUnitId);
+    }
+
+    [TestMethod]
     public void SubmitRequiresAtLeastOneLineAndRecordsActor()
     {
         var request = NewRequest();
@@ -74,6 +92,21 @@ public sealed class PurchaseRequestTests
         Assert.AreEqual(PurchaseRequestStatus.Submitted, request.Status);
         Assert.AreEqual(actorId, request.SubmittedByUserId);
         Assert.AreEqual(submittedAt, request.SubmittedAtUtc);
+    }
+
+    [TestMethod]
+    public void FailedSubmitDoesNotPartiallyMutateRequest()
+    {
+        var request = NewRequest();
+        request.AddLine("Item", 1m, Guid.NewGuid());
+
+        Assert.Throws<ArgumentException>(() => request.Submit(
+            Guid.NewGuid(),
+            DateTime.SpecifyKind(CreatedAt.AddHours(1), DateTimeKind.Local)));
+
+        Assert.AreEqual(PurchaseRequestStatus.Draft, request.Status);
+        Assert.IsNull(request.SubmittedByUserId);
+        Assert.IsNull(request.SubmittedAtUtc);
     }
 
     [TestMethod]
@@ -97,6 +130,9 @@ public sealed class PurchaseRequestTests
         var cancelledAt = CreatedAt.AddHours(2);
 
         Assert.Throws<ArgumentException>(() => request.Cancel(actorId, cancelledAt, "   "));
+        Assert.AreEqual(PurchaseRequestStatus.Draft, request.Status);
+        Assert.IsNull(request.CancelledByUserId);
+        Assert.IsNull(request.CancelledAtUtc);
 
         request.Cancel(actorId, cancelledAt, "  Necessidade retirada  ");
 

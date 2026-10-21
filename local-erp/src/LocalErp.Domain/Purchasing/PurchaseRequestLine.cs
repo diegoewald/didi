@@ -45,9 +45,13 @@ public sealed class PurchaseRequestLine : Entity
         Guid measurementUnitId,
         DateOnly? neededByDate)
     {
-        Description = NormalizeDescription(description);
-        Quantity = ValidateQuantity(quantity);
-        MeasurementUnitId = ValidateIdentifier(measurementUnitId, nameof(measurementUnitId));
+        var normalizedDescription = NormalizeDescription(description);
+        var validatedQuantity = ValidateQuantity(quantity);
+        var validatedMeasurementUnitId = ValidateIdentifier(measurementUnitId, nameof(measurementUnitId));
+
+        Description = normalizedDescription;
+        Quantity = validatedQuantity;
+        MeasurementUnitId = validatedMeasurementUnitId;
         NeededByDate = neededByDate;
     }
 
