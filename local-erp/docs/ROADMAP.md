@@ -59,8 +59,9 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 ## Fase 7 — Primeiro módulo operacional
 
-- [ ] compras: definir primeiro o fluxo mínimo e suas regras de negócio reais;
-- [ ] compras: implementar o primeiro slice vertical somente após estados, atores e invariantes mínimos estarem documentados.
+- [-] compras: descoberta funcional iniciada em `docs/PURCHASING.md`; padrões de mercado e decisões bloqueadoras documentados sem presumir regra interna;
+- [ ] compras: resolver estados, atores, vínculos obrigatórios, permissões e invariantes do primeiro slice de Solicitação de Compra;
+- [ ] compras: implementar o primeiro slice vertical somente após essas decisões estarem documentadas.
 
 ## Fases posteriores
 
@@ -146,3 +147,11 @@ O catálogo WPF de Categorias foi integrado ao módulo `Cadastros` com loading/e
 O catálogo WPF de Centros de Custo foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #131 recompilou o Desktop/XAML e validou 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), snapshot EF sem mudanças pendentes e 13 migrations em apply -> rollback 0 -> reapply.
 
 Com isso, a Fase 6 de cadastros-base está concluída. A próxima prioridade funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de introduzir entidades, estados, aprovações ou vínculos adicionais**.
+
+## Marco de descoberta de Compras — 2026-10-21
+
+A Fase 7 foi iniciada pela documentação `docs/PURCHASING.md`. Foram comparados padrões de referência de Microsoft Dynamics 365, Oracle Procurement e SAP para separar conceitos recorrentes de regras que variam por organização.
+
+O projeto reconhece como cadeia conceitual de longo prazo `necessidade interna -> requisição -> processo de compra -> pedido -> acompanhamento -> recebimento`, mas não tornou obrigatórios cotação, aprovação, quantidade mínima de fornecedores, alçadas, vínculos organizacionais ou recebimento parcial.
+
+O primeiro slice recomendado é **Solicitação de Compra**, porém sua implementação permanece bloqueada até a definição explícita de estados, atores, objetos compráveis, vínculos obrigatórios, dados mínimos de linha, permissões e transições. Nenhuma regra interna de empresa real foi incorporada ao repositório.
