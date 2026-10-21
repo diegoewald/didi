@@ -1,0 +1,34 @@
+name: Fix RFQ CA1859
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/fix-rfq-ca1859.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-local-ci
+      - name: Apply analyzer fix and remove temporary workflow
+        shell: pwsh
+        run: |
+          $path = 'local-erp/src/LocalErp.Desktop/ViewModels/RequestForQuotationsWorkspaceViewModel.cs'
+          $content = Get-Content $path -Raw
+          $old = 'private IReadOnlyDictionary<Guid, RequestForQuotationSupplierOption> _supplierReferences ='
+          $new = 'private Dictionary<Guid, RequestForQuotationSupplierOption> _supplierReferences ='
+          if (-not $content.Contains($old)) { throw "Expected declaration was not found." }
+          Set-Content -Path $path -Value ($content.Replace($old, $new)) -Encoding utf8NoBOM
+          git rm '.github/workflows/fix-rfq-ca1859.yml'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $path
+          git commit -m 'fix(purchases): satisfy RFQ workspace analyzer'
+          git push origin HEAD:erp-local-ci
