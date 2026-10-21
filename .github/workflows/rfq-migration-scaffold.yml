@@ -8,6 +8,9 @@ on:
       - 'local-erp/src/LocalErp.Persistence/**'
       - '.github/workflows/rfq-migration-scaffold.yml'
 
+permissions:
+  contents: write
+
 jobs:
   scaffold:
     runs-on: windows-2025
@@ -16,6 +19,8 @@ jobs:
         working-directory: local-erp
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: '10.0.x'
@@ -25,11 +30,12 @@ jobs:
         run: dotnet restore src/LocalErp.Persistence/LocalErp.Persistence.csproj
       - name: Scaffold RFQ migration
         run: dotnet ef migrations add AddRequestForQuotations --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
-      - name: Upload generated migration
-        uses: actions/upload-artifact@v7
-        with:
-          name: rfq-generated-migration
-          path: |
-            local-erp/src/LocalErp.Persistence/Migrations/*AddRequestForQuotations*
-            local-erp/src/LocalErp.Persistence/Migrations/ErpDbContextModelSnapshot.cs
-          if-no-files-found: error
+      - name: Commit generated migration
+        shell: pwsh
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add local-erp/src/LocalErp.Persistence/Migrations
+          git commit -m "feat(purchases): add RFQ persistence migration"
+          git push origin HEAD:erp-local-ci
