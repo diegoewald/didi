@@ -84,6 +84,16 @@ A migration `20261019093000_AddMeasurementUnits` cria a tabela `MeasurementUnits
 
 A migration `20261020113000_AddCategories` cria a tabela `Categories`. O schema atual não possui hierarquia, categoria-pai, código ou FKs para `Product`/`Material`. Esses relacionamentos só devem ser adicionados quando houver regra de negócio explicitamente definida.
 
+## Centros de custo
+
+`CostCenter` contém:
+
+- `Id` — `Guid`, chave primária criada pelo domínio;
+- `Name` — obrigatório, normalizado e limitado a 200 caracteres;
+- `IsActive` — obrigatório.
+
+A migration `20261021100000_AddCostCenters` cria a tabela `CostCenters`. Nesta etapa o cadastro é global e independente: não há código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático com compras. Esses conceitos só devem entrar no schema quando suas regras de negócio forem explicitamente definidas.
+
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -94,9 +104,9 @@ A migration `20261020113000_AddCategories` cria a tabela `Categories`. O schema 
 - valores monetários seguem ADR-0005: inteiro de 64 bits com escala fixa de 6 casas quando participarem de consultas relacionais;
 - nunca usar `double` para valores financeiros apenas para contornar limitação do provider.
 
-## Baseline de migrations — 2026-10-20
+## Baseline de migrations — 2026-10-21
 
-Doze migrations validadas no CI:
+Treze migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -109,9 +119,10 @@ Doze migrations validadas no CI:
 9. `20261018222000_AddMaterials`;
 10. `20261019005000_AddProducts`;
 11. `20261019093000_AddMeasurementUnits`;
-12. `20261020113000_AddCategories`.
+12. `20261020113000_AddCategories`;
+13. `20261021100000_AddCostCenters`.
 
-O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #128 validou o núcleo de Centros de Custo, o snapshot EF e o ciclo completo das 13 migrations. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 
 ## Backup
 

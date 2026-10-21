@@ -74,7 +74,13 @@
 - [x] categoria: domínio, autorização e persistência cobertos por testes;
 - [x] categoria: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] categoria: não adicionar hierarquia, categoria-pai, código ou vínculo com Produto/Material sem requisito explícito;
-- [ ] centros de custo.
+- [x] centro de custo: entidade `CostCenter` global independente, com identidade, nome e status;
+- [x] centro de custo: `cost-centers.read` e `cost-centers.manage` registrados no `PermissionCatalog`;
+- [x] centro de custo: serviço/repositório com listagem, criação, renomeação e status;
+- [x] centro de custo: migration `20261021100000_AddCostCenters` validada em apply/rollback/reapply;
+- [x] centro de custo: domínio, autorização e persistência cobertos por testes;
+- [ ] centro de custo: catálogo WPF operacional em `Cadastros`;
+- [ ] centro de custo: não adicionar código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira ou relacionamento automático sem requisito explícito.
 
 ## P1 — Persistência
 
@@ -88,6 +94,7 @@
 - [x] `Products` integrado ao snapshot EF e migration smoke;
 - [x] `MeasurementUnits` integrado ao snapshot EF e migration smoke;
 - [x] `Categories` integrado ao snapshot EF e migration smoke;
+- [x] `CostCenters` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P2 — Engenharia
@@ -100,14 +107,14 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline atual — 2026-10-20
+## Baseline atual — 2026-10-21
 
-Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais nos cadastros-base.
+Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais nos cadastros-base. O núcleo de Centro de Custo está implementado e validado; sua UI ainda é a próxima tarefa funcional.
 
-`Category` permanece um cadastro global independente com somente identidade, nome e status. `CategoryService` exige `categories.read` para consulta e `categories.manage` para mutações. O catálogo WPF lista ativos/inativos e permite criação, renomeação e mudança de status sem mover autorização para a UI. Não existe hierarquia, categoria-pai, código nem vínculo automático com Produto ou Material nesta etapa.
+`CostCenter` permanece um cadastro global independente com somente identidade, nome e status. `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para mutações. Não existe código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático nesta etapa.
 
-Instalações novas recebem `categories.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+Instalações novas recebem `cost-centers.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 188/188 testes (Domain 42, Application 94, Persistence 46, Infrastructure 6), 12 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #126 recompilou o catálogo WPF de Categorias e preservou todo esse baseline.
+O CI #128 passou build Release, build da ferramenta de benchmark, suíte automatizada, verificação de snapshot EF e apply -> rollback 0 -> reapply das 13 migrations.
 
-Próxima tarefa funcional: **centros de custo**, começando pela modelagem mínima antes de UI ou relacionamentos adicionais. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
+Próxima tarefa funcional: **catálogo WPF de Centros de Custo**. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.

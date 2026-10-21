@@ -55,7 +55,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] unidade de medida: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] categoria: domínio, Application, persistência, migration, permissões e UI operacional;
-- [ ] centros de custo.
+- [-] centro de custo: domínio, Application, persistência, migration e permissões concluídos; catálogo WPF pendente.
 
 ## Fase 7 — Primeiro módulo operacional
 
@@ -134,4 +134,12 @@ O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com l
 
 O catálogo WPF de Categorias foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #126 recompilou o Desktop/XAML e preservou 188/188 testes, snapshot EF e o ciclo completo das 12 migrations.
 
-Próxima prioridade funcional: **centros de custo**. Qualquer hierarquia ou relacionamento entre Categoria, Produto e Material continua dependente de requisito explícito.
+## Marco do núcleo de Centros de Custo — 2026-10-21
+
+`CostCenter` foi introduzido como cadastro global independente com identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos permanecem fora do modelo até existir requisito explícito.
+
+`CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para criação, renomeação e status. As permissões entram no `PermissionCatalog` e no bootstrap de instalações novas; roles existentes continuam sem receber grants novos automaticamente.
+
+`EfCostCenterRepository` persiste `CostCenters`. A migration `20261021100000_AddCostCenters` é a décima terceira migration. O CI #128 validou build Release, suíte automatizada, snapshot EF sem mudanças pendentes e o ciclo completo apply -> rollback 0 -> reapply das 13 migrations.
+
+Próxima prioridade funcional: **catálogo WPF de Centros de Custo**. Relacionamentos adicionais continuam dependentes de requisito de negócio explícito.
