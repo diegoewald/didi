@@ -90,6 +90,9 @@
                 <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True">
                   <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
+                <DataTrigger Binding="{Binding IsPurchasingSelected}" Value="True">
+                  <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsAdministrationSelected}" Value="True">
                   <Setter Property="Visibility" Value="Collapsed" />
                 </DataTrigger>
@@ -180,6 +183,19 @@
             <views:CostCentersCatalogView x:Name="CostCentersCatalogPanel" DataContext="{Binding CostCentersCatalog}" />
           </TabItem>
         </TabControl>
+
+        <views:PurchaseRequestsWorkspaceView DataContext="{Binding PurchaseRequestsWorkspace}">
+          <views:PurchaseRequestsWorkspaceView.Style>
+            <Style TargetType="{x:Type views:PurchaseRequestsWorkspaceView}">
+              <Setter Property="Visibility" Value="Collapsed" />
+              <Style.Triggers>
+                <DataTrigger Binding="{Binding DataContext.IsPurchasingSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                  <Setter Property="Visibility" Value="Visible" />
+                </DataTrigger>
+              </Style.Triggers>
+            </Style>
+          </views:PurchaseRequestsWorkspaceView.Style>
+        </views:PurchaseRequestsWorkspaceView>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
           <views:AdministrationUsersView.Style>

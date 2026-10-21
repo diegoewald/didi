@@ -16,7 +16,8 @@ public partial class MainWindowViewModel : ObservableObject
         ProductsCatalogViewModel productsCatalog,
         MeasurementUnitsCatalogViewModel measurementUnitsCatalog,
         CategoriesCatalogViewModel categoriesCatalog,
-        CostCentersCatalogViewModel costCentersCatalog)
+        CostCentersCatalogViewModel costCentersCatalog,
+        PurchaseRequestsWorkspaceViewModel purchaseRequestsWorkspace)
     {
         ArgumentNullException.ThrowIfNull(session);
         UsersAdministration = usersAdministration
@@ -35,6 +36,8 @@ public partial class MainWindowViewModel : ObservableObject
             ?? throw new ArgumentNullException(nameof(categoriesCatalog));
         CostCentersCatalog = costCentersCatalog
             ?? throw new ArgumentNullException(nameof(costCentersCatalog));
+        PurchaseRequestsWorkspace = purchaseRequestsWorkspace
+            ?? throw new ArgumentNullException(nameof(purchaseRequestsWorkspace));
 
         NavigationItems =
         [
@@ -71,6 +74,8 @@ public partial class MainWindowViewModel : ObservableObject
 
     public CostCentersCatalogViewModel CostCentersCatalog { get; }
 
+    public PurchaseRequestsWorkspaceViewModel PurchaseRequestsWorkspace { get; }
+
     public string VersionLabel { get; }
 
     public string CurrentUsername { get; }
@@ -80,6 +85,9 @@ public partial class MainWindowViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isCatalogsSelected;
+
+    [ObservableProperty]
+    private bool isPurchasingSelected;
 
     [ObservableProperty]
     private bool isAdministrationSelected;
@@ -94,6 +102,10 @@ public partial class MainWindowViewModel : ObservableObject
             item.Title,
             "Cadastros",
             StringComparison.Ordinal);
+        IsPurchasingSelected = string.Equals(
+            item.Title,
+            "Compras",
+            StringComparison.Ordinal);
         IsAdministrationSelected = string.Equals(
             item.Title,
             "Administração",
@@ -102,6 +114,10 @@ public partial class MainWindowViewModel : ObservableObject
         if (IsCatalogsSelected)
         {
             await CompaniesCatalog.LoadAsync();
+        }
+        else if (IsPurchasingSelected)
+        {
+            await PurchaseRequestsWorkspace.LoadAsync();
         }
         else if (IsAdministrationSelected)
         {

@@ -9,6 +9,7 @@ using LocalErp.Application.Companies;
 using LocalErp.Application.CostCenters;
 using LocalErp.Application.Materials;
 using LocalErp.Application.Products;
+using LocalErp.Application.Purchasing;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
@@ -74,6 +75,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<MeasurementUnitService>();
                 services.AddTransient<CategoryService>();
                 services.AddTransient<CostCenterService>();
+                services.AddTransient<PurchaseRequestService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
@@ -90,6 +92,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<MeasurementUnitsCatalogViewModel>();
                 services.AddTransient<CategoriesCatalogViewModel>();
                 services.AddTransient<CostCentersCatalogViewModel>();
+                services.AddTransient<PurchaseRequestsWorkspaceViewModel>();
                 services.AddTransient<UsersAdministrationViewModel>();
                 services.AddTransient<MainWindowViewModel>();
                 services.AddTransient<MainWindow>();
