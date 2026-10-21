@@ -21,14 +21,12 @@
           <TextBlock Text="LOCAL ERP" Foreground="White" FontWeight="SemiBold" FontSize="18" />
           <TextBlock Text="Ambiente local" Foreground="#92A4B5" Margin="0,4,0,0" />
         </StackPanel>
-
         <Border DockPanel.Dock="Bottom" Margin="12" Padding="12" Background="#1C2A36" CornerRadius="5">
           <StackPanel>
             <TextBlock Text="{Binding VersionLabel}" Foreground="#D7E0E8" FontWeight="SemiBold" />
             <TextBlock Text="Offline-first" Foreground="#8FA4B8" Margin="0,3,0,0" />
           </StackPanel>
         </Border>
-
         <ItemsControl ItemsSource="{Binding NavigationItems}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
@@ -36,10 +34,7 @@
                       Command="{Binding DataContext.NavigateCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                       CommandParameter="{Binding}">
                 <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="24" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
+                  <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                   <TextBlock Grid.Column="0" Text="{Binding Symbol}" FontFamily="Segoe MDL2 Assets" FontSize="14" />
                   <TextBlock Grid.Column="1" Text="{Binding Title}" />
                 </Grid>
@@ -51,32 +46,20 @@
     </Border>
 
     <Grid Grid.Column="1">
-      <Grid.RowDefinitions>
-        <RowDefinition Height="58" />
-        <RowDefinition Height="*" />
-      </Grid.RowDefinitions>
-
+      <Grid.RowDefinitions><RowDefinition Height="58"/><RowDefinition Height="*"/></Grid.RowDefinitions>
       <Border Grid.Row="0" Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
         <Grid Margin="24,0">
-          <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-          </Grid.ColumnDefinitions>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
           <TextBlock VerticalAlignment="Center" Text="{Binding CurrentSection}" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
           <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
             <Ellipse Width="8" Height="8" Fill="{StaticResource Brush.Success}" Margin="0,0,8,0" />
             <TextBlock Text="{Binding CurrentUsername}" Foreground="{StaticResource Brush.Text}" FontWeight="SemiBold" VerticalAlignment="Center" />
-            <Button Content="Alterar senha"
-                    Padding="12,5"
-                    Margin="14,0,0,0"
-                    Background="Transparent"
-                    BorderBrush="{StaticResource Brush.Border}"
-                    BorderThickness="1"
-                    Foreground="{StaticResource Brush.Muted}"
-                    Cursor="Hand"
-                    Click="ChangePassword_Click" />
+            <Button Content="Alterar senha" Padding="12,5" Margin="14,0,0,0" Background="Transparent"
+                    BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" Foreground="{StaticResource Brush.Muted}"
+                    Cursor="Hand" Click="ChangePassword_Click" />
             <Border Width="1" Height="22" Background="{StaticResource Brush.Border}" Margin="14,0" />
-            <Button Content="Sair" Padding="12,5" Background="Transparent" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" Foreground="{StaticResource Brush.Muted}" Cursor="Hand" Click="Logout_Click" />
+            <Button Content="Sair" Padding="12,5" Background="Transparent" BorderBrush="{StaticResource Brush.Border}"
+                    BorderThickness="1" Foreground="{StaticResource Brush.Muted}" Cursor="Hand" Click="Logout_Click" />
           </StackPanel>
         </Grid>
       </Border>
@@ -87,62 +70,37 @@
             <Style TargetType="ScrollViewer">
               <Setter Property="Visibility" Value="Visible" />
               <Style.Triggers>
-                <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsPurchasingSelected}" Value="True">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
-                <DataTrigger Binding="{Binding IsAdministrationSelected}" Value="True">
-                  <Setter Property="Visibility" Value="Collapsed" />
-                </DataTrigger>
+                <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                <DataTrigger Binding="{Binding IsPurchasingSelected}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                <DataTrigger Binding="{Binding IsAdministrationSelected}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
               </Style.Triggers>
             </Style>
           </ScrollViewer.Style>
-
           <StackPanel Margin="28,26" MaxWidth="980" HorizontalAlignment="Left">
             <TextBlock Text="Fundação técnica" FontSize="28" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-            <TextBlock Text="A estrutura inicial está preparada para evoluir por fases, sem antecipar módulos antes da base técnica." Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,22" FontSize="14" />
-
+            <TextBlock Text="A estrutura inicial está preparada para evoluir por fases, sem antecipar módulos antes da base técnica."
+                       Foreground="{StaticResource Brush.Muted}" Margin="0,7,0,22" FontSize="14" />
             <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6">
               <Grid>
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto" />
-                  <RowDefinition Height="Auto" />
-                  <RowDefinition Height="Auto" />
-                  <RowDefinition Height="Auto" />
-                  <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="210" />
-                  <ColumnDefinition Width="250" />
-                  <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-
-                <Border Grid.Row="0" Grid.ColumnSpan="3" Background="#F7F9FB" Padding="14,11" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1">
-                  <TextBlock Text="Decisões da fundação" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" />
-                </Border>
-
+                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="210"/><ColumnDefinition Width="250"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                <Border Grid.Row="0" Grid.ColumnSpan="3" Background="#F7F9FB" Padding="14,11" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,0,0,1"><TextBlock Text="Decisões da fundação" FontWeight="SemiBold" Foreground="{StaticResource Brush.Text}" /></Border>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="Interface" Margin="14,12" Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Grid.Row="1" Grid.Column="1" Text="WPF / .NET 10 LTS" Margin="14,12" FontWeight="SemiBold" />
                 <TextBlock Grid.Row="1" Grid.Column="2" Text="Windows desktop, foco em produtividade" Margin="14,12" />
-
                 <Border Grid.Row="2" Grid.ColumnSpan="3" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,1,0,0" />
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="Banco inicial" Margin="14,12" Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Grid.Row="2" Grid.Column="1" Text="SQLite + EF Core 10" Margin="14,12" FontWeight="SemiBold" />
                 <TextBlock Grid.Row="2" Grid.Column="2" Text="Arquivo local; nunca compartilhado diretamente na rede" Margin="14,12" />
-
                 <Border Grid.Row="3" Grid.ColumnSpan="3" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,1,0,0" />
                 <TextBlock Grid.Row="3" Grid.Column="0" Text="Rede futura" Margin="14,12" Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Grid.Row="3" Grid.Column="1" Text="PostgreSQL" Margin="14,12" FontWeight="SemiBold" />
                 <TextBlock Grid.Row="3" Grid.Column="2" Text="Migração controlada para cliente/servidor" Margin="14,12" />
-
                 <Border Grid.Row="4" Grid.ColumnSpan="3" BorderBrush="{StaticResource Brush.Border}" BorderThickness="0,1,0,0" />
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="Segurança" Margin="14,12" Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="Login local, primeiro administrador, RBAC, auditoria e sessão autenticada ativos" Margin="14,12" FontWeight="SemiBold" />
               </Grid>
             </Border>
-
             <TextBlock Text="Diretórios de dados" FontSize="17" FontWeight="SemiBold" Margin="0,24,0,8" Foreground="{StaticResource Brush.Text}" />
             <Border Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="6" Padding="14">
               <TextBlock Text="%LocalAppData%\LocalErp\Data   |   Logs   |   Backups   |   Attachments" FontFamily="Consolas" Foreground="{StaticResource Brush.Text}" />
@@ -151,61 +109,36 @@
         </ScrollViewer>
 
         <TabControl x:Name="CatalogsTabControl" SelectionChanged="CatalogsTabControl_SelectionChanged">
+          <TabControl.Style><Style TargetType="TabControl"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></TabControl.Style>
+          <TabItem Header="Empresas"><views:CompaniesCatalogView x:Name="CompaniesCatalogPanel" DataContext="{Binding CompaniesCatalog}" /></TabItem>
+          <TabItem Header="Fornecedores"><views:SuppliersCatalogView x:Name="SuppliersCatalogPanel" DataContext="{Binding SuppliersCatalog}" /></TabItem>
+          <TabItem Header="Materiais"><views:MaterialsCatalogView x:Name="MaterialsCatalogPanel" DataContext="{Binding MaterialsCatalog}" /></TabItem>
+          <TabItem Header="Produtos"><views:ProductsCatalogView x:Name="ProductsCatalogPanel" DataContext="{Binding ProductsCatalog}" /></TabItem>
+          <TabItem Header="Unidades"><views:MeasurementUnitsCatalogView x:Name="MeasurementUnitsCatalogPanel" DataContext="{Binding MeasurementUnitsCatalog}" /></TabItem>
+          <TabItem Header="Categorias"><views:CategoriesCatalogView x:Name="CategoriesCatalogPanel" DataContext="{Binding CategoriesCatalog}" /></TabItem>
+          <TabItem Header="Centros de custo"><views:CostCentersCatalogView x:Name="CostCentersCatalogPanel" DataContext="{Binding CostCentersCatalog}" /></TabItem>
+        </TabControl>
+
+        <TabControl x:Name="PurchasingTabControl" SelectionChanged="PurchasingTabControl_SelectionChanged">
           <TabControl.Style>
             <Style TargetType="TabControl">
               <Setter Property="Visibility" Value="Collapsed" />
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding IsCatalogsSelected}" Value="True">
-                  <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-              </Style.Triggers>
+              <Style.Triggers><DataTrigger Binding="{Binding IsPurchasingSelected}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
             </Style>
           </TabControl.Style>
-          <TabItem Header="Empresas">
-            <views:CompaniesCatalogView x:Name="CompaniesCatalogPanel" DataContext="{Binding CompaniesCatalog}" />
+          <TabItem Header="Solicitações">
+            <views:PurchaseRequestsWorkspaceView DataContext="{Binding PurchaseRequestsWorkspace}" />
           </TabItem>
-          <TabItem Header="Fornecedores">
-            <views:SuppliersCatalogView x:Name="SuppliersCatalogPanel" DataContext="{Binding SuppliersCatalog}" />
-          </TabItem>
-          <TabItem Header="Materiais">
-            <views:MaterialsCatalogView x:Name="MaterialsCatalogPanel" DataContext="{Binding MaterialsCatalog}" />
-          </TabItem>
-          <TabItem Header="Produtos">
-            <views:ProductsCatalogView x:Name="ProductsCatalogPanel" DataContext="{Binding ProductsCatalog}" />
-          </TabItem>
-          <TabItem Header="Unidades">
-            <views:MeasurementUnitsCatalogView x:Name="MeasurementUnitsCatalogPanel" DataContext="{Binding MeasurementUnitsCatalog}" />
-          </TabItem>
-          <TabItem Header="Categorias">
-            <views:CategoriesCatalogView x:Name="CategoriesCatalogPanel" DataContext="{Binding CategoriesCatalog}" />
-          </TabItem>
-          <TabItem Header="Centros de custo">
-            <views:CostCentersCatalogView x:Name="CostCentersCatalogPanel" DataContext="{Binding CostCentersCatalog}" />
+          <TabItem Header="Cotações">
+            <views:RequestForQuotationsWorkspaceView DataContext="{Binding RequestForQuotationsWorkspace}" />
           </TabItem>
         </TabControl>
-
-        <views:PurchaseRequestsWorkspaceView DataContext="{Binding PurchaseRequestsWorkspace}">
-          <views:PurchaseRequestsWorkspaceView.Style>
-            <Style TargetType="{x:Type views:PurchaseRequestsWorkspaceView}">
-              <Setter Property="Visibility" Value="Collapsed" />
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding DataContext.IsPurchasingSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                  <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-              </Style.Triggers>
-            </Style>
-          </views:PurchaseRequestsWorkspaceView.Style>
-        </views:PurchaseRequestsWorkspaceView>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
           <views:AdministrationUsersView.Style>
             <Style TargetType="{x:Type views:AdministrationUsersView}">
               <Setter Property="Visibility" Value="Collapsed" />
-              <Style.Triggers>
-                <DataTrigger Binding="{Binding DataContext.IsAdministrationSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                  <Setter Property="Visibility" Value="Visible" />
-                </DataTrigger>
-              </Style.Triggers>
+              <Style.Triggers><DataTrigger Binding="{Binding DataContext.IsAdministrationSelected, RelativeSource={RelativeSource AncestorType=Window}}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger></Style.Triggers>
             </Style>
           </views:AdministrationUsersView.Style>
         </views:AdministrationUsersView>

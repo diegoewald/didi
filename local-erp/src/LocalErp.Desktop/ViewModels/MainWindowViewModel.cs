@@ -17,27 +17,20 @@ public partial class MainWindowViewModel : ObservableObject
         MeasurementUnitsCatalogViewModel measurementUnitsCatalog,
         CategoriesCatalogViewModel categoriesCatalog,
         CostCentersCatalogViewModel costCentersCatalog,
-        PurchaseRequestsWorkspaceViewModel purchaseRequestsWorkspace)
+        PurchaseRequestsWorkspaceViewModel purchaseRequestsWorkspace,
+        RequestForQuotationsWorkspaceViewModel requestForQuotationsWorkspace)
     {
         ArgumentNullException.ThrowIfNull(session);
-        UsersAdministration = usersAdministration
-            ?? throw new ArgumentNullException(nameof(usersAdministration));
-        CompaniesCatalog = companiesCatalog
-            ?? throw new ArgumentNullException(nameof(companiesCatalog));
-        SuppliersCatalog = suppliersCatalog
-            ?? throw new ArgumentNullException(nameof(suppliersCatalog));
-        MaterialsCatalog = materialsCatalog
-            ?? throw new ArgumentNullException(nameof(materialsCatalog));
-        ProductsCatalog = productsCatalog
-            ?? throw new ArgumentNullException(nameof(productsCatalog));
-        MeasurementUnitsCatalog = measurementUnitsCatalog
-            ?? throw new ArgumentNullException(nameof(measurementUnitsCatalog));
-        CategoriesCatalog = categoriesCatalog
-            ?? throw new ArgumentNullException(nameof(categoriesCatalog));
-        CostCentersCatalog = costCentersCatalog
-            ?? throw new ArgumentNullException(nameof(costCentersCatalog));
-        PurchaseRequestsWorkspace = purchaseRequestsWorkspace
-            ?? throw new ArgumentNullException(nameof(purchaseRequestsWorkspace));
+        UsersAdministration = usersAdministration ?? throw new ArgumentNullException(nameof(usersAdministration));
+        CompaniesCatalog = companiesCatalog ?? throw new ArgumentNullException(nameof(companiesCatalog));
+        SuppliersCatalog = suppliersCatalog ?? throw new ArgumentNullException(nameof(suppliersCatalog));
+        MaterialsCatalog = materialsCatalog ?? throw new ArgumentNullException(nameof(materialsCatalog));
+        ProductsCatalog = productsCatalog ?? throw new ArgumentNullException(nameof(productsCatalog));
+        MeasurementUnitsCatalog = measurementUnitsCatalog ?? throw new ArgumentNullException(nameof(measurementUnitsCatalog));
+        CategoriesCatalog = categoriesCatalog ?? throw new ArgumentNullException(nameof(categoriesCatalog));
+        CostCentersCatalog = costCentersCatalog ?? throw new ArgumentNullException(nameof(costCentersCatalog));
+        PurchaseRequestsWorkspace = purchaseRequestsWorkspace ?? throw new ArgumentNullException(nameof(purchaseRequestsWorkspace));
+        RequestForQuotationsWorkspace = requestForQuotationsWorkspace ?? throw new ArgumentNullException(nameof(requestForQuotationsWorkspace));
 
         NavigationItems =
         [
@@ -57,27 +50,17 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     public IReadOnlyList<NavigationItem> NavigationItems { get; }
-
     public UsersAdministrationViewModel UsersAdministration { get; }
-
     public CompaniesCatalogViewModel CompaniesCatalog { get; }
-
     public SuppliersCatalogViewModel SuppliersCatalog { get; }
-
     public MaterialsCatalogViewModel MaterialsCatalog { get; }
-
     public ProductsCatalogViewModel ProductsCatalog { get; }
-
     public MeasurementUnitsCatalogViewModel MeasurementUnitsCatalog { get; }
-
     public CategoriesCatalogViewModel CategoriesCatalog { get; }
-
     public CostCentersCatalogViewModel CostCentersCatalog { get; }
-
     public PurchaseRequestsWorkspaceViewModel PurchaseRequestsWorkspace { get; }
-
+    public RequestForQuotationsWorkspaceViewModel RequestForQuotationsWorkspace { get; }
     public string VersionLabel { get; }
-
     public string CurrentUsername { get; }
 
     [ObservableProperty]
@@ -98,18 +81,9 @@ public partial class MainWindowViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(item);
 
         CurrentSection = item.Title;
-        IsCatalogsSelected = string.Equals(
-            item.Title,
-            "Cadastros",
-            StringComparison.Ordinal);
-        IsPurchasingSelected = string.Equals(
-            item.Title,
-            "Compras",
-            StringComparison.Ordinal);
-        IsAdministrationSelected = string.Equals(
-            item.Title,
-            "Administração",
-            StringComparison.Ordinal);
+        IsCatalogsSelected = string.Equals(item.Title, "Cadastros", StringComparison.Ordinal);
+        IsPurchasingSelected = string.Equals(item.Title, "Compras", StringComparison.Ordinal);
+        IsAdministrationSelected = string.Equals(item.Title, "Administração", StringComparison.Ordinal);
 
         if (IsCatalogsSelected)
         {

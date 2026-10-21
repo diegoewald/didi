@@ -65,43 +65,35 @@ public partial class MainWindow : Window
 
     private async void CatalogsTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (!ReferenceEquals(e.Source, CatalogsTabControl) || DataContext is not MainWindowViewModel viewModel)
-        {
-            return;
-        }
+        if (!ReferenceEquals(e.Source, CatalogsTabControl) || DataContext is not MainWindowViewModel viewModel) return;
 
         if (CatalogsTabControl.SelectedIndex == 1 && !viewModel.SuppliersCatalog.HasLoaded)
-        {
             await viewModel.SuppliersCatalog.LoadAsync();
-        }
         else if (CatalogsTabControl.SelectedIndex == 2 && !viewModel.MaterialsCatalog.HasLoaded)
-        {
             await viewModel.MaterialsCatalog.LoadAsync();
-        }
         else if (CatalogsTabControl.SelectedIndex == 3 && !viewModel.ProductsCatalog.HasLoaded)
-        {
             await viewModel.ProductsCatalog.LoadAsync();
-        }
         else if (CatalogsTabControl.SelectedIndex == 4 && !viewModel.MeasurementUnitsCatalog.HasLoaded)
-        {
             await viewModel.MeasurementUnitsCatalog.LoadAsync();
-        }
         else if (CatalogsTabControl.SelectedIndex == 5 && !viewModel.CategoriesCatalog.HasLoaded)
-        {
             await viewModel.CategoriesCatalog.LoadAsync();
-        }
         else if (CatalogsTabControl.SelectedIndex == 6 && !viewModel.CostCentersCatalog.HasLoaded)
-        {
             await viewModel.CostCentersCatalog.LoadAsync();
-        }
+    }
+
+    private async void PurchasingTabControl_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (!ReferenceEquals(e.Source, PurchasingTabControl) || DataContext is not MainWindowViewModel viewModel) return;
+
+        if (PurchasingTabControl.SelectedIndex == 0 && !viewModel.PurchaseRequestsWorkspace.HasLoaded)
+            await viewModel.PurchaseRequestsWorkspace.LoadAsync();
+        else if (PurchasingTabControl.SelectedIndex == 1 && !viewModel.RequestForQuotationsWorkspace.HasLoaded)
+            await viewModel.RequestForQuotationsWorkspace.LoadAsync();
     }
 
     private void ChangePassword_Click(object sender, RoutedEventArgs e)
     {
-        var window = new ChangePasswordWindow(_accountService)
-        {
-            Owner = this,
-        };
+        var window = new ChangePasswordWindow(_accountService) { Owner = this };
         window.ShowDialog();
     }
 

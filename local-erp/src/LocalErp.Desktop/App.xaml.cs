@@ -76,6 +76,8 @@ public partial class App : System.Windows.Application
                 services.AddTransient<CategoryService>();
                 services.AddTransient<CostCenterService>();
                 services.AddTransient<PurchaseRequestService>();
+                services.AddTransient<RequestForQuotationService>();
+                services.AddTransient<RequestForQuotationLookupService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
@@ -93,6 +95,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<CategoriesCatalogViewModel>();
                 services.AddTransient<CostCentersCatalogViewModel>();
                 services.AddTransient<PurchaseRequestsWorkspaceViewModel>();
+                services.AddTransient<RequestForQuotationsWorkspaceViewModel>();
                 services.AddTransient<UsersAdministrationViewModel>();
                 services.AddTransient<MainWindowViewModel>();
                 services.AddTransient<MainWindow>();
