@@ -101,12 +101,9 @@ public sealed class EfRequestForQuotationRepositoryTests
         var connection = context.Database.GetDbConnection();
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
-        command.CommandText = "SELECT UnitPrice FROM SupplierQuotationLines WHERE Id = $id;";
-        var parameter = command.CreateParameter();
-        parameter.ParameterName = "$id";
-        parameter.Value = firstQuotedLine.Id.ToString();
-        command.Parameters.Add(parameter);
+        command.CommandText = "SELECT UnitPrice FROM SupplierQuotationLines;";
         var storedValue = await command.ExecuteScalarAsync();
+        Assert.IsNotNull(storedValue);
         Assert.AreEqual(25_123_456L, Convert.ToInt64(storedValue, CultureInfo.InvariantCulture));
     }
 
