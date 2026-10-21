@@ -156,7 +156,7 @@ public sealed class RequestForQuotationComparisonService(
     private static RequestForQuotationComparisonOfferResult MapOffer(
         Guid supplierId,
         Guid requestForQuotationLineId,
-        IReadOnlyDictionary<Guid, SupplierQuotation> finalizedBySupplier)
+        Dictionary<Guid, SupplierQuotation> finalizedBySupplier)
     {
         if (!finalizedBySupplier.TryGetValue(supplierId, out var quotation))
         {
