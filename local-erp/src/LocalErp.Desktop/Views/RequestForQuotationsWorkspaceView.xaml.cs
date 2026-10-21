@@ -13,10 +13,16 @@ public partial class RequestForQuotationsWorkspaceView : UserControl
     private Guid? _creatingQuotationSupplierId;
     private Guid? _editingQuotationLineId;
     private bool _isBusy;
+    private RequestForQuotationComparisonService? _comparisonService;
 
     public RequestForQuotationsWorkspaceView()
     {
         InitializeComponent();
+    }
+
+    public void Configure(RequestForQuotationComparisonService comparisonService)
+    {
+        _comparisonService = comparisonService ?? throw new ArgumentNullException(nameof(comparisonService));
     }
 
     private RequestForQuotationsWorkspaceViewModel? ViewModel => DataContext as RequestForQuotationsWorkspaceViewModel;
@@ -97,6 +103,27 @@ public partial class RequestForQuotationsWorkspaceView : UserControl
             ShowOperationError("Não foi possível abrir a cotação. Consulte os logs para detalhes técnicos.");
         }
         finally { SetBusy(false); }
+    }
+
+    private void OpenComparison_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy || ViewModel?.CurrentRequestForQuotation is not RequestForQuotationResult current)
+        {
+            return;
+        }
+
+        if (_comparisonService is null)
+        {
+            ShowOperationError("A comparação de cotações não está disponível nesta sessão.");
+            return;
+        }
+
+        HideOperationMessages();
+        var window = new QuotationComparisonWindow(_comparisonService, current.Id)
+        {
+            Owner = Window.GetWindow(this),
+        };
+        window.ShowDialog();
     }
 
     private async void SaveNotes_Click(object sender, RoutedEventArgs e)

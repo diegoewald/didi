@@ -144,6 +144,8 @@
                 <TextBlock Text="{Binding CurrentIdDisplay, StringFormat=ID técnico: {0}}" Margin="0,3,0,0" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Brush.Muted}" />
               </StackPanel>
               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
+                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
                 <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"
                         Visibility="{Binding IsDraft, Converter={StaticResource BoolToVisibilityConverter}}" />
                 <Button Content="Encerrar" Click="CloseRfq_Click" Padding="12,7" MinWidth="88" Margin="0,0,8,0" Cursor="Hand"

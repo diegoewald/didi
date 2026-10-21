@@ -78,6 +78,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<PurchaseRequestService>();
                 services.AddTransient<RequestForQuotationService>();
                 services.AddTransient<RequestForQuotationLookupService>();
+                services.AddTransient<RequestForQuotationComparisonService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();

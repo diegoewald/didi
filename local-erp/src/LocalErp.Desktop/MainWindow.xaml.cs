@@ -5,6 +5,7 @@ using LocalErp.Application.Companies;
 using LocalErp.Application.CostCenters;
 using LocalErp.Application.Materials;
 using LocalErp.Application.Products;
+using LocalErp.Application.Purchasing;
 using LocalErp.Application.Roles;
 using LocalErp.Application.Security;
 using LocalErp.Application.Suppliers;
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
         MeasurementUnitService measurementUnitService,
         CategoryService categoryService,
         CostCenterService costCenterService,
+        RequestForQuotationComparisonService requestForQuotationComparisonService,
         UserService userService,
         RoleService roleService)
     {
@@ -46,6 +48,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(measurementUnitService);
         ArgumentNullException.ThrowIfNull(categoryService);
         ArgumentNullException.ThrowIfNull(costCenterService);
+        ArgumentNullException.ThrowIfNull(requestForQuotationComparisonService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -57,6 +60,7 @@ public partial class MainWindow : Window
         MeasurementUnitsCatalogPanel.Configure(measurementUnitService);
         CategoriesCatalogPanel.Configure(categoryService);
         CostCentersCatalogPanel.Configure(costCenterService);
+        RequestForQuotationsWorkspacePanel.Configure(requestForQuotationComparisonService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
