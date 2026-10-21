@@ -44,6 +44,12 @@ O projeto segue versionamento semântico.
 - migration `20261020113000_AddCategories`;
 - testes de domínio, Application, repositório e migration smoke para Categorias;
 - catálogo WPF de Categorias com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
+- entidade `CostCenter` global independente, com identidade, nome e status;
+- `CostCenterService`, `ICostCenterRepository` e `EfCostCenterRepository`;
+- permissões `cost-centers.read` e `cost-centers.manage` no `PermissionCatalog`;
+- migration `20261021100000_AddCostCenters`;
+- testes de domínio, Application, repositório e migration smoke para Centros de Custo;
+- catálogo WPF de Centros de Custo com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
 - tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
 
 ### Changed
@@ -56,9 +62,11 @@ O projeto segue versionamento semântico.
 - Produtos usam autorização própria `products.read/manage` na Application;
 - Unidades de medida usam autorização própria `units.read/manage` na Application;
 - Categorias usam autorização própria `categories.read/manage` na Application;
+- Centros de Custo usam autorização própria `cost-centers.read/manage` na Application;
 - `Material` e `Product` permanecem conceitos separados e não presumem código/SKU, unidade, categoria, estoque, preço, composição/BOM ou vínculo comercial;
 - `MeasurementUnit` permanece independente e não presume sigla/símbolo, precisão, conversões ou vínculo automático com Produto/Material;
 - `Category` permanece independente e não presume hierarquia, categoria-pai, código ou vínculo automático com Produto/Material;
+- `CostCenter` permanece independente e não presume código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira ou relacionamento automático;
 - novas instalações recebem todo o catálogo de permissões no bootstrap; instalações existentes não recebem grants novos automaticamente;
 - dados fiscais/endereço de filial e campos fiscais, bancários ou comerciais de fornecedor permanecem fora do modelo até requisito explícito;
 - falha não tratada no dispatcher WPF agora é logada como fatal, mostra mensagem genérica e encerra a aplicação para evitar continuidade em estado incerto;
@@ -70,10 +78,10 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 188/188;
-- Domain 42/42, Application 94/94, Persistence 46/46, Infrastructure 6/6;
+- suíte automatizada: 198/198;
+- Domain 46/46, Application 99/99, Persistence 47/47, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 12 migrations: apply -> rollback 0 -> reapply passando;
+- 13 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
@@ -84,6 +92,8 @@ O projeto segue versionamento semântico.
 - CI #122 validou o catálogo WPF de Unidades de Medida e preservou 178/178 testes, snapshot EF e as 11 migrations;
 - CI #124 validou o núcleo de Categorias com 188/188 testes, snapshot EF e a décima segunda migration;
 - CI #126 validou o catálogo WPF de Categorias e preservou 188/188 testes, snapshot EF e as 12 migrations;
+- CI #128 validou o núcleo de Centros de Custo e a décima terceira migration;
+- CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
@@ -173,3 +183,15 @@ O projeto segue versionamento semântico.
 - CI #124 validou build, 188/188 testes, snapshot EF e ciclo completo das 12 migrations;
 - catálogo WPF de Categorias integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
 - CI #126 recompilou o Desktop/XAML e preservou 188/188 testes e 12 migrations.
+
+## Marco de Centros de Custo — 2026-10-21
+
+- `CostCenter` adicionado como cadastro global independente, com identidade, nome e status;
+- `cost-centers.read` e `cost-centers.manage` adicionados ao catálogo de permissões;
+- `CostCenterService`, repositório EF e migration `20261021100000_AddCostCenters` integrados;
+- sem código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira ou relacionamento automático;
+- baseline subiu para 198 testes e 13 migrations;
+- CI #128 validou o núcleo, snapshot EF e ciclo completo das 13 migrations;
+- catálogo WPF de Centros de Custo integrado ao módulo `Cadastros` com ativos/inativos, criação, renomeação e status;
+- CI #131 recompilou o Desktop/XAML e preservou 198/198 testes e 13 migrations;
+- Fase 6 de cadastros-base concluída; próxima fase exige definição do fluxo mínimo de Compras com regras reais antes de modelar o módulo.

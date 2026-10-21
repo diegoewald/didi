@@ -79,7 +79,7 @@
 - [x] centro de custo: serviço/repositório com listagem, criação, renomeação e status;
 - [x] centro de custo: migration `20261021100000_AddCostCenters` validada em apply/rollback/reapply;
 - [x] centro de custo: domínio, autorização e persistência cobertos por testes;
-- [ ] centro de custo: catálogo WPF operacional em `Cadastros`;
+- [x] centro de custo: catálogo WPF operacional em `Cadastros`, com ativos/inativos, criação, renomeação e status;
 - [ ] centro de custo: não adicionar código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira ou relacionamento automático sem requisito explícito.
 
 ## P1 — Persistência
@@ -97,6 +97,11 @@
 - [x] `CostCenters` integrado ao snapshot EF e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
+## P1 — Primeiro módulo operacional
+
+- [ ] definir o fluxo mínimo de Compras usando regras de negócio reais antes de criar entidades, estados ou aprovações;
+- [ ] somente após a definição do fluxo, implementar o primeiro slice vertical de Compras sem presumir regras fiscais/comerciais não documentadas.
+
 ## P2 — Engenharia
 
 - [x] CI Windows permanente;
@@ -109,12 +114,10 @@
 
 ## Baseline atual — 2026-10-21
 
-Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais nos cadastros-base. O núcleo de Centro de Custo está implementado e validado; sua UI ainda é a próxima tarefa funcional.
+Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais nos cadastros-base. `CostCenter` permanece um cadastro global independente com somente identidade, nome e status. `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para mutações; a UI apenas orquestra interação e mantém autorização/regras na Application.
 
-`CostCenter` permanece um cadastro global independente com somente identidade, nome e status. `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para mutações. Não existe código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático nesta etapa.
+Não existe código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático para Centro de Custo nesta etapa. Instalações novas recebem `cost-centers.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Instalações novas recebem `cost-centers.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+Baseline automatizado: 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), 13 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #131 recompilou o catálogo WPF de Centros de Custo e preservou todo esse baseline.
 
-O CI #128 passou build Release, build da ferramenta de benchmark, suíte automatizada, verificação de snapshot EF e apply -> rollback 0 -> reapply das 13 migrations.
-
-Próxima tarefa funcional: **catálogo WPF de Centros de Custo**. Smoke WPF e benchmark em hardware representativo continuam pendências de pré-release.
+A Fase 6 de cadastros-base está fechada. Próxima prioridade funcional: **definir o fluxo mínimo de Compras com regras de negócio reais antes de implementar entidades ou estados do módulo**. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

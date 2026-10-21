@@ -20,17 +20,17 @@
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline atual — 2026-10-20
+## Baseline atual — 2026-10-21
 
-- Domain: 42/42;
-- Application: 94/94;
-- Persistence: 46/46;
+- Domain: 46/46;
+- Application: 99/99;
+- Persistence: 47/47;
 - Infrastructure: 6/6;
-- Total automatizado: 188/188;
+- Total automatizado: 198/198;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 12; apply -> rollback 0 -> reapply passando.
+- Migrations: 13; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -94,6 +94,17 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #124 validou o núcleo de Categorias com 188/188 testes e 12 migrations;
 - CI #126 recompilou `CategoriesCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 188/188 testes e as 12 migrations verdes.
 
+### Cobertura de Centros de Custo
+
+- domínio de `CostCenter`: nome obrigatório/normalizado, limite de 200 caracteres, rename e status;
+- Application: listagem exige `cost-centers.read`; criação, rename e status exigem `cost-centers.manage`;
+- Application rejeita identificador inexistente sem persistir mutação;
+- Persistence: add/get/list/update, ordenação e filtro de inativos sobre SQLite;
+- `PermissionCatalog` inclui `cost-centers.read` e `cost-centers.manage`, incorporados ao bootstrap de instalações novas;
+- migration `20261021100000_AddCostCenters` integra o snapshot e o migration smoke;
+- CI #128 validou o núcleo de Centros de Custo e a décima terceira migration;
+- CI #131 recompilou `CostCentersCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 198/198 testes e as 13 migrations verdes.
+
 A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
@@ -127,6 +138,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Produtos: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `products.read/manage` insuficientes;
 - catálogo de Unidades de Medida: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `units.read/manage` insuficientes;
 - catálogo de Categorias: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `categories.read/manage` insuficientes;
+- catálogo de Centros de Custo: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `cost-centers.read/manage` insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

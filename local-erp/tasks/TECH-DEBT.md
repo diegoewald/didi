@@ -4,7 +4,7 @@
 
 - O shell ainda possui estilos locais; extrair design system somente quando a repetição justificar.
 - Backup/restauração e atualização possuem estratégia documentada, mas fluxo final de produto ainda não está implementado.
-- Segurança, administração, Empresa, Filial, Fornecedor, Material, Produto, Unidade de Medida e Categoria estão implementados e validados; a próxima frente funcional é Centros de Custo.
+- Segurança, administração, Empresa, Filial, Fornecedor, Material, Produto, Unidade de Medida, Categoria e Centro de Custo estão implementados e validados. A Fase 6 de cadastros-base está concluída; a próxima frente funcional depende da definição do fluxo mínimo de Compras com regras reais de negócio.
 - O tratamento global de exceções além do startup está implementado. Erros recuperáveis continuam responsabilidade do caso de uso/tela correspondente; não usar a barreira global como substituto de tratamento local.
 - A proteção administrativa cobre os caminhos atuais que podem eliminar `roles.manage`; futuras mutações do grafo RBAC devem reutilizar salvaguarda equivalente.
 - `SecurityAuditEvents` ainda não possui política aprovada de retenção/limpeza.
@@ -16,14 +16,16 @@
 - `Product` possui apenas nome e status. Código/SKU, unidade, categoria, estoque, preço, tributação, composição/BOM e vínculos comerciais não devem ser adicionados sem requisito explícito.
 - `MeasurementUnit` possui apenas nome e status. Sigla/símbolo, precisão decimal, fatores de conversão e vínculo com Produto/Material não devem ser adicionados sem requisito explícito.
 - `Category` possui apenas nome e status. Hierarquia, categoria-pai, código e vínculo com Produto/Material não devem ser adicionados sem requisito explícito.
+- `CostCenter` possui apenas nome e status. Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos não devem ser adicionados sem requisito explícito.
 - `Material` e `Product` permanecem conceitos separados; não unificar os dois nem criar relacionamento/composição apenas para reduzir número de cadastros.
-- `materials.read/manage`, `products.read/manage`, `units.read/manage` e `categories.read/manage` entram automaticamente no bootstrap de instalações novas. Roles de instalações existentes não recebem grants novos automaticamente; essa ausência de elevação implícita é deliberada e preserva menor privilégio.
-- A repetição entre catálogos WPF aumentou com Categorias; qualquer consolidação em componente comum deve ser feita em refactor próprio, após definir abstração que reduza complexidade sem misturar regras específicas. Não misturar essa refatoração com o futuro cadastro de Centros de Custo.
+- `materials.read/manage`, `products.read/manage`, `units.read/manage`, `categories.read/manage` e `cost-centers.read/manage` entram automaticamente no bootstrap de instalações novas. Roles de instalações existentes não recebem grants novos automaticamente; essa ausência de elevação implícita é deliberada e preserva menor privilégio.
+- A repetição entre os catálogos WPF agora inclui Centros de Custo. Qualquer consolidação em componente comum deve ser feita em refactor próprio, após definir abstração que reduza complexidade sem misturar regras específicas.
 - A migration `20261017234500_AddAdministrativeAuditContext` usa rebuild explícito de tabela por limitação SQLite; preservar esse padrão quando necessário.
 - O rollback de `20261016131952_AddAuthenticationThrottling` ainda emite aviso do EF Core por executar `PRAGMA foreign_keys = 0` fora de transação. O rollback conclui com sucesso, mas a estratégia deve ser revisada antes de release sem alterar migration histórica de forma insegura.
 - O smoke visual/interativo do WPF em Windows real permanece obrigatório; compilação do XAML no CI não valida ergonomia, foco, DPI ou fluxo real.
-- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias e o encerramento por falha global precisam entrar no smoke manual.
+- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo e o encerramento por falha global precisam entrar no smoke manual.
 - O benchmark de password hashing ainda deve ser repetido em hardware Windows representativo.
 - Verificação automatizada de dependências vulneráveis e script de package/release permanecem pendências de engenharia.
+- O módulo de Compras não deve ser modelado por suposição. Antes do primeiro slice é necessário definir estados, atores, invariantes e o menor fluxo real que o ERP precisa suportar.
 
 Nada acima deve ser ocultado por TODOs dispersos no código.

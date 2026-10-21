@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: segurança/administração baseline fechado; Fase 6 de cadastros-base em andamento
+- Fase: segurança/administração baseline fechado; Fase 6 de cadastros-base concluída; preparação da Fase 7 de Compras
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 188/188 testes passando
-- Migrations: 12 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 198/198 testes passando
+- Migrations: 13 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -70,7 +70,15 @@ O catálogo WPF de Categorias está disponível em `Cadastros`, com estados load
 
 Não existe hierarquia, categoria-pai, código ou vínculo automático com Produto ou Material. Instalações novas recebem `categories.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Empresa, filial, fornecedor, material, produto, unidade de medida e categoria estão operacionais na UI. A próxima frente funcional é **centros de custo**, começando por modelagem mínima antes de UI ou relacionamentos adicionais. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+### Centros de custo
+
+`CostCenter` é um cadastro global independente e contém somente identidade, nome normalizado de até 200 caracteres e status ativo/inativo. `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para criação, renomeação e status. `EfCostCenterRepository` persiste o cadastro em `CostCenters`, criado pela migration `20261021100000_AddCostCenters`.
+
+O catálogo WPF de Centros de Custo está disponível em `Cadastros`, com estados loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. A UI apenas orquestra interação; autorização e regras permanecem na Application.
+
+Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos não foram presumidos. Instalações novas recebem `cost-centers.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
+
+Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída. A próxima frente funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de criar entidades, estados ou aprovações do módulo**. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

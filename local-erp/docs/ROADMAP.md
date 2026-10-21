@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida e Categorias, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias e Centros de Custo, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -55,11 +55,12 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] produto: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] unidade de medida: domínio, Application, persistência, migration, permissões e UI operacional;
 - [x] categoria: domínio, Application, persistência, migration, permissões e UI operacional;
-- [-] centro de custo: domínio, Application, persistência, migration e permissões concluídos; catálogo WPF pendente.
+- [x] centro de custo: domínio, Application, persistência, migration, permissões e UI operacional.
 
 ## Fase 7 — Primeiro módulo operacional
 
-- [ ] compras: fluxo mínimo a definir com regras de negócio reais.
+- [ ] compras: definir primeiro o fluxo mínimo e suas regras de negócio reais;
+- [ ] compras: implementar o primeiro slice vertical somente após estados, atores e invariantes mínimos estarem documentados.
 
 ## Fases posteriores
 
@@ -134,12 +135,14 @@ O catálogo WPF de Unidades de Medida foi integrado ao módulo `Cadastros` com l
 
 O catálogo WPF de Categorias foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #126 recompilou o Desktop/XAML e preservou 188/188 testes, snapshot EF e o ciclo completo das 12 migrations.
 
-## Marco do núcleo de Centros de Custo — 2026-10-21
+## Marco de Centros de Custo — 2026-10-21
 
-`CostCenter` foi introduzido como cadastro global independente com identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos permanecem fora do modelo até existir requisito explícito.
+`CostCenter` é um cadastro global independente com identidade, nome normalizado de até 200 caracteres e status ativo/inativo. Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos permanecem fora do modelo até existir requisito explícito.
 
 `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para criação, renomeação e status. As permissões entram no `PermissionCatalog` e no bootstrap de instalações novas; roles existentes continuam sem receber grants novos automaticamente.
 
-`EfCostCenterRepository` persiste `CostCenters`. A migration `20261021100000_AddCostCenters` é a décima terceira migration. O CI #128 validou build Release, suíte automatizada, snapshot EF sem mudanças pendentes e o ciclo completo apply -> rollback 0 -> reapply das 13 migrations.
+`EfCostCenterRepository` persiste `CostCenters`. A migration `20261021100000_AddCostCenters` é a décima terceira migration.
 
-Próxima prioridade funcional: **catálogo WPF de Centros de Custo**. Relacionamentos adicionais continuam dependentes de requisito de negócio explícito.
+O catálogo WPF de Centros de Custo foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #131 recompilou o Desktop/XAML e validou 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), snapshot EF sem mudanças pendentes e 13 migrations em apply -> rollback 0 -> reapply.
+
+Com isso, a Fase 6 de cadastros-base está concluída. A próxima prioridade funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de introduzir entidades, estados, aprovações ou vínculos adicionais**.
