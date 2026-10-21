@@ -12,7 +12,7 @@ public partial class RequestForQuotationsWorkspaceViewModel : ObservableObject
 {
     private readonly RequestForQuotationService _service;
     private readonly RequestForQuotationLookupService _lookupService;
-    private IReadOnlyDictionary<Guid, RequestForQuotationSupplierOption> _supplierReferences =
+    private Dictionary<Guid, RequestForQuotationSupplierOption> _supplierReferences =
         new Dictionary<Guid, RequestForQuotationSupplierOption>();
 
     public RequestForQuotationsWorkspaceViewModel(
@@ -743,3 +743,4 @@ public sealed record RequestForQuotationSupplierQuotationLineListItemViewModel(
             result.PromisedDeliveryDate,
             result.Notes);
 }
+
