@@ -30,6 +30,16 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
 
     public DbSet<PurchaseRequestLine> PurchaseRequestLines => Set<PurchaseRequestLine>();
 
+    public DbSet<RequestForQuotation> RequestForQuotations => Set<RequestForQuotation>();
+
+    public DbSet<RequestForQuotationLine> RequestForQuotationLines => Set<RequestForQuotationLine>();
+
+    public DbSet<RequestForQuotationSupplier> RequestForQuotationSuppliers => Set<RequestForQuotationSupplier>();
+
+    public DbSet<SupplierQuotation> SupplierQuotations => Set<SupplierQuotation>();
+
+    public DbSet<SupplierQuotationLine> SupplierQuotationLines => Set<SupplierQuotationLine>();
+
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
     public DbSet<MeasurementUnit> MeasurementUnits => Set<MeasurementUnit>();
