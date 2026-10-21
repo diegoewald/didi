@@ -59,9 +59,12 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 ## Fase 7 — Primeiro módulo operacional
 
-- [-] compras: descoberta funcional iniciada em `docs/PURCHASING.md`; padrões de mercado e decisões bloqueadoras documentados sem presumir regra interna;
-- [ ] compras: resolver estados, atores, vínculos obrigatórios, permissões e invariantes do primeiro slice de Solicitação de Compra;
-- [ ] compras: implementar o primeiro slice vertical somente após essas decisões estarem documentadas.
+- [x] compras: descoberta inicial documentada em `docs/PURCHASING.md`, separando padrões de mercado de regras não confirmadas;
+- [x] compras: primeiro slice de Solicitação de Compra especificado em `docs/PURCHASE-REQUEST-SPEC.md`, com estados, atores, permissões, invariantes, dados mínimos e limites de escopo definidos;
+- [-] compras: implementar domínio e Application da Solicitação de Compra conforme a especificação;
+- [ ] compras: integrar persistência/migration e validar integridade;
+- [ ] compras: integrar primeira UI WPF operacional;
+- [ ] compras: especificar aprovação/cotação/pedido somente em slices posteriores, sem importar regras empresariais não documentadas.
 
 ## Fases posteriores
 
@@ -154,4 +157,6 @@ A Fase 7 foi iniciada pela documentação `docs/PURCHASING.md`. Foram comparados
 
 O projeto reconhece como cadeia conceitual de longo prazo `necessidade interna -> requisição -> processo de compra -> pedido -> acompanhamento -> recebimento`, mas não tornou obrigatórios cotação, aprovação, quantidade mínima de fornecedores, alçadas, vínculos organizacionais ou recebimento parcial.
 
-O primeiro slice recomendado é **Solicitação de Compra**, porém sua implementação permanece bloqueada até a definição explícita de estados, atores, objetos compráveis, vínculos obrigatórios, dados mínimos de linha, permissões e transições. Nenhuma regra interna de empresa real foi incorporada ao repositório.
+O primeiro slice recomendado é **Solicitação de Compra**. A especificação executável foi consolidada em `docs/PURCHASE-REQUEST-SPEC.md`: estados `Draft`, `Submitted` e `Cancelled`; permissões `purchase-requests.read/manage`; linha por descrição, quantidade e Unidade de Medida; nenhuma aprovação, cotação, fornecedor, preço, pedido ou recebimento neste primeiro corte; edição somente em `Draft`; cancelamento rastreável e ausência de hard delete público.
+
+As doze decisões bloqueadoras originais estão resolvidas para esse primeiro slice como decisões de produto genéricas e reversíveis, sem incorporar processo interno de empresa real. A próxima prioridade técnica é implementar domínio e Application de Solicitação de Compra conforme essa especificação.
