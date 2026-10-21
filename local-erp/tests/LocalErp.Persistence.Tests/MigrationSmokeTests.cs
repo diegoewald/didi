@@ -22,6 +22,7 @@ public sealed class MigrationSmokeTests
     private const string AddMeasurementUnitsMigration = "20261019093000_AddMeasurementUnits";
     private const string AddCategoriesMigration = "20261020113000_AddCategories";
     private const string AddCostCentersMigration = "20261021100000_AddCostCenters";
+    private const string AddPurchaseRequestsMigration = "20261021123000_AddPurchaseRequests";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -47,6 +48,8 @@ public sealed class MigrationSmokeTests
                 AssertTableExists(context, "Materials", expected: true);
                 AssertTableExists(context, "MeasurementUnits", expected: true);
                 AssertTableExists(context, "Products", expected: true);
+                AssertTableExists(context, "PurchaseRequests", expected: true);
+                AssertTableExists(context, "PurchaseRequestLines", expected: true);
                 AssertTableExists(context, "Suppliers", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
@@ -65,6 +68,8 @@ public sealed class MigrationSmokeTests
                 AssertTableExists(context, "Materials", expected: false);
                 AssertTableExists(context, "MeasurementUnits", expected: false);
                 AssertTableExists(context, "Products", expected: false);
+                AssertTableExists(context, "PurchaseRequests", expected: false);
+                AssertTableExists(context, "PurchaseRequestLines", expected: false);
                 AssertTableExists(context, "Suppliers", expected: false);
                 AssertTableExists(context, "Users", expected: false);
                 AssertRbacTablesExist(context, expected: false);
@@ -79,6 +84,8 @@ public sealed class MigrationSmokeTests
                 AssertTableExists(context, "Materials", expected: true);
                 AssertTableExists(context, "MeasurementUnits", expected: true);
                 AssertTableExists(context, "Products", expected: true);
+                AssertTableExists(context, "PurchaseRequests", expected: true);
+                AssertTableExists(context, "PurchaseRequestLines", expected: true);
                 AssertTableExists(context, "Suppliers", expected: true);
                 AssertTableExists(context, "Users", expected: true);
                 AssertRbacTablesExist(context, expected: true);
@@ -114,6 +121,7 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddMeasurementUnitsMigration);
         CollectionAssert.Contains(appliedMigrations, AddCategoriesMigration);
         CollectionAssert.Contains(appliedMigrations, AddCostCentersMigration);
+        CollectionAssert.Contains(appliedMigrations, AddPurchaseRequestsMigration);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)

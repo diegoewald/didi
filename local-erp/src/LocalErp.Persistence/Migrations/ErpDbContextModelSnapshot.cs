@@ -130,6 +130,91 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("Products", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequesterUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SubmittedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CancelledByUserId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("RequesterUserId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SubmittedByUserId");
+
+                    b.ToTable("PurchaseRequests", (string)null);
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequestLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("MeasurementUnitId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("NeededByDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PurchaseRequestId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeasurementUnitId");
+
+                    b.HasIndex("PurchaseRequestId", "LineNumber")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseRequestLines", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Suppliers.Supplier", b =>
                 {
                     b.Property<Guid>("Id")
@@ -308,6 +393,40 @@ namespace LocalErp.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CancelledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequesterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequestLine", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Units.MeasurementUnit", null)
+                        .WithMany()
+                        .HasForeignKey("MeasurementUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Purchasing.PurchaseRequest", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PurchaseRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Security.RolePermissionGrant", b =>
                 {
                     b.HasOne("LocalErp.Domain.Security.Role", null)
@@ -348,6 +467,11 @@ namespace LocalErp.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
+                {
+                    b.Navigation("Lines");
                 });
 #pragma warning restore 612, 618
         }

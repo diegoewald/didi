@@ -27,6 +27,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddTransient<ICostCenterRepository, EfCostCenterRepository>();
         services.AddTransient<IMaterialRepository, EfMaterialRepository>();
         services.AddTransient<IProductRepository, EfProductRepository>();
+        services.AddTransient<IPurchaseRequestRepository, EfPurchaseRequestRepository>();
         services.AddTransient<ISupplierRepository, EfSupplierRepository>();
         services.AddTransient<IMeasurementUnitRepository, EfMeasurementUnitRepository>();
         services.AddTransient<IUserRepository, EfUserRepository>();

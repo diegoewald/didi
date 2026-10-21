@@ -3,6 +3,7 @@ using LocalErp.Domain.Companies;
 using LocalErp.Domain.CostCenters;
 using LocalErp.Domain.Materials;
 using LocalErp.Domain.Products;
+using LocalErp.Domain.Purchasing;
 using LocalErp.Domain.Security;
 using LocalErp.Domain.Suppliers;
 using LocalErp.Domain.Units;
@@ -24,6 +25,10 @@ public sealed class ErpDbContext(DbContextOptions<ErpDbContext> options) : DbCon
     public DbSet<Material> Materials => Set<Material>();
 
     public DbSet<Product> Products => Set<Product>();
+
+    public DbSet<PurchaseRequest> PurchaseRequests => Set<PurchaseRequest>();
+
+    public DbSet<PurchaseRequestLine> PurchaseRequestLines => Set<PurchaseRequestLine>();
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
 
