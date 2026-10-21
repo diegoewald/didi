@@ -23,6 +23,7 @@ public sealed class MigrationSmokeTests
     private const string AddCategoriesMigration = "20261020113000_AddCategories";
     private const string AddCostCentersMigration = "20261021100000_AddCostCenters";
     private const string AddPurchaseRequestsMigration = "20261021123000_AddPurchaseRequests";
+    private const string AddRequestForQuotationsMigration = "20261021132811_AddRequestForQuotations";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -41,17 +42,8 @@ public sealed class MigrationSmokeTests
             {
                 context.Database.Migrate();
                 AssertExpectedMigrationsApplied(context);
-                AssertTableExists(context, "Categories", expected: true);
-                AssertTableExists(context, "Companies", expected: true);
-                AssertTableExists(context, "CompanyBranches", expected: true);
-                AssertTableExists(context, "CostCenters", expected: true);
-                AssertTableExists(context, "Materials", expected: true);
-                AssertTableExists(context, "MeasurementUnits", expected: true);
-                AssertTableExists(context, "Products", expected: true);
-                AssertTableExists(context, "PurchaseRequests", expected: true);
-                AssertTableExists(context, "PurchaseRequestLines", expected: true);
-                AssertTableExists(context, "Suppliers", expected: true);
-                AssertTableExists(context, "Users", expected: true);
+                AssertCoreTables(context, expected: true);
+                AssertRfqTables(context, expected: true);
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
                 AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
@@ -61,33 +53,15 @@ public sealed class MigrationSmokeTests
 
                 var migrator = context.Database.GetService<IMigrator>();
                 migrator.Migrate(Migration.InitialDatabase);
-                AssertTableExists(context, "Categories", expected: false);
-                AssertTableExists(context, "Companies", expected: false);
-                AssertTableExists(context, "CompanyBranches", expected: false);
-                AssertTableExists(context, "CostCenters", expected: false);
-                AssertTableExists(context, "Materials", expected: false);
-                AssertTableExists(context, "MeasurementUnits", expected: false);
-                AssertTableExists(context, "Products", expected: false);
-                AssertTableExists(context, "PurchaseRequests", expected: false);
-                AssertTableExists(context, "PurchaseRequestLines", expected: false);
-                AssertTableExists(context, "Suppliers", expected: false);
-                AssertTableExists(context, "Users", expected: false);
+                AssertCoreTables(context, expected: false);
+                AssertRfqTables(context, expected: false);
                 AssertRbacTablesExist(context, expected: false);
                 AssertTableExists(context, "SecurityAuditEvents", expected: false);
 
                 migrator.Migrate();
                 AssertExpectedMigrationsApplied(context);
-                AssertTableExists(context, "Categories", expected: true);
-                AssertTableExists(context, "Companies", expected: true);
-                AssertTableExists(context, "CompanyBranches", expected: true);
-                AssertTableExists(context, "CostCenters", expected: true);
-                AssertTableExists(context, "Materials", expected: true);
-                AssertTableExists(context, "MeasurementUnits", expected: true);
-                AssertTableExists(context, "Products", expected: true);
-                AssertTableExists(context, "PurchaseRequests", expected: true);
-                AssertTableExists(context, "PurchaseRequestLines", expected: true);
-                AssertTableExists(context, "Suppliers", expected: true);
-                AssertTableExists(context, "Users", expected: true);
+                AssertCoreTables(context, expected: true);
+                AssertRfqTables(context, expected: true);
                 AssertRbacTablesExist(context, expected: true);
                 AssertColumnExists(context, "Users", "FailedSignInCount", expected: true);
                 AssertColumnExists(context, "Users", "SignInBlockedUntilUtc", expected: true);
@@ -122,6 +96,31 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddCategoriesMigration);
         CollectionAssert.Contains(appliedMigrations, AddCostCentersMigration);
         CollectionAssert.Contains(appliedMigrations, AddPurchaseRequestsMigration);
+        CollectionAssert.Contains(appliedMigrations, AddRequestForQuotationsMigration);
+    }
+
+    private static void AssertCoreTables(ErpDbContext context, bool expected)
+    {
+        AssertTableExists(context, "Categories", expected);
+        AssertTableExists(context, "Companies", expected);
+        AssertTableExists(context, "CompanyBranches", expected);
+        AssertTableExists(context, "CostCenters", expected);
+        AssertTableExists(context, "Materials", expected);
+        AssertTableExists(context, "MeasurementUnits", expected);
+        AssertTableExists(context, "Products", expected);
+        AssertTableExists(context, "PurchaseRequests", expected);
+        AssertTableExists(context, "PurchaseRequestLines", expected);
+        AssertTableExists(context, "Suppliers", expected);
+        AssertTableExists(context, "Users", expected);
+    }
+
+    private static void AssertRfqTables(ErpDbContext context, bool expected)
+    {
+        AssertTableExists(context, "RequestForQuotations", expected);
+        AssertTableExists(context, "RequestForQuotationLines", expected);
+        AssertTableExists(context, "RequestForQuotationSuppliers", expected);
+        AssertTableExists(context, "SupplierQuotations", expected);
+        AssertTableExists(context, "SupplierQuotationLines", expected);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)
