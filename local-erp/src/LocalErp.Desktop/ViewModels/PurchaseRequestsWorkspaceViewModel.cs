@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using LocalErp.Application.Purchasing;
 using LocalErp.Application.Security;
@@ -68,7 +69,7 @@ public partial class PurchaseRequestsWorkspaceViewModel : ObservableObject
 
     public string CurrentCreatedDisplay => CurrentRequest is null
         ? string.Empty
-        : CurrentRequest.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+        : CurrentRequest.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture);
 
     public string CurrentIdDisplay => CurrentRequest?.Id.ToString("D") ?? string.Empty;
 
@@ -355,7 +356,7 @@ public sealed record PurchaseRequestListItemViewModel(
 {
     public string StatusLabel => PurchaseRequestsWorkspaceViewModel.StatusLabel(Status);
 
-    public string CreatedDisplay => CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
+    public string CreatedDisplay => CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm", CultureInfo.CurrentCulture);
 
     public string NotesDisplay => string.IsNullOrWhiteSpace(Notes) ? "—" : Notes;
 
@@ -380,9 +381,9 @@ public sealed record PurchaseRequestLineListItemViewModel(
     string MeasurementUnitName,
     DateOnly? NeededByDate)
 {
-    public string QuantityDisplay => Quantity.ToString("0.####");
+    public string QuantityDisplay => Quantity.ToString("0.####", CultureInfo.CurrentCulture);
 
-    public string NeededByDateDisplay => NeededByDate?.ToString("dd/MM/yyyy") ?? "—";
+    public string NeededByDateDisplay => NeededByDate?.ToString("dd/MM/yyyy", CultureInfo.CurrentCulture) ?? "—";
 
     public static PurchaseRequestLineListItemViewModel FromResult(
         PurchaseRequestLineResult line,
