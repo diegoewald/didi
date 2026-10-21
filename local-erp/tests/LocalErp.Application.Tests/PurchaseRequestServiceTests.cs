@@ -57,6 +57,29 @@ public sealed class PurchaseRequestServiceTests
     }
 
     [TestMethod]
+    public async Task ListActiveMeasurementUnitsUsesPurchaseManagePermissionAndFiltersInactive()
+    {
+        var repository = new InMemoryPurchaseRequestRepository();
+        var units = new InMemoryMeasurementUnitRepository();
+        var active = new MeasurementUnit("Peça");
+        var inactive = new MeasurementUnit("Caixa");
+        inactive.Deactivate();
+        await units.AddAsync(active);
+        await units.AddAsync(inactive);
+        var authorization = new RecordingAuthorizationService();
+        var service = NewService(repository, authorization, units: units);
+
+        var result = await service.ListActiveMeasurementUnitsAsync();
+
+        Assert.AreEqual(1, result.Count);
+        Assert.AreEqual(active.Id, result[0].Id);
+        Assert.AreEqual("Peça", result[0].Name);
+        CollectionAssert.AreEqual(
+            new[] { PermissionCatalog.PurchaseRequestsManage },
+            authorization.Demands.ToArray());
+    }
+
+    [TestMethod]
     public async Task AddLineRequiresExistingActiveMeasurementUnit()
     {
         var repository = new InMemoryPurchaseRequestRepository();

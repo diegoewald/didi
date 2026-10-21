@@ -2,6 +2,8 @@ using LocalErp.Domain.Purchasing;
 
 namespace LocalErp.Application.Purchasing;
 
+public sealed record PurchaseRequestMeasurementUnitOption(Guid Id, string Name);
+
 public sealed record PurchaseRequestLineResult(
     Guid Id,
     int LineNumber,
