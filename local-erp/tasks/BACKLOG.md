@@ -2,7 +2,7 @@
 
 ## P0 — Pré-release / validação de ambiente
 
-- [ ] executar smoke visual/interativo do WPF em Windows real;
+- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo o fluxo de Solicitação de Compra;
 - [ ] executar benchmark do password hashing em hardware Windows representativo do ambiente alvo.
 
 ## P1 — Segurança e administração
@@ -110,12 +110,14 @@
 - [x] garantir atomicidade das mutações de domínio em falhas de validação;
 - [x] integrar EF Core, FKs, índices, precisão de quantidade e migration reproduzível;
 - [x] validar snapshot e ciclo das 14 migrations em apply -> rollback 0 -> reapply;
-- [-] implementar primeira UI WPF operacional da Solicitação de Compra;
-- [ ] lista WPF com filtro por status, loading/empty/error e criação de rascunho;
-- [ ] editor WPF de rascunho com observação e linhas, incluindo seleção de Unidade de Medida ativa;
-- [ ] implementar envio, cancelamento com justificativa e modo somente leitura para `Submitted`/`Cancelled`;
-- [ ] integrar navegação/DI do módulo Compras sem mover autorização para a UI;
-- [ ] manter aprovação, cotação, fornecedor, preço, pedido, recebimento, estoque, financeiro e fiscal fora deste primeiro slice.
+- [x] implementar primeira UI WPF operacional da Solicitação de Compra;
+- [x] lista WPF com filtro por status, loading/empty/error e criação de rascunho;
+- [x] editor WPF de rascunho com observação e linhas, incluindo seleção de Unidade de Medida ativa;
+- [x] implementar envio, cancelamento com justificativa e modo somente leitura para `Submitted`/`Cancelled`;
+- [x] integrar navegação/DI do módulo Compras sem mover autorização para a UI;
+- [x] preservar nome de Unidade de Medida inativa em leitura histórica, oferecendo somente unidades ativas para novas alterações;
+- [ ] especificar o próximo slice de Compras antes de implementar aprovação, cotação ou Pedido de Compra;
+- [ ] manter fornecedor, preço, recebimento, estoque, financeiro e fiscal fora de Solicitação de Compra até requisitos explícitos.
 
 ## P2 — Engenharia
 
@@ -131,8 +133,8 @@
 
 Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo permanecem operacionais nos cadastros-base.
 
-O primeiro slice de Solicitação de Compra possui domínio, Application e persistência implementados. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. Não possui aprovação, cotação, fornecedor, preço, Pedido de Compra, recebimento, estoque, financeiro ou fiscal.
+O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **216/216 testes** (Domain 56, Application 105, Persistence 49, Infrastructure 6), **14 migrations**, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #143.
+Baseline automatizado atual: **217/217 testes** (Domain 56, Application 106, Persistence 49, Infrastructure 6), **14 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #148.
 
-A próxima tarefa é a UI WPF operacional da Solicitação de Compra. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+A próxima prioridade funcional é **especificar o próximo slice de Compras antes de qualquer nova implementação**, mantendo aprovação, cotação, Pedido de Compra, fornecedor, preço, recebimento, estoque, financeiro e fiscal fora do primeiro slice até haver requisitos explícitos. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

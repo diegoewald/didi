@@ -1,6 +1,6 @@
 # Solicitação de Compra — especificação do primeiro slice
 
-Status: **núcleo e persistência implementados; UI WPF pendente**.
+Status: **primeiro slice implementado de Domain a WPF**.
 
 Esta especificação resolve as decisões mínimas necessárias para o primeiro slice vertical de Compras sem transformar práticas de uma empresa específica em regras universais do ERP.
 
@@ -119,7 +119,7 @@ Fora do escopo. Nenhuma coluna de quantidade recebida, saldo, encerramento ou re
 
 O identificador persistente do primeiro slice é `Guid`.
 
-Não será criada sequência humana permanente antes de existir regra aprovada para escopo e formato da numeração. A UI pode localizar registros por dados de contexto e pelo identificador técnico, mas não deve transformar um trecho do `Guid` em número oficial do documento.
+Não foi criada sequência humana permanente antes de existir regra aprovada para escopo e formato da numeração. A UI exibe o `Guid` explicitamente como **ID técnico** e não transforma trecho dele em número oficial do documento.
 
 Uma numeração amigável deverá ser especificada antes de documentos externos como Pedido de Compra.
 
@@ -238,6 +238,7 @@ A migration `20261021123000_AddPurchaseRequests` é a 14ª migration do projeto.
 - `CreateDraftAsync`;
 - `ListAsync`;
 - `GetByIdAsync`;
+- `ListMeasurementUnitsAsync` para contexto de Compras;
 - `UpdateDraftAsync`;
 - `AddLineAsync`;
 - `UpdateLineAsync`;
@@ -247,7 +248,7 @@ A migration `20261021123000_AddPurchaseRequests` é a 14ª migration do projeto.
 
 Consultas exigem `purchase-requests.read`; mutações exigem `purchase-requests.manage`. Operações que registram ator exigem sessão autenticada e usuário ativo.
 
-A Application valida Unidade de Medida existente e ativa antes de inserir ou alterar linha.
+A Application valida Unidade de Medida existente e ativa antes de inserir ou alterar linha. A consulta contextual de unidades usa `purchase-requests.read`, retorna também unidades inativas para resolver nomes de registros históricos e não exige `units.read`; a UI filtra esse resultado para oferecer somente unidades ativas em novas alterações.
 
 ## 7. Concorrência e consistência
 
@@ -257,33 +258,41 @@ O primeiro slice evita operações de regra de negócio espalhadas na UI. Mutaç
 
 Controle de concorrência otimista/versionamento de linha não foi introduzido sem necessidade comprovada no cenário single-PC atual; deverá ser reavaliado na preparação multiusuário.
 
-## 8. Primeira UI WPF prevista
+## 8. UI WPF implementada
 
-A UI operacional ainda pendente deve permitir:
+O módulo `Compras` possui workspace operacional com:
 
 - lista de solicitações;
-- filtro básico por status;
-- criar rascunho;
-- abrir rascunho;
-- editar observação;
+- filtro por todos os estados, `Draft`, `Submitted` e `Cancelled`;
+- estados loading/empty/error;
+- criação e abertura de rascunho;
+- edição de observação;
 - adicionar/editar/remover linhas;
-- selecionar Unidade de Medida ativa;
-- enviar;
-- cancelar com confirmação e justificativa;
-- visualizar solicitação enviada/cancelada em modo somente leitura;
-- estados loading/empty/error consistentes com o shell.
+- seleção apenas de Unidade de Medida ativa para mutações;
+- exibição do nome de unidade inativa em histórico já persistido;
+- quantidade decimal e `NeededByDate` opcional;
+- envio com confirmação;
+- cancelamento com justificativa;
+- modo somente leitura para `Submitted` e `Cancelled`;
+- identificação explícita do `Guid` como ID técnico, sem numeração oficial inventada;
+- mensagens seguras para acesso negado, registro ausente, validação de domínio e falhas inesperadas, com detalhe técnico somente nos logs.
 
-A UI não implementará aprovação, cotação, fornecedor, preço ou recebimento.
+A UI apenas coordena interação. Autorização, validação de unidade, invariantes de estado e persistência permanecem na Application/Domain.
 
-## 9. Validação automatizada do núcleo e persistência
+A UI não implementa aprovação, cotação, fornecedor, preço, pedido ou recebimento.
 
-O CI #143 validou o HEAD funcional de persistência com:
+## 9. Validação automatizada
 
-- build Release sem warnings/erros;
-- 216/216 testes: Domain 56, Application 105, Persistence 49, Infrastructure 6;
+O CI #148 validou o HEAD funcional da UI com:
+
+- build Release do Desktop/XAML com 0 warnings e 0 erros;
+- build da ferramenta de benchmark com 0 warnings e 0 erros;
+- **217/217 testes**: Domain 56, Application 106, Persistence 49, Infrastructure 6;
 - `has-pending-model-changes` sem diferenças;
 - 14 migrations em apply -> rollback 0 -> reapply;
-- testes de round-trip, sincronização de linhas e FKs do novo agregado.
+- artefatos de source snapshot e resultados TRX publicados.
+
+O teste adicional de Application confirma que o contexto de Compras pode resolver unidades ativas/inativas usando `purchase-requests.read`, sem depender da permissão administrativa `units.read`.
 
 O aviso histórico do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` continua não bloqueante e não foi introduzido por Compras.
 
@@ -317,6 +326,8 @@ Não implementar neste momento:
 
 ## 11. Próxima prioridade técnica
 
-O domínio, a Application, a persistência EF, a migration e os testes do primeiro slice estão concluídos e verdes.
+O primeiro slice de Solicitação de Compra está concluído de Domain a WPF e validado automaticamente.
 
-A próxima prioridade é implementar a **primeira UI WPF operacional de Solicitação de Compra**, consumindo exclusivamente os casos de uso existentes e mantendo todas as regras/autorização na Application/Domain.
+A próxima prioridade é **especificar o próximo slice de Compras antes de codificá-lo**. Aprovação, cotação e Pedido de Compra devem ser avaliados como capacidades separadas, com estados, atores, permissões, cardinalidades e regras explicitamente documentados antes de qualquer nova entidade ou migration.
+
+O smoke visual/interativo em Windows real continua como pendência de pré-release e não deve ser confundido com aprovação automática da experiência visual pelo CI.

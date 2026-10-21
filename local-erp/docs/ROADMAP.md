@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias e Centros de Custo, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Cadastros e Solicitações de Compra, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -63,8 +63,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: primeiro slice de Solicitação de Compra especificado em `docs/PURCHASE-REQUEST-SPEC.md`;
 - [x] compras: domínio e Application da Solicitação de Compra implementados com estados `Draft/Submitted/Cancelled`, permissões e invariantes;
 - [x] compras: persistência EF, FKs, índices, repositório de agregado e migration `20261021123000_AddPurchaseRequests` validados;
-- [-] compras: integrar primeira UI WPF operacional da Solicitação de Compra;
-- [ ] compras: especificar aprovação/cotação/pedido somente em slices posteriores, sem importar regras empresariais não documentadas.
+- [x] compras: primeira UI WPF operacional da Solicitação de Compra integrada ao shell;
+- [ ] compras: especificar o próximo slice de aprovação/cotação/pedido antes de qualquer implementação, sem importar regras empresariais não documentadas.
 
 ## Fases posteriores
 
@@ -167,4 +167,12 @@ O primeiro slice é **Solicitação de Compra**. A especificação executável e
 
 O CI #143 validou 216/216 testes (Domain 56, Application 105, Persistence 49, Infrastructure 6), build Release sem warnings/erros, snapshot EF sem mudanças pendentes e as 14 migrations em apply -> rollback 0 -> reapply.
 
-A próxima prioridade funcional é a **UI WPF operacional da Solicitação de Compra**, sem expandir o escopo para aprovação, cotação, fornecedor, preço, Pedido de Compra ou recebimento.
+## Marco da UI WPF de Solicitação de Compra — 2026-10-21
+
+O módulo `Compras` passou a abrir um workspace operacional de Solicitações de Compra. A tela oferece filtro por `Draft`/`Submitted`/`Cancelled`, criação e abertura de rascunhos, edição de observação, inclusão/edição/remoção de linhas, seleção de Unidade de Medida ativa, envio e cancelamento com justificativa. Solicitações `Submitted` e `Cancelled` exibem conteúdo em modo somente leitura, respeitando as transições definidas no domínio.
+
+A UI não recebeu regras de autorização próprias: consultas e mutações continuam passando por `PurchaseRequestService`. O contexto de Compras carrega o nome de Unidades de Medida ativas e inativas para preservar leitura histórica, mas somente unidades ativas são oferecidas no editor de linha. Isso evita que uma unidade desativada posteriormente torne uma solicitação antiga ilegível e não exige conceder `units.read` ao operador de Compras.
+
+O CI #148 validou o workspace WPF com **217/217 testes** (Domain 56, Application 106, Persistence 49, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e as 14 migrations em apply -> rollback 0 -> reapply.
+
+Com isso, o primeiro slice vertical de **Solicitação de Compra** está implementado de Domain a WPF. A próxima prioridade funcional é especificar o próximo slice de Compras — aprovação, cotação e/ou Pedido de Compra — antes de introduzir entidades, estados ou vínculos adicionais. O smoke visual/interativo em Windows real permanece uma pendência de pré-release separada.
