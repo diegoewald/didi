@@ -43,7 +43,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] administração de usuários Partes A–F;
 - [x] roles/permissões completas e salvaguarda da última capacidade efetiva;
 - [x] auditoria atômica das mutações administrativas;
-- [x] troca própria de senha com senha atual e compare-and-set transacional.
+- [x] troca própria de senha com senha atual, compare-and-set transacional e auditoria.
 
 ## Fase 6 — Cadastros-base
 
@@ -60,10 +60,10 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 ## Fase 7 — Primeiro módulo operacional
 
 - [x] compras: descoberta inicial documentada em `docs/PURCHASING.md`, separando padrões de mercado de regras não confirmadas;
-- [x] compras: primeiro slice de Solicitação de Compra especificado em `docs/PURCHASE-REQUEST-SPEC.md`, com estados, atores, permissões, invariantes, dados mínimos e limites de escopo definidos;
-- [-] compras: implementar domínio e Application da Solicitação de Compra conforme a especificação;
-- [ ] compras: integrar persistência/migration e validar integridade;
-- [ ] compras: integrar primeira UI WPF operacional;
+- [x] compras: primeiro slice de Solicitação de Compra especificado em `docs/PURCHASE-REQUEST-SPEC.md`;
+- [x] compras: domínio e Application da Solicitação de Compra implementados com estados `Draft/Submitted/Cancelled`, permissões e invariantes;
+- [x] compras: persistência EF, FKs, índices, repositório de agregado e migration `20261021123000_AddPurchaseRequests` validados;
+- [-] compras: integrar primeira UI WPF operacional da Solicitação de Compra;
 - [ ] compras: especificar aprovação/cotação/pedido somente em slices posteriores, sem importar regras empresariais não documentadas.
 
 ## Fases posteriores
@@ -149,7 +149,7 @@ O catálogo WPF de Categorias foi integrado ao módulo `Cadastros` com loading/e
 
 O catálogo WPF de Centros de Custo foi integrado ao módulo `Cadastros` com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação via Enter/Escape e ativação/desativação com confirmação. O CI #131 recompilou o Desktop/XAML e validou 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), snapshot EF sem mudanças pendentes e 13 migrations em apply -> rollback 0 -> reapply.
 
-Com isso, a Fase 6 de cadastros-base está concluída. A próxima prioridade funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de introduzir entidades, estados, aprovações ou vínculos adicionais**.
+Com isso, a Fase 6 de cadastros-base está concluída.
 
 ## Marco de descoberta de Compras — 2026-10-21
 
@@ -157,6 +157,14 @@ A Fase 7 foi iniciada pela documentação `docs/PURCHASING.md`. Foram comparados
 
 O projeto reconhece como cadeia conceitual de longo prazo `necessidade interna -> requisição -> processo de compra -> pedido -> acompanhamento -> recebimento`, mas não tornou obrigatórios cotação, aprovação, quantidade mínima de fornecedores, alçadas, vínculos organizacionais ou recebimento parcial.
 
-O primeiro slice recomendado é **Solicitação de Compra**. A especificação executável foi consolidada em `docs/PURCHASE-REQUEST-SPEC.md`: estados `Draft`, `Submitted` e `Cancelled`; permissões `purchase-requests.read/manage`; linha por descrição, quantidade e Unidade de Medida; nenhuma aprovação, cotação, fornecedor, preço, pedido ou recebimento neste primeiro corte; edição somente em `Draft`; cancelamento rastreável e ausência de hard delete público.
+O primeiro slice é **Solicitação de Compra**. A especificação executável está em `docs/PURCHASE-REQUEST-SPEC.md`: estados `Draft`, `Submitted` e `Cancelled`; permissões `purchase-requests.read/manage`; linha por descrição, quantidade e Unidade de Medida; nenhuma aprovação, cotação, fornecedor, preço, pedido ou recebimento neste primeiro corte; edição somente em `Draft`; cancelamento rastreável e ausência de hard delete público.
 
-As doze decisões bloqueadoras originais estão resolvidas para esse primeiro slice como decisões de produto genéricas e reversíveis, sem incorporar processo interno de empresa real. A próxima prioridade técnica é implementar domínio e Application de Solicitação de Compra conforme essa especificação.
+## Marco do núcleo e persistência de Solicitação de Compra — 2026-10-21
+
+`PurchaseRequest` e `PurchaseRequestLine` foram implementados como agregado de domínio. A Application oferece criação/listagem/consulta, edição de rascunho e linhas, envio e cancelamento, mantendo autorização e validação de Unidade de Medida fora da UI. As mutações do domínio validam antes de alterar estado, evitando alterações parciais em memória em caso de falha.
+
+`EfPurchaseRequestRepository` persiste o agregado em `PurchaseRequests` e `PurchaseRequestLines`, sincronizando filhos em um único `SaveChangesAsync`. Usuários e Unidade de Medida usam FKs `RESTRICT`; as linhas usam `CASCADE` somente em relação ao pai interno do agregado. A migration `20261021123000_AddPurchaseRequests` é a 14ª migration.
+
+O CI #143 validou 216/216 testes (Domain 56, Application 105, Persistence 49, Infrastructure 6), build Release sem warnings/erros, snapshot EF sem mudanças pendentes e as 14 migrations em apply -> rollback 0 -> reapply.
+
+A próxima prioridade funcional é a **UI WPF operacional da Solicitação de Compra**, sem expandir o escopo para aprovação, cotação, fornecedor, preço, Pedido de Compra ou recebimento.

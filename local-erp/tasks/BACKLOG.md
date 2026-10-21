@@ -95,6 +95,7 @@
 - [x] `MeasurementUnits` integrado ao snapshot EF e migration smoke;
 - [x] `Categories` integrado ao snapshot EF e migration smoke;
 - [x] `CostCenters` integrado ao snapshot EF e migration smoke;
+- [x] `PurchaseRequests`/`PurchaseRequestLines` integrados ao snapshot EF, FKs e migration smoke;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P1 — Primeiro módulo operacional
@@ -102,13 +103,18 @@
 - [x] iniciar descoberta de Compras em `docs/PURCHASING.md`, comparando referências de mercado e separando padrões conceituais de regras internas não confirmadas;
 - [x] resolver as doze decisões bloqueadoras do primeiro slice em `docs/PURCHASE-REQUEST-SPEC.md`;
 - [x] documentar estados `Draft/Submitted/Cancelled`, atores, permissões `purchase-requests.read/manage`, invariantes, transições e limites de escopo;
-- [-] implementar domínio `PurchaseRequest`, `PurchaseRequestLine` e `PurchaseRequestStatus` conforme a especificação;
-- [ ] adicionar permissões de Solicitação de Compra ao `PermissionCatalog` e bootstrap de instalações novas sem elevar roles existentes;
-- [ ] implementar contratos Application/repositório e casos de uso de criar/listar/consultar/editar rascunho/linhas/enviar/cancelar;
-- [ ] cobrir domínio e autorização com testes antes da UI;
-- [ ] integrar EF Core, FKs, índices e migration reproduzível;
-- [ ] validar snapshot e ciclo apply -> rollback 0 -> reapply;
-- [ ] implementar primeira UI WPF operacional somente depois do núcleo e persistência verdes;
+- [x] implementar domínio `PurchaseRequest`, `PurchaseRequestLine` e `PurchaseRequestStatus` conforme a especificação;
+- [x] adicionar permissões de Solicitação de Compra ao `PermissionCatalog` e bootstrap de instalações novas sem elevar roles existentes;
+- [x] implementar contrato/repositório e casos de uso de criar/listar/consultar/editar rascunho/linhas/enviar/cancelar;
+- [x] cobrir domínio e autorização com testes antes da UI;
+- [x] garantir atomicidade das mutações de domínio em falhas de validação;
+- [x] integrar EF Core, FKs, índices, precisão de quantidade e migration reproduzível;
+- [x] validar snapshot e ciclo das 14 migrations em apply -> rollback 0 -> reapply;
+- [-] implementar primeira UI WPF operacional da Solicitação de Compra;
+- [ ] lista WPF com filtro por status, loading/empty/error e criação de rascunho;
+- [ ] editor WPF de rascunho com observação e linhas, incluindo seleção de Unidade de Medida ativa;
+- [ ] implementar envio, cancelamento com justificativa e modo somente leitura para `Submitted`/`Cancelled`;
+- [ ] integrar navegação/DI do módulo Compras sem mover autorização para a UI;
 - [ ] manter aprovação, cotação, fornecedor, preço, pedido, recebimento, estoque, financeiro e fiscal fora deste primeiro slice.
 
 ## P2 — Engenharia
@@ -123,10 +129,10 @@
 
 ## Baseline atual — 2026-10-21
 
-Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais nos cadastros-base. `CostCenter` permanece um cadastro global independente com somente identidade, nome e status. `CostCenterService` exige `cost-centers.read` para consulta e `cost-centers.manage` para mutações; a UI apenas orquestra interação e mantém autorização/regras na Application.
+Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo permanecem operacionais nos cadastros-base.
 
-Não existe código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático para Centro de Custo nesta etapa. Instalações novas recebem `cost-centers.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
+O primeiro slice de Solicitação de Compra possui domínio, Application e persistência implementados. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. Não possui aprovação, cotação, fornecedor, preço, Pedido de Compra, recebimento, estoque, financeiro ou fiscal.
 
-Baseline automatizado anterior à implementação de Compras: 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), 13 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #131 recompilou o catálogo WPF de Centros de Custo e preservou todo esse baseline.
+Baseline automatizado atual: **216/216 testes** (Domain 56, Application 105, Persistence 49, Infrastructure 6), **14 migrations**, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #143.
 
-A Fase 6 de cadastros-base está fechada. A Fase 7 possui agora duas fontes de definição: `docs/PURCHASING.md` para descoberta ampla e `docs/PURCHASE-REQUEST-SPEC.md` para o primeiro slice executável. Esse slice não possui aprovação, cotação, fornecedor, preço, pedido nem recebimento; trabalha com `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A próxima tarefa é implementar o domínio e a Application exatamente dentro desse limite. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+A próxima tarefa é a UI WPF operacional da Solicitação de Compra. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

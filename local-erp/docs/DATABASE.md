@@ -94,6 +94,39 @@ A migration `20261020113000_AddCategories` cria a tabela `Categories`. O schema 
 
 A migration `20261021100000_AddCostCenters` cria a tabela `CostCenters`. Nesta etapa o cadastro é global e independente: não há código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático com compras. Esses conceitos só devem entrar no schema quando suas regras de negócio forem explicitamente definidas.
 
+## Solicitações de compra
+
+O primeiro slice de Compras usa duas tabelas:
+
+### `PurchaseRequests`
+
+- `Id` — `Guid`, chave primária criada pelo domínio;
+- `Status` — enum persistido como inteiro (`Draft`, `Submitted`, `Cancelled`);
+- `RequesterUserId` — FK obrigatória para `Users` com `ON DELETE RESTRICT`;
+- `CreatedAtUtc` — `DateTime` UTC obrigatório;
+- `Notes` — opcional, até 1000 caracteres;
+- `SubmittedAtUtc` / `SubmittedByUserId` — opcionais, ator com FK `RESTRICT`;
+- `CancelledAtUtc` / `CancelledByUserId` — opcionais, ator com FK `RESTRICT`;
+- `CancellationReason` — opcional no schema e obrigatório pela regra de domínio ao cancelar, até 500 caracteres.
+
+Índices cobrem `Status`, `CreatedAtUtc`, `RequesterUserId`, `SubmittedByUserId` e `CancelledByUserId`.
+
+### `PurchaseRequestLines`
+
+- `Id` — `Guid`;
+- `PurchaseRequestId` — FK obrigatória para `PurchaseRequests` com `ON DELETE CASCADE`;
+- `LineNumber` — inteiro positivo, com unicidade conjunta `(PurchaseRequestId, LineNumber)`;
+- `Description` — obrigatória, até 500 caracteres;
+- `Quantity` — `decimal` com precisão EF `18,4`;
+- `MeasurementUnitId` — FK obrigatória para `MeasurementUnits` com `ON DELETE RESTRICT`;
+- `NeededByDate` — `DateOnly?`.
+
+O `CASCADE` é restrito ao filho interno do agregado: a Application não expõe hard delete da Solicitação de Compra. Usuários e Unidades de Medida não são apagados em cascata pelo documento.
+
+`EfPurchaseRequestRepository` carrega o agregado com linhas e sincroniza alterações, remoções e inclusões antes de um único `SaveChangesAsync`.
+
+A migration `20261021123000_AddPurchaseRequests` introduz esse schema.
+
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -102,11 +135,12 @@ A migration `20261021100000_AddCostCenters` cria a tabela `CostCenters`. Nesta e
 - a inicialização valida `journal_mode=wal` e `foreign_keys=1`;
 - timestamps técnicos usam UTC em `DateTime`;
 - valores monetários seguem ADR-0005: inteiro de 64 bits com escala fixa de 6 casas quando participarem de consultas relacionais;
+- `Quantity` de Solicitação de Compra não é valor monetário e usa `decimal(18,4)` no modelo EF;
 - nunca usar `double` para valores financeiros apenas para contornar limitação do provider.
 
 ## Baseline de migrations — 2026-10-21
 
-Treze migrations validadas no CI:
+Quatorze migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -120,9 +154,12 @@ Treze migrations validadas no CI:
 10. `20261019005000_AddProducts`;
 11. `20261019093000_AddMeasurementUnits`;
 12. `20261020113000_AddCategories`;
-13. `20261021100000_AddCostCenters`.
+13. `20261021100000_AddCostCenters`;
+14. `20261021123000_AddPurchaseRequests`.
 
-O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #128 validou o núcleo de Centros de Custo, o snapshot EF e o ciclo completo das 13 migrations. O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #143 validou o modelo de Solicitação de Compra sem mudanças pendentes, 216/216 testes (Domain 56, Application 105, Persistence 49, Infrastructure 6) e o ciclo completo das 14 migrations.
+
+O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 
 ## Backup
 

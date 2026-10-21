@@ -1,8 +1,8 @@
 # Solicitação de Compra — especificação do primeiro slice
 
-Status: **pronto para implementação**.
+Status: **núcleo e persistência implementados; UI WPF pendente**.
 
-Esta especificação resolve as decisões mínimas necessárias para iniciar o primeiro slice vertical de Compras sem transformar práticas de uma empresa específica em regras universais do ERP.
+Esta especificação resolve as decisões mínimas necessárias para o primeiro slice vertical de Compras sem transformar práticas de uma empresa específica em regras universais do ERP.
 
 As decisões abaixo são **decisões de produto deste ERP para o primeiro slice**. Elas foram escolhidas para manter o modelo pequeno, reversível e compatível com evolução posterior. Não representam processo interno de empregador, fornecedor ou organização real.
 
@@ -34,7 +34,7 @@ Um vínculo opcional com `Material` poderá ser acrescentado em slice posterior 
 
 Nenhum vínculo com `Company`, `CompanyBranch` ou `CostCenter` é obrigatório no primeiro slice.
 
-Esses campos também não serão adicionados apenas como opcionais nesta primeira entidade. Quando houver regra real sobre qual vínculo é necessário, a relação será introduzida por migration explícita e com invariantes correspondentes.
+Esses campos também não foram adicionados apenas como opcionais nesta primeira entidade. Quando houver regra real sobre qual vínculo é necessário, a relação será introduzida por migration explícita e com invariantes correspondentes.
 
 ### 2.3 Dados mínimos da solicitação
 
@@ -89,7 +89,7 @@ A autorização permanece na camada Application. Esconder ou desabilitar control
 
 Neste primeiro slice não existe restrição de visibilidade ou edição baseada em propriedade do registro. Um usuário com `purchase-requests.manage` pode operar qualquer solicitação dentro das transições permitidas. Se futuramente houver escopo por solicitante, empresa, filial ou departamento, será uma regra nova e explícita.
 
-Instalações novas podem receber essas permissões pelo mesmo mecanismo de bootstrap usado pelos demais módulos. Roles já existentes não recebem elevação automática de privilégio.
+Instalações novas recebem essas permissões pelo mesmo mecanismo de bootstrap baseado no `PermissionCatalog`. Roles já existentes não recebem elevação automática de privilégio.
 
 ### 2.6 Aprovação
 
@@ -103,7 +103,7 @@ Aprovação será um slice separado para que regras de aprovador, alçada, retor
 
 Cotação não é requisito para enviar a Solicitação de Compra neste slice.
 
-Isso não significa que cotação será opcional no produto final. Significa apenas que Solicitação de Compra não dependerá de uma entidade de Cotação que ainda não existe.
+Isso não significa que cotação será opcional no produto final. Significa apenas que Solicitação de Compra não depende de uma entidade de Cotação que ainda não existe.
 
 ### 2.8 Relação com Pedido de Compra
 
@@ -113,7 +113,7 @@ O modelo não presume se uma solicitação gerará um pedido, vários pedidos, o
 
 ### 2.9 Recebimento parcial
 
-Fora do escopo. Nenhuma coluna de quantidade recebida, saldo, encerramento ou recebimento será adicionada à Solicitação de Compra.
+Fora do escopo. Nenhuma coluna de quantidade recebida, saldo, encerramento ou recebimento foi adicionada à Solicitação de Compra.
 
 ### 2.10 Numeração
 
@@ -168,26 +168,27 @@ Logs estruturados podem registrar as operações, mas log não substitui estado 
 7. `MeasurementUnitId` não pode ser vazio.
 8. `LineNumber` deve ser positivo e único dentro da solicitação.
 9. Para enviar, a solicitação precisa possuir pelo menos uma linha válida.
-10. Ao adicionar ou alterar linha, a Application deve verificar que a Unidade de Medida existe e está ativa.
+10. Ao adicionar ou alterar linha, a Application verifica que a Unidade de Medida existe e está ativa.
 11. `Submitted` não pode voltar para `Draft`.
 12. `Cancelled` é terminal.
 13. Cancelamento exige justificativa não vazia de até 500 caracteres.
-14. Datas de criação, envio e cancelamento são persistidas em UTC.
-15. `NeededByDate` é opcional e não terá, neste slice, regra automática que proíba datas passadas; tal política não será presumida.
+14. Datas de criação, envio e cancelamento são persistidas em UTC usando `DateTime`, alinhado ao `IClock` e ao padrão técnico existente do ERP.
+15. `NeededByDate` é opcional e não possui regra automática que proíba datas passadas neste slice.
 16. Não existe hard delete exposto pela Application.
+17. Validações de mutação são executadas antes de alterar estado persistível, evitando alterações parciais em memória quando uma transição falha.
 
-## 4. Modelo proposto
+## 4. Modelo implementado
 
 ### `PurchaseRequest`
 
 - `Guid Id`
 - `PurchaseRequestStatus Status`
 - `Guid RequesterUserId`
-- `DateTimeOffset CreatedAtUtc`
+- `DateTime CreatedAtUtc`
 - `string? Notes`
-- `DateTimeOffset? SubmittedAtUtc`
+- `DateTime? SubmittedAtUtc`
 - `Guid? SubmittedByUserId`
-- `DateTimeOffset? CancelledAtUtc`
+- `DateTime? CancelledAtUtc`
 - `Guid? CancelledByUserId`
 - `string? CancellationReason`
 - coleção de `PurchaseRequestLine`
@@ -202,36 +203,37 @@ Logs estruturados podem registrar as operações, mas log não substitui estado 
 - `Guid MeasurementUnitId`
 - `DateOnly? NeededByDate`
 
-A precisão de `Quantity` deve ser explicitada na configuração EF, com valor adequado para quantidade e sem uso de `double`/`float`.
+`Quantity` usa precisão EF `18,4`; não é armazenada como `double`/`float`.
 
-## 5. Persistência proposta
+## 5. Persistência implementada
 
 Tabelas:
 
 - `PurchaseRequests`;
 - `PurchaseRequestLines`.
 
-Relações previstas:
+Relações:
 
 - `PurchaseRequest.RequesterUserId -> Users.Id` com `RESTRICT`;
 - `SubmittedByUserId -> Users.Id` com `RESTRICT` quando preenchido;
 - `CancelledByUserId -> Users.Id` com `RESTRICT` quando preenchido;
-- `PurchaseRequestLine.PurchaseRequestId -> PurchaseRequests.Id`;
+- `PurchaseRequestLine.PurchaseRequestId -> PurchaseRequests.Id` com `CASCADE` apenas para o filho interno do agregado;
 - `PurchaseRequestLine.MeasurementUnitId -> MeasurementUnits.Id` com `RESTRICT`.
 
-Índices mínimos:
+Índices:
 
 - status da solicitação;
 - data de criação;
 - solicitante;
-- linhas por `PurchaseRequestId`;
+- atores de envio/cancelamento;
+- unidade de medida das linhas;
 - unicidade de `(PurchaseRequestId, LineNumber)`.
 
-A estratégia exata de `ON DELETE` para linhas deve manter coerência com a ausência de hard delete público e ser validada na migration/smoke test.
+O repositório EF carrega o agregado com linhas e sincroniza inclusão, alteração e remoção dos filhos em um único `SaveChangesAsync`.
 
-## 6. Casos de uso da Application
+A migration `20261021123000_AddPurchaseRequests` é a 14ª migration do projeto.
 
-Primeiro conjunto:
+## 6. Casos de uso implementados na Application
 
 - `CreateDraftAsync`;
 - `ListAsync`;
@@ -243,21 +245,21 @@ Primeiro conjunto:
 - `SubmitAsync`;
 - `CancelAsync`.
 
-Todos devem exigir sessão autenticada e a permissão correspondente.
+Consultas exigem `purchase-requests.read`; mutações exigem `purchase-requests.manage`. Operações que registram ator exigem sessão autenticada e usuário ativo.
 
-Mutações devem carregar o agregado, executar a transição no domínio e persistir de forma atômica.
+A Application valida Unidade de Medida existente e ativa antes de inserir ou alterar linha.
 
 ## 7. Concorrência e consistência
 
-O produto atual é single-PC/local-first, porém a modelagem não deve depender de ausência eterna de concorrência.
+O produto atual é single-PC/local-first, porém a modelagem não depende conceitualmente de ausência eterna de concorrência.
 
-O primeiro slice deve evitar operações do tipo read-modify-write espalhadas entre UI e repositório. A Application deve executar mutações como unidade transacional.
+O primeiro slice evita operações de regra de negócio espalhadas na UI. Mutações carregam o agregado, executam suas invariantes e o repositório persiste cabeçalho e linhas conjuntamente.
 
-Se os padrões atuais de persistência já utilizarem mecanismo de compare-and-set ou transação imediata para mutações concorrentes críticas, o novo módulo deve reutilizar a estratégia adequada em vez de criar um padrão paralelo.
+Controle de concorrência otimista/versionamento de linha não foi introduzido sem necessidade comprovada no cenário single-PC atual; deverá ser reavaliado na preparação multiusuário.
 
 ## 8. Primeira UI WPF prevista
 
-A primeira UI operacional deve permitir:
+A UI operacional ainda pendente deve permitir:
 
 - lista de solicitações;
 - filtro básico por status;
@@ -265,6 +267,7 @@ A primeira UI operacional deve permitir:
 - abrir rascunho;
 - editar observação;
 - adicionar/editar/remover linhas;
+- selecionar Unidade de Medida ativa;
 - enviar;
 - cancelar com confirmação e justificativa;
 - visualizar solicitação enviada/cancelada em modo somente leitura;
@@ -272,36 +275,17 @@ A primeira UI operacional deve permitir:
 
 A UI não implementará aprovação, cotação, fornecedor, preço ou recebimento.
 
-## 9. Testes obrigatórios antes da UI
+## 9. Validação automatizada do núcleo e persistência
 
-Domínio:
+O CI #143 validou o HEAD funcional de persistência com:
 
-- criação em `Draft`;
-- normalização e limites;
-- quantidade inválida;
-- unidade vazia;
-- numeração de linha inválida/duplicada;
-- envio sem linhas bloqueado;
-- envio válido;
-- edição após envio bloqueada;
-- cancelamento com e sem justificativa;
-- estado cancelado terminal.
+- build Release sem warnings/erros;
+- 216/216 testes: Domain 56, Application 105, Persistence 49, Infrastructure 6;
+- `has-pending-model-changes` sem diferenças;
+- 14 migrations em apply -> rollback 0 -> reapply;
+- testes de round-trip, sincronização de linhas e FKs do novo agregado.
 
-Application:
-
-- `read` exigido para consulta;
-- `manage` exigido para mutações;
-- usuário da sessão registrado como solicitante/ator;
-- unidade inexistente/inativa rejeitada;
-- transições inválidas não persistem alteração parcial.
-
-Persistência:
-
-- round-trip do agregado e linhas;
-- FKs reais;
-- índice/constraint de linha única;
-- migration apply/rollback/reapply;
-- snapshot EF sem alterações pendentes.
+O aviso histórico do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` continua não bloqueante e não foi introduzido por Compras.
 
 ## 10. Fora do escopo do primeiro slice
 
@@ -331,16 +315,8 @@ Não implementar neste momento:
 - aprovação por alçada;
 - consolidação/divisão de solicitações em pedidos.
 
-## 11. Critério de conclusão da especificação
+## 11. Próxima prioridade técnica
 
-As doze decisões bloqueadoras de `docs/PURCHASING.md` estão resolvidas **para o primeiro slice** por esta especificação.
+O domínio, a Application, a persistência EF, a migration e os testes do primeiro slice estão concluídos e verdes.
 
-Isso não encerra a descoberta de todo o módulo de Compras; apenas libera a implementação de Solicitação de Compra em seu menor fluxo seguro.
-
-Próxima prioridade técnica:
-
-1. criar domínio `PurchaseRequest`/`PurchaseRequestLine` e `PurchaseRequestStatus`;
-2. adicionar permissões `purchase-requests.read/manage`;
-3. criar contratos Application/repositório;
-4. cobrir domínio e autorização com testes;
-5. somente depois integrar EF/migration e UI.
+A próxima prioridade é implementar a **primeira UI WPF operacional de Solicitação de Compra**, consumindo exclusivamente os casos de uso existentes e mantendo todas as regras/autorização na Application/Domain.
