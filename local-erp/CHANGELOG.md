@@ -50,7 +50,12 @@ O projeto segue versionamento semântico.
 - migration `20261021100000_AddCostCenters`;
 - testes de domínio, Application, repositório e migration smoke para Centros de Custo;
 - catálogo WPF de Centros de Custo com loading/erro/vazio, listagem de ativos/inativos, criação, renomeação e ativação/desativação;
-- tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.
+- tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`;
+- primeiro slice vertical de Solicitação de Compra, de Domain a WPF;
+- segundo slice de Cotação/RFQ com linhas de origem, fornecedores convidados, respostas, envio, finalização, encerramento e cancelamento;
+- permissões `request-for-quotations.read` e `request-for-quotations.manage`;
+- migration `20261021132811_AddRequestForQuotations` e persistência de preço unitário SQLite em inteiro escalado de 6 casas;
+- workspace WPF de RFQ integrado ao módulo Compras.
 
 ### Changed
 
@@ -78,10 +83,10 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 198/198;
-- Domain 46/46, Application 99/99, Persistence 47/47, Infrastructure 6/6;
+- suíte automatizada: 235/235;
+- Domain 63/63, Application 115/115, Persistence 51/51, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 13 migrations: apply -> rollback 0 -> reapply passando;
+- 15 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
@@ -94,6 +99,7 @@ O projeto segue versionamento semântico.
 - CI #126 validou o catálogo WPF de Categorias e preservou 188/188 testes, snapshot EF e as 12 migrations;
 - CI #128 validou o núcleo de Centros de Custo e a décima terceira migration;
 - CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;
+- CI #160 validou o slice vertical de RFQ com 235/235 testes, snapshot EF consistente e 15 migrations em apply -> rollback 0 -> reapply;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15

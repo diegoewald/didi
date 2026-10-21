@@ -34,7 +34,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [-] navegação real por módulos;
 - [x] tratamento global de erro além do startup;
 - [ ] atalhos e foco/teclado;
-- [-] estados loading/empty/error já existem em Administração, Cadastros e Solicitações de Compra, ainda sem componente comum;
+- [-] estados loading/empty/error já existem em Administração, Cadastros, Solicitações de Compra e RFQ, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
 - [ ] smoke visual/interativo em Windows real.
 
@@ -64,7 +64,11 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: domínio e Application da Solicitação de Compra implementados com estados `Draft/Submitted/Cancelled`, permissões e invariantes;
 - [x] compras: persistência EF, FKs, índices, repositório de agregado e migration `20261021123000_AddPurchaseRequests` validados;
 - [x] compras: primeira UI WPF operacional da Solicitação de Compra integrada ao shell;
-- [ ] compras: especificar o próximo slice de aprovação/cotação/pedido antes de qualquer implementação, sem importar regras empresariais não documentadas.
+- [x] compras: segundo slice de Cotação/RFQ especificado em `docs/REQUEST-FOR-QUOTATION-SPEC.md`;
+- [x] compras: domínio e Application de RFQ/respostas implementados com permissões `request-for-quotations.read/manage`;
+- [x] compras: persistência EF e migration `20261021132811_AddRequestForQuotations` validadas, incluindo preço unitário como inteiro escalado de 6 casas no SQLite;
+- [x] compras: workspace WPF de RFQ integrado ao shell, com origem em Solicitação `Submitted`, linhas, fornecedores, respostas, envio, finalização, encerramento e cancelamento;
+- [ ] compras: especificar o terceiro slice antes de implementar comparação/seleção, aprovação ou Pedido de Compra.
 
 ## Fases posteriores
 
@@ -176,3 +180,13 @@ A UI não recebeu regras de autorização próprias: consultas e mutações cont
 O CI #148 validou o workspace WPF com **217/217 testes** (Domain 56, Application 106, Persistence 49, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e as 14 migrations em apply -> rollback 0 -> reapply.
 
 Com isso, o primeiro slice vertical de **Solicitação de Compra** está implementado de Domain a WPF. A próxima prioridade funcional é especificar o próximo slice de Compras — aprovação, cotação e/ou Pedido de Compra — antes de introduzir entidades, estados ou vínculos adicionais. O smoke visual/interativo em Windows real permanece uma pendência de pré-release separada.
+
+## Marco de Cotação / RFQ — 2026-10-21
+
+O segundo slice vertical de Compras foi definido em `docs/REQUEST-FOR-QUOTATION-SPEC.md` e implementado de Domain a WPF. `RequestForQuotation` parte obrigatoriamente de uma Solicitação de Compra `Submitted`, seleciona linhas da origem, mantém fornecedores convidados e controla estados `Draft`, `Sent`, `Closed` e `Cancelled`. Respostas de fornecedor usam `Draft`/`Finalized`, moeda explícita e preço unitário com até seis casas decimais.
+
+A persistência usa a migration `20261021132811_AddRequestForQuotations`. O preço unitário segue o ADR-0005 e é armazenado no SQLite como inteiro escalado de 6 casas, sem `double`. O workspace WPF permite listar/filtrar RFQs, criar a partir de Solicitação enviada, administrar linhas e fornecedores em rascunho, enviar, registrar/finalizar respostas, encerrar e cancelar. Autorização e invariantes permanecem na Application/Domain.
+
+O CI #160 validou **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e **15 migrations** em apply -> rollback 0 -> reapply.
+
+O slice não define vencedor, menor preço obrigatório, quantidade mínima de fornecedores, aprovação, Pedido de Compra, impostos, frete, câmbio, estoque, financeiro ou fiscal. A próxima prioridade funcional é especificar o **terceiro slice de Compras** antes de introduzir qualquer uma dessas regras.

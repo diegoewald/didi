@@ -96,6 +96,7 @@
 - [x] `Categories` integrado ao snapshot EF e migration smoke;
 - [x] `CostCenters` integrado ao snapshot EF e migration smoke;
 - [x] `PurchaseRequests`/`PurchaseRequestLines` integrados ao snapshot EF, FKs e migration smoke;
+- [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P1 — Primeiro módulo operacional
@@ -116,7 +117,11 @@
 - [x] implementar envio, cancelamento com justificativa e modo somente leitura para `Submitted`/`Cancelled`;
 - [x] integrar navegação/DI do módulo Compras sem mover autorização para a UI;
 - [x] preservar nome de Unidade de Medida inativa em leitura histórica, oferecendo somente unidades ativas para novas alterações;
-- [ ] especificar o próximo slice de Compras antes de implementar aprovação, cotação ou Pedido de Compra;
+- [x] especificar Cotação/RFQ em `docs/REQUEST-FOR-QUOTATION-SPEC.md` antes da implementação;
+- [x] implementar Domain/Application de RFQ e respostas com autorização deny-by-default;
+- [x] integrar persistência EF, preço unitário escalado, migration e testes de round trip/FKs;
+- [x] integrar workspace WPF de RFQ ao módulo Compras;
+- [ ] especificar o terceiro slice de Compras antes de implementar comparação/seleção, aprovação ou Pedido de Compra;
 - [ ] manter fornecedor, preço, recebimento, estoque, financeiro e fiscal fora de Solicitação de Compra até requisitos explícitos.
 
 ## P2 — Engenharia
@@ -135,6 +140,8 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **217/217 testes** (Domain 56, Application 106, Persistence 49, Infrastructure 6), **14 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #148.
+Baseline automatizado atual: **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), **15 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #160.
 
-A próxima prioridade funcional é **especificar o próximo slice de Compras antes de qualquer nova implementação**, mantendo aprovação, cotação, Pedido de Compra, fornecedor, preço, recebimento, estoque, financeiro e fiscal fora do primeiro slice até haver requisitos explícitos. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.
+
+A próxima prioridade funcional é **especificar o terceiro slice de Compras antes de qualquer nova implementação**. Comparação/seleção, aprovação e Pedido de Compra permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

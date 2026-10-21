@@ -1,6 +1,6 @@
 # Cotação / RFQ — especificação do segundo slice de Compras
 
-Status: **especificado; implementação pendente**.
+Status: **implementado e validado de Domain a WPF no CI #160**.
 
 Esta especificação define o segundo slice vertical de Compras. O objetivo é evoluir do documento interno `PurchaseRequest` para um processo de solicitação de proposta comercial a fornecedores sem introduzir aprovação, comparação automática, seleção de vencedor ou Pedido de Compra antes de suas regras próprias existirem.
 
@@ -321,6 +321,8 @@ Não implementar neste slice:
 - financeiro;
 - fiscal.
 
-## 16. Próxima implementação
+## 16. Estado de implementação e próxima etapa
 
-A implementação deve começar por **Domain + Application**, com testes das invariantes e autorização. Persistência EF/migration e WPF entram somente depois de o núcleo estar verde.
+O slice descrito neste documento foi implementado de Domain a WPF. A migration `20261021132811_AddRequestForQuotations` está integrada ao snapshot EF; o CI #160 validou 235/235 testes, 15 migrations e build Release sem warnings/erros.
+
+A próxima etapa não deve ampliar este RFQ por suposição. O projeto deve **especificar o terceiro slice de Compras** e decidir explicitamente se o próximo corte será comparação/seleção, aprovação ou Pedido de Compra, incluindo estados, atores, permissões e invariantes antes de criar novas entidades.

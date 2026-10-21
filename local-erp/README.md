@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: segurança/administração baseline fechado; Fase 6 de cadastros-base concluída; preparação da Fase 7 de Compras
+- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação de Compra e Cotação/RFQ operacionais
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 198/198 testes passando
-- Migrations: 13 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 235/235 testes passando
+- Migrations: 15 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -78,7 +78,11 @@ O catálogo WPF de Centros de Custo está disponível em `Cadastros`, com estado
 
 Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira e relacionamentos automáticos não foram presumidos. Instalações novas recebem `cost-centers.read/manage` no bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída. A próxima frente funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de criar entidades, estados ou aprovações do módulo**. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída.
+
+O módulo Compras possui dois slices verticais operacionais: **Solicitação de Compra** e **Cotação/RFQ**. O RFQ nasce de uma Solicitação `Submitted`, seleciona linhas de origem, convida fornecedores, registra e finaliza respostas com preço unitário/data prometida e permite encerramento ou cancelamento. Ele não escolhe vencedor automaticamente e não cria Pedido de Compra.
+
+A próxima frente funcional é **especificar o terceiro slice de Compras antes de nova implementação**, mantendo aprovação, seleção de vencedor e Pedido de Compra fora do código até suas regras serem documentadas. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

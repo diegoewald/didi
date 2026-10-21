@@ -127,6 +127,21 @@ O `CASCADE` é restrito ao filho interno do agregado: a Application não expõe 
 
 A migration `20261021123000_AddPurchaseRequests` introduz esse schema.
 
+## Cotações / RFQ
+
+O segundo slice de Compras adiciona cinco tabelas:
+
+- `RequestForQuotations` — cabeçalho do RFQ, origem `PurchaseRequestId`, status, atores/timestamps e observações/cancelamento;
+- `RequestForQuotationLines` — linhas selecionadas da Solicitação de origem, com numeração única dentro do RFQ;
+- `RequestForQuotationSuppliers` — fornecedores convidados, únicos por RFQ;
+- `SupplierQuotations` — resposta de fornecedor convidado, com status `Draft`/`Finalized`, moeda explícita, referência/validade/notas e atores;
+- `SupplierQuotationLines` — linhas cotadas, com preço unitário, data prometida e observação opcional.
+
+As relações históricas usam FKs reais. Linhas e filhos internos do agregado usam cascata apenas para o pai interno quando apropriado; referências a Solicitação, fornecedor e usuário usam `RESTRICT` para preservar integridade do cadastro externo.
+
+`SupplierQuotationLine.UnitPrice` é `decimal` no Domain/Application e usa conversor EF para `INTEGER` (`long`) escalado por 1.000.000 no SQLite, conforme ADR-0005. A conversão é `checked`; valores negativos ou com mais de seis casas são rejeitados pelo domínio e nenhum caminho monetário usa `double`.
+
+A migration `20261021132811_AddRequestForQuotations` introduz esse schema.
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -140,7 +155,7 @@ A migration `20261021123000_AddPurchaseRequests` introduz esse schema.
 
 ## Baseline de migrations — 2026-10-21
 
-Quatorze migrations validadas no CI:
+Quinze migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -155,9 +170,10 @@ Quatorze migrations validadas no CI:
 11. `20261019093000_AddMeasurementUnits`;
 12. `20261020113000_AddCategories`;
 13. `20261021100000_AddCostCenters`;
-14. `20261021123000_AddPurchaseRequests`.
+14. `20261021123000_AddPurchaseRequests`;
+15. `20261021132811_AddRequestForQuotations`.
 
-O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #143 validou o modelo de Solicitação de Compra sem mudanças pendentes, 216/216 testes (Domain 56, Application 105, Persistence 49, Infrastructure 6) e o ciclo completo das 14 migrations.
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #160 validou Solicitação de Compra + RFQ sem mudanças pendentes, **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6) e o ciclo completo das **15 migrations**.
 
 O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 

@@ -22,15 +22,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 
 ## Baseline atual — 2026-10-21
 
-- Domain: 46/46;
-- Application: 99/99;
-- Persistence: 47/47;
+- Domain: 63/63;
+- Application: 115/115;
+- Persistence: 51/51;
 - Infrastructure: 6/6;
-- Total automatizado: 198/198;
+- Total automatizado: 235/235;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 13; apply -> rollback 0 -> reapply passando.
+- Migrations: 15; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -105,6 +105,15 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #128 validou o núcleo de Centros de Custo e a décima terceira migration;
 - CI #131 recompilou `CostCentersCatalogView`, integração no `MainWindow`, DI e ViewModel, preservando 198/198 testes e as 13 migrations verdes.
 
+### Cobertura de Solicitação de Compra e RFQ
+
+- Solicitação de Compra: domínio, autorização, unidades ativas, persistência do agregado, FKs, migration e workspace WPF;
+- RFQ: estados `Draft/Sent/Closed/Cancelled`, linhas de origem, fornecedores convidados e invariantes de envio/encerramento/cancelamento;
+- respostas de fornecedor: `Draft/Finalized`, moeda explícita, preço com até seis casas, linhas cotadas e imutabilidade após finalização;
+- Application: permissões `request-for-quotations.read/manage`, validação de Solicitação `Submitted`, fornecedor ativo e referências pertencentes ao agregado;
+- Persistence: round trip do agregado, FKs/unicidade e armazenamento exato de `UnitPrice` em inteiro escalado;
+- migration `20261021132811_AddRequestForQuotations` integrada ao snapshot e ao migration smoke;
+- CI #160 validou 235/235 testes e 15 migrations, além da compilação completa da workspace WPF de RFQ.
 A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
@@ -139,6 +148,8 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Unidades de Medida: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `units.read/manage` insuficientes;
 - catálogo de Categorias: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `categories.read/manage` insuficientes;
 - catálogo de Centros de Custo: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `cost-centers.read/manage` insuficientes;
+- Solicitação de Compra: lista/filtro, rascunho, linhas, envio, cancelamento, unidade inativa histórica e permissões insuficientes;
+- Cotação/RFQ: criação a partir de Solicitação `Submitted`, linhas, fornecedores, envio, respostas, preços/datas, finalização, encerramento/cancelamento e permissões insuficientes;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;
