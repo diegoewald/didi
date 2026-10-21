@@ -100,9 +100,16 @@
 ## P1 — Primeiro módulo operacional
 
 - [x] iniciar descoberta de Compras em `docs/PURCHASING.md`, comparando referências de mercado e separando padrões conceituais de regras internas não confirmadas;
-- [-] resolver as decisões bloqueadoras da Solicitação de Compra: objetos compráveis, vínculos obrigatórios, dados mínimos de linha, estados, atores, permissões, aprovação, numeração e alterações permitidas;
-- [ ] transformar as decisões confirmadas em estados, atores, invariantes e transições documentadas;
-- [ ] somente após essa definição, implementar o primeiro slice vertical de Compras sem presumir regras fiscais/comerciais não documentadas.
+- [x] resolver as doze decisões bloqueadoras do primeiro slice em `docs/PURCHASE-REQUEST-SPEC.md`;
+- [x] documentar estados `Draft/Submitted/Cancelled`, atores, permissões `purchase-requests.read/manage`, invariantes, transições e limites de escopo;
+- [-] implementar domínio `PurchaseRequest`, `PurchaseRequestLine` e `PurchaseRequestStatus` conforme a especificação;
+- [ ] adicionar permissões de Solicitação de Compra ao `PermissionCatalog` e bootstrap de instalações novas sem elevar roles existentes;
+- [ ] implementar contratos Application/repositório e casos de uso de criar/listar/consultar/editar rascunho/linhas/enviar/cancelar;
+- [ ] cobrir domínio e autorização com testes antes da UI;
+- [ ] integrar EF Core, FKs, índices e migration reproduzível;
+- [ ] validar snapshot e ciclo apply -> rollback 0 -> reapply;
+- [ ] implementar primeira UI WPF operacional somente depois do núcleo e persistência verdes;
+- [ ] manter aprovação, cotação, fornecedor, preço, pedido, recebimento, estoque, financeiro e fiscal fora deste primeiro slice.
 
 ## P2 — Engenharia
 
@@ -120,6 +127,6 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 Não existe código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira nem relacionamento automático para Centro de Custo nesta etapa. Instalações novas recebem `cost-centers.read/manage` pelo bootstrap; roles existentes não recebem grants novos automaticamente.
 
-Baseline automatizado: 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), 13 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #131 recompilou o catálogo WPF de Centros de Custo e preservou todo esse baseline.
+Baseline automatizado anterior à implementação de Compras: 198/198 testes (Domain 46, Application 99, Persistence 47, Infrastructure 6), 13 migrations, build Release e benchmark tool sem warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado. O CI #131 recompilou o catálogo WPF de Centros de Custo e preservou todo esse baseline.
 
-A Fase 6 de cadastros-base está fechada. A Fase 7 começou com `docs/PURCHASING.md`, que documenta a pesquisa de referência, o fluxo conceitual de longo prazo e doze decisões bloqueadoras. O primeiro slice recomendado é Solicitação de Compra, mas nenhuma entidade de Compras deve ser criada até que os estados, atores, vínculos, dados mínimos e invariantes necessários sejam confirmados. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+A Fase 6 de cadastros-base está fechada. A Fase 7 possui agora duas fontes de definição: `docs/PURCHASING.md` para descoberta ampla e `docs/PURCHASE-REQUEST-SPEC.md` para o primeiro slice executável. Esse slice não possui aprovação, cotação, fornecedor, preço, pedido nem recebimento; trabalha com `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A próxima tarefa é implementar o domínio e a Application exatamente dentro desse limite. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
