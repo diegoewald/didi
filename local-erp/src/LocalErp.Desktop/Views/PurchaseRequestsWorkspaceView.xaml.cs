@@ -178,7 +178,7 @@ public partial class PurchaseRequestsWorkspaceView : UserControl
         try
         {
             await ViewModel.EnsureMeasurementUnitsAsync();
-            if (ViewModel.MeasurementUnits.Count == 0)
+            if (ViewModel.ActiveMeasurementUnits.Count == 0)
             {
                 ShowOperationError("Cadastre e mantenha ativa ao menos uma Unidade de Medida antes de incluir linhas.");
                 return;
@@ -192,7 +192,11 @@ public partial class PurchaseRequestsWorkspaceView : UserControl
             LineNeededByDatePicker.SelectedDate = line?.NeededByDate is DateOnly neededBy
                 ? neededBy.ToDateTime(TimeOnly.MinValue)
                 : null;
-            LineUnitComboBox.SelectedValue = line?.MeasurementUnitId ?? ViewModel.MeasurementUnits[0].Id;
+
+            var selectedUnitId = line?.MeasurementUnitId;
+            LineUnitComboBox.SelectedValue = selectedUnitId is Guid id && ViewModel.ActiveMeasurementUnits.Any(unit => unit.Id == id)
+                ? id
+                : ViewModel.ActiveMeasurementUnits[0].Id;
             LineEditorPanel.Visibility = Visibility.Visible;
             LineDescriptionTextBox.Focus();
             LineDescriptionTextBox.SelectAll();

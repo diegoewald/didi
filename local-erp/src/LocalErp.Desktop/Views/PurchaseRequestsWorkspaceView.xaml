@@ -122,8 +122,10 @@
                 <TextBlock Text="   Criada em: " Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Text="{Binding CurrentCreatedDisplay}" Foreground="{StaticResource Brush.Text}" />
               </StackPanel>
-              <TextBlock Text="{Binding CurrentIdDisplay, StringFormat=ID técnico: {0}}" Margin="0,4,0,0"
-                         FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Brush.Muted}" />
+              <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock Text="ID técnico: " FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Brush.Muted}" />
+                <TextBlock Text="{Binding CurrentIdDisplay}" FontFamily="Consolas" FontSize="11" Foreground="{StaticResource Brush.Muted}" />
+              </StackPanel>
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
               <Button Content="Enviar" Click="Submit_Click" Padding="14,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
@@ -212,7 +214,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="2" Margin="0,0,10,0">
                   <TextBlock Text="Unidade" Foreground="{StaticResource Brush.Muted}" Margin="0,0,0,4" />
-                  <ComboBox x:Name="LineUnitComboBox" ItemsSource="{Binding MeasurementUnits}" DisplayMemberPath="Name"
+                  <ComboBox x:Name="LineUnitComboBox" ItemsSource="{Binding ActiveMeasurementUnits}" DisplayMemberPath="Name"
                             SelectedValuePath="Id" MinHeight="31" Padding="7,4" />
                 </StackPanel>
                 <StackPanel Grid.Column="3">

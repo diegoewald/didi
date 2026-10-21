@@ -57,7 +57,7 @@ public sealed class PurchaseRequestServiceTests
     }
 
     [TestMethod]
-    public async Task ListActiveMeasurementUnitsUsesPurchaseManagePermissionAndFiltersInactive()
+    public async Task ListMeasurementUnitsUsesPurchaseReadPermissionAndPreservesInactiveForHistory()
     {
         var repository = new InMemoryPurchaseRequestRepository();
         var units = new InMemoryMeasurementUnitRepository();
@@ -69,13 +69,13 @@ public sealed class PurchaseRequestServiceTests
         var authorization = new RecordingAuthorizationService();
         var service = NewService(repository, authorization, units: units);
 
-        var result = await service.ListActiveMeasurementUnitsAsync();
+        var result = await service.ListMeasurementUnitsAsync();
 
-        Assert.AreEqual(1, result.Count);
-        Assert.AreEqual(active.Id, result[0].Id);
-        Assert.AreEqual("Peça", result[0].Name);
+        Assert.AreEqual(2, result.Count);
+        Assert.IsTrue(result.Single(item => item.Id == active.Id).IsActive);
+        Assert.IsFalse(result.Single(item => item.Id == inactive.Id).IsActive);
         CollectionAssert.AreEqual(
-            new[] { PermissionCatalog.PurchaseRequestsManage },
+            new[] { PermissionCatalog.PurchaseRequestsRead },
             authorization.Demands.ToArray());
     }
 

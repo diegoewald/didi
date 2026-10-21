@@ -7,27 +7,36 @@ using Serilog;
 
 namespace LocalErp.Desktop.ViewModels;
 
-public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService purchaseRequestService) : ObservableObject
+public partial class PurchaseRequestsWorkspaceViewModel : ObservableObject
 {
-    private readonly PurchaseRequestService _purchaseRequestService = purchaseRequestService
-        ?? throw new ArgumentNullException(nameof(purchaseRequestService));
+    private readonly PurchaseRequestService _purchaseRequestService;
+
+    public PurchaseRequestsWorkspaceViewModel(PurchaseRequestService purchaseRequestService)
+    {
+        _purchaseRequestService = purchaseRequestService
+            ?? throw new ArgumentNullException(nameof(purchaseRequestService));
+        StatusFilters =
+        [
+            new("Todos", null),
+            new("Rascunho", PurchaseRequestStatus.Draft),
+            new("Enviada", PurchaseRequestStatus.Submitted),
+            new("Cancelada", PurchaseRequestStatus.Cancelled),
+        ];
+        selectedStatusFilter = StatusFilters[0];
+    }
 
     public ObservableCollection<PurchaseRequestListItemViewModel> PurchaseRequests { get; } = [];
 
     public ObservableCollection<PurchaseRequestMeasurementUnitOption> MeasurementUnits { get; } = [];
 
+    public ObservableCollection<PurchaseRequestMeasurementUnitOption> ActiveMeasurementUnits { get; } = [];
+
     public ObservableCollection<PurchaseRequestLineListItemViewModel> CurrentLines { get; } = [];
 
-    public IReadOnlyList<PurchaseRequestStatusFilterOption> StatusFilters { get; } =
-    [
-        new("Todos", null),
-        new("Rascunho", PurchaseRequestStatus.Draft),
-        new("Enviada", PurchaseRequestStatus.Submitted),
-        new("Cancelada", PurchaseRequestStatus.Cancelled),
-    ];
+    public IReadOnlyList<PurchaseRequestStatusFilterOption> StatusFilters { get; }
 
     [ObservableProperty]
-    private PurchaseRequestStatusFilterOption selectedStatusFilter = new("Todos", null);
+    private PurchaseRequestStatusFilterOption selectedStatusFilter;
 
     [ObservableProperty]
     private bool isLoading;
@@ -76,6 +85,9 @@ public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService p
         try
         {
             var requests = await _purchaseRequestService.ListAsync(SelectedStatusFilter.Status);
+            var units = await _purchaseRequestService.ListMeasurementUnitsAsync();
+            ReplaceMeasurementUnits(units);
+
             PurchaseRequests.Clear();
             foreach (var request in requests
                          .OrderByDescending(item => item.CreatedAtUtc)
@@ -100,6 +112,8 @@ public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService p
         catch (AccessDeniedException)
         {
             PurchaseRequests.Clear();
+            MeasurementUnits.Clear();
+            ActiveMeasurementUnits.Clear();
             ClearCurrent();
             ErrorMessage = "Você não tem permissão para consultar solicitações de compra.";
         }
@@ -130,14 +144,7 @@ public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService p
             return;
         }
 
-        var units = await _purchaseRequestService.ListActiveMeasurementUnitsAsync();
-        MeasurementUnits.Clear();
-        foreach (var unit in units)
-        {
-            MeasurementUnits.Add(unit);
-        }
-
-        RebuildLines();
+        ReplaceMeasurementUnits(await _purchaseRequestService.ListMeasurementUnitsAsync());
     }
 
     public async Task<PurchaseRequestResult> CreateDraftAsync()
@@ -270,6 +277,23 @@ public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService p
         NotifyDerivedState();
     }
 
+    private void ReplaceMeasurementUnits(IReadOnlyList<PurchaseRequestMeasurementUnitOption> units)
+    {
+        MeasurementUnits.Clear();
+        ActiveMeasurementUnits.Clear();
+
+        foreach (var unit in units)
+        {
+            MeasurementUnits.Add(unit);
+            if (unit.IsActive)
+            {
+                ActiveMeasurementUnits.Add(unit);
+            }
+        }
+
+        RebuildLines();
+    }
+
     private void RebuildLines()
     {
         CurrentLines.Clear();
@@ -281,7 +305,7 @@ public partial class PurchaseRequestsWorkspaceViewModel(PurchaseRequestService p
         foreach (var line in CurrentRequest.Lines.OrderBy(item => item.LineNumber))
         {
             var unitName = MeasurementUnits.FirstOrDefault(unit => unit.Id == line.MeasurementUnitId)?.Name
-                ?? "Unidade não carregada";
+                ?? "Unidade não encontrada";
             CurrentLines.Add(PurchaseRequestLineListItemViewModel.FromResult(line, unitName));
         }
     }

@@ -53,16 +53,15 @@ public sealed class PurchaseRequestService(
             await GetRequiredAsync(purchaseRequestId, cancellationToken));
     }
 
-    public async Task<IReadOnlyList<PurchaseRequestMeasurementUnitOption>> ListActiveMeasurementUnitsAsync(
+    public async Task<IReadOnlyList<PurchaseRequestMeasurementUnitOption>> ListMeasurementUnitsAsync(
         CancellationToken cancellationToken = default)
     {
-        await _authorizationService.DemandAsync(PermissionCatalog.PurchaseRequestsManage, cancellationToken);
-        var units = await _measurementUnitRepository.ListAsync(includeInactive: false, cancellationToken);
+        await _authorizationService.DemandAsync(PermissionCatalog.PurchaseRequestsRead, cancellationToken);
+        var units = await _measurementUnitRepository.ListAsync(includeInactive: true, cancellationToken);
         return units
-            .Where(unit => unit.IsActive)
             .OrderBy(unit => unit.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(unit => unit.Id)
-            .Select(unit => new PurchaseRequestMeasurementUnitOption(unit.Id, unit.Name))
+            .Select(unit => new PurchaseRequestMeasurementUnitOption(unit.Id, unit.Name, unit.IsActive))
             .ToArray();
     }
 
