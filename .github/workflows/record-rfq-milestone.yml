@@ -1,0 +1,147 @@
+name: Record RFQ milestone docs
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/record-rfq-milestone.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-local-ci
+      - name: Update RFQ milestone documentation
+        shell: pwsh
+        run: |
+          function Replace-Required([string]$Path, [string]$Old, [string]$New) {
+            $content = Get-Content $Path -Raw
+            if (-not $content.Contains($Old)) { throw "Expected text not found in $Path`n$Old" }
+            Set-Content -Path $Path -Value ($content.Replace($Old, $New)) -Encoding utf8NoBOM
+          }
+
+          $readme = 'local-erp/README.md'
+          Replace-Required $readme '- Fase: segurança/administração baseline fechado; Fase 6 de cadastros-base concluída; preparação da Fase 7 de Compras' '- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação de Compra e Cotação/RFQ operacionais'
+          Replace-Required $readme '- CI Windows: build Release com 0 warnings / 0 errors e 198/198 testes passando' '- CI Windows: build Release com 0 warnings / 0 errors e 235/235 testes passando'
+          Replace-Required $readme '- Migrations: 13 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado' '- Migrations: 15 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado'
+          Replace-Required $readme 'Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída. A próxima frente funcional é **definir o fluxo mínimo de Compras com regras reais de negócio antes de criar entidades, estados ou aprovações do módulo**. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.' 'Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída.`n`nO módulo Compras possui dois slices verticais operacionais: **Solicitação de Compra** e **Cotação/RFQ**. O RFQ nasce de uma Solicitação `Submitted`, seleciona linhas de origem, convida fornecedores, registra e finaliza respostas com preço unitário/data prometida e permite encerramento ou cancelamento. Ele não escolhe vencedor automaticamente e não cria Pedido de Compra.`n`nA próxima frente funcional é **especificar o terceiro slice de Compras antes de nova implementação**, mantendo aprovação, seleção de vencedor e Pedido de Compra fora do código até suas regras serem documentadas. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.'
+
+          $roadmap = 'local-erp/docs/ROADMAP.md'
+          Replace-Required $roadmap '- [-] estados loading/empty/error já existem em Administração, Cadastros e Solicitações de Compra, ainda sem componente comum;' '- [-] estados loading/empty/error já existem em Administração, Cadastros, Solicitações de Compra e RFQ, ainda sem componente comum;'
+          Replace-Required $roadmap '- [ ] compras: especificar o próximo slice de aprovação/cotação/pedido antes de qualquer implementação, sem importar regras empresariais não documentadas.' '- [x] compras: segundo slice de Cotação/RFQ especificado em `docs/REQUEST-FOR-QUOTATION-SPEC.md`;`n- [x] compras: domínio e Application de RFQ/respostas implementados com permissões `request-for-quotations.read/manage`;`n- [x] compras: persistência EF e migration `20261021132811_AddRequestForQuotations` validadas, incluindo preço unitário como inteiro escalado de 6 casas no SQLite;`n- [x] compras: workspace WPF de RFQ integrado ao shell, com origem em Solicitação `Submitted`, linhas, fornecedores, respostas, envio, finalização, encerramento e cancelamento;`n- [ ] compras: especificar o terceiro slice antes de implementar comparação/seleção, aprovação ou Pedido de Compra.'
+          if (-not (Select-String -Path $roadmap -SimpleMatch '## Marco de Cotação / RFQ — 2026-10-21' -Quiet)) {
+            Add-Content -Path $roadmap -Encoding utf8NoBOM -Value @'
+
+## Marco de Cotação / RFQ — 2026-10-21
+
+O segundo slice vertical de Compras foi definido em `docs/REQUEST-FOR-QUOTATION-SPEC.md` e implementado de Domain a WPF. `RequestForQuotation` parte obrigatoriamente de uma Solicitação de Compra `Submitted`, seleciona linhas da origem, mantém fornecedores convidados e controla estados `Draft`, `Sent`, `Closed` e `Cancelled`. Respostas de fornecedor usam `Draft`/`Finalized`, moeda explícita e preço unitário com até seis casas decimais.
+
+A persistência usa a migration `20261021132811_AddRequestForQuotations`. O preço unitário segue o ADR-0005 e é armazenado no SQLite como inteiro escalado de 6 casas, sem `double`. O workspace WPF permite listar/filtrar RFQs, criar a partir de Solicitação enviada, administrar linhas e fornecedores em rascunho, enviar, registrar/finalizar respostas, encerrar e cancelar. Autorização e invariantes permanecem na Application/Domain.
+
+O CI #160 validou **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e **15 migrations** em apply -> rollback 0 -> reapply.
+
+O slice não define vencedor, menor preço obrigatório, quantidade mínima de fornecedores, aprovação, Pedido de Compra, impostos, frete, câmbio, estoque, financeiro ou fiscal. A próxima prioridade funcional é especificar o **terceiro slice de Compras** antes de introduzir qualquer uma dessas regras.
+'@
+          }
+
+          $backlog = 'local-erp/tasks/BACKLOG.md'
+          Replace-Required $backlog '- [x] `PurchaseRequests`/`PurchaseRequestLines` integrados ao snapshot EF, FKs e migration smoke;' '- [x] `PurchaseRequests`/`PurchaseRequestLines` integrados ao snapshot EF, FKs e migration smoke;`n- [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;'
+          Replace-Required $backlog '- [ ] especificar o próximo slice de Compras antes de implementar aprovação, cotação ou Pedido de Compra;' '- [x] especificar Cotação/RFQ em `docs/REQUEST-FOR-QUOTATION-SPEC.md` antes da implementação;`n- [x] implementar Domain/Application de RFQ e respostas com autorização deny-by-default;`n- [x] integrar persistência EF, preço unitário escalado, migration e testes de round trip/FKs;`n- [x] integrar workspace WPF de RFQ ao módulo Compras;`n- [ ] especificar o terceiro slice de Compras antes de implementar comparação/seleção, aprovação ou Pedido de Compra;'
+          Replace-Required $backlog 'Baseline automatizado atual: **217/217 testes** (Domain 56, Application 106, Persistence 49, Infrastructure 6), **14 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #148.' 'Baseline automatizado atual: **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), **15 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #160.'
+          Replace-Required $backlog 'A próxima prioridade funcional é **especificar o próximo slice de Compras antes de qualquer nova implementação**, mantendo aprovação, cotação, Pedido de Compra, fornecedor, preço, recebimento, estoque, financeiro e fiscal fora do primeiro slice até haver requisitos explícitos. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.' 'O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.`n`nA próxima prioridade funcional é **especificar o terceiro slice de Compras antes de qualquer nova implementação**. Comparação/seleção, aprovação e Pedido de Compra permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.'
+
+          $database = 'local-erp/docs/DATABASE.md'
+          if (-not (Select-String -Path $database -SimpleMatch '## Cotações / RFQ' -Quiet)) {
+            Replace-Required $database '## SQLite: pontos de atenção' @'
+## Cotações / RFQ
+
+O segundo slice de Compras adiciona cinco tabelas:
+
+- `RequestsForQuotation` — cabeçalho do RFQ, origem `PurchaseRequestId`, status, atores/timestamps e observações/cancelamento;
+- `RequestForQuotationLines` — linhas selecionadas da Solicitação de origem, com numeração única dentro do RFQ;
+- `RequestForQuotationSuppliers` — fornecedores convidados, únicos por RFQ;
+- `SupplierQuotations` — resposta de fornecedor convidado, com status `Draft`/`Finalized`, moeda explícita, referência/validade/notas e atores;
+- `SupplierQuotationLines` — linhas cotadas, com preço unitário, data prometida e observação opcional.
+
+As relações históricas usam FKs reais. Linhas e filhos internos do agregado podem usar cascata somente dentro do documento; referências a Solicitação, fornecedor e usuário preservam integridade sem exclusão silenciosa do cadastro externo.
+
+`SupplierQuotationLine.UnitPrice` é `decimal` no Domain/Application e usa conversor EF para `INTEGER` (`long`) escalado por 1.000.000 no SQLite, conforme ADR-0005. A conversão é `checked`; valores negativos ou com mais de seis casas são rejeitados pelo domínio e nenhum caminho monetário usa `double`.
+
+A migration `20261021132811_AddRequestForQuotations` introduz esse schema.
+
+## SQLite: pontos de atenção
+'@
+          }
+          Replace-Required $database 'Quatorze migrations validadas no CI:' 'Quinze migrations validadas no CI:'
+          Replace-Required $database '14. `20261021123000_AddPurchaseRequests`.' '14. `20261021123000_AddPurchaseRequests`;`n15. `20261021132811_AddRequestForQuotations`.'
+          Replace-Required $database 'O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #143 validou o modelo de Solicitação de Compra sem mudanças pendentes, 216/216 testes (Domain 56, Application 105, Persistence 49, Infrastructure 6) e o ciclo completo das 14 migrations.' 'O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #160 validou Solicitação de Compra + RFQ sem mudanças pendentes, **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6) e o ciclo completo das **15 migrations**.'
+
+          $testing = 'local-erp/docs/TESTING.md'
+          Replace-Required $testing '- Domain: 46/46;' '- Domain: 63/63;'
+          Replace-Required $testing '- Application: 99/99;' '- Application: 115/115;'
+          Replace-Required $testing '- Persistence: 47/47;' '- Persistence: 51/51;'
+          Replace-Required $testing '- Total automatizado: 198/198;' '- Total automatizado: 235/235;'
+          Replace-Required $testing '- Migrations: 13; apply -> rollback 0 -> reapply passando.' '- Migrations: 15; apply -> rollback 0 -> reapply passando.'
+          if (-not (Select-String -Path $testing -SimpleMatch '### Cobertura de Solicitação de Compra e RFQ' -Quiet)) {
+            Replace-Required $testing 'A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.' @'
+### Cobertura de Solicitação de Compra e RFQ
+
+- Solicitação de Compra: domínio, autorização, unidades ativas, persistência do agregado, FKs, migration e workspace WPF;
+- RFQ: estados `Draft/Sent/Closed/Cancelled`, linhas de origem, fornecedores convidados e invariantes de envio/encerramento/cancelamento;
+- respostas de fornecedor: `Draft/Finalized`, moeda explícita, preço com até seis casas, linhas cotadas e imutabilidade após finalização;
+- Application: permissões `request-for-quotations.read/manage`, validação de Solicitação `Submitted`, fornecedor ativo e referências pertencentes ao agregado;
+- Persistence: round trip do agregado, FKs/unicidade e armazenamento exato de `UnitPrice` em inteiro escalado;
+- migration `20261021132811_AddRequestForQuotations` integrada ao snapshot e ao migration smoke;
+- CI #160 validou 235/235 testes e 15 migrations, além da compilação completa da workspace WPF de RFQ.
+
+A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
+'@
+          }
+          Replace-Required $testing '- catálogo de Centros de Custo: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `cost-centers.read/manage` insuficientes;' '- catálogo de Centros de Custo: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `cost-centers.read/manage` insuficientes;`n- Solicitação de Compra: lista/filtro, rascunho, linhas, envio, cancelamento, unidade inativa histórica e permissões insuficientes;`n- Cotação/RFQ: criação a partir de Solicitação `Submitted`, linhas, fornecedores, envio, respostas, preços/datas, finalização, encerramento/cancelamento e permissões insuficientes;'
+
+          $spec = 'local-erp/docs/REQUEST-FOR-QUOTATION-SPEC.md'
+          Replace-Required $spec 'Status: **especificado; implementação pendente**.' 'Status: **implementado e validado de Domain a WPF no CI #160**.'
+          Replace-Required $spec '## 16. Próxima implementação`n`nA implementação deve começar por **Domain + Application**, com testes das invariantes e autorização. Persistência EF/migration e WPF entram somente depois de o núcleo estar verde.' '## 16. Estado de implementação e próxima etapa`n`nO slice descrito neste documento foi implementado de Domain a WPF. A migration `20261021132811_AddRequestForQuotations` está integrada ao snapshot EF; o CI #160 validou 235/235 testes, 15 migrations e build Release sem warnings/erros.`n`nA próxima etapa não deve ampliar este RFQ por suposição. O projeto deve **especificar o terceiro slice de Compras** e decidir explicitamente se o próximo corte será comparação/seleção, aprovação ou Pedido de Compra, incluindo estados, atores, permissões e invariantes antes de criar novas entidades.'
+
+          $validation = 'local-erp/docs/RFQ-VALIDATION.md'
+          if (-not (Select-String -Path $validation -SimpleMatch '## Resultado final — CI #160' -Quiet)) {
+            Add-Content -Path $validation -Encoding utf8NoBOM -Value @'
+
+## Resultado final — CI #160
+
+A revalidação completa terminou com sucesso no run `39622565165` sobre o commit `fdf715308533211014c51f8ce6564f095512d3ce`:
+
+- Build Release: 0 warnings / 0 errors;
+- benchmark tool: 0 warnings / 0 errors;
+- Domain: 63/63;
+- Application: 115/115;
+- Persistence: 51/51;
+- Infrastructure: 6/6;
+- total: 235/235 testes;
+- snapshot EF sem mudanças pendentes;
+- 15 migrations aplicadas, revertidas a zero e reaplicadas com sucesso;
+- migration RFQ validada: `20261021132811_AddRequestForQuotations`.
+
+O aviso histórico de `PRAGMA foreign_keys = 0` ao reverter `AddAuthenticationThrottling` continua conhecido e não bloqueante; deve ser tratado antes do release sem reescrever migrations antigas de forma insegura.
+'@
+          }
+
+          $changelog = 'local-erp/CHANGELOG.md'
+          Replace-Required $changelog '- tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`.' '- tratamento global de exceções do shell para `DispatcherUnhandledException`, `AppDomain.UnhandledException` e `TaskScheduler.UnobservedTaskException`;`n- primeiro slice vertical de Solicitação de Compra, de Domain a WPF;`n- segundo slice de Cotação/RFQ com linhas de origem, fornecedores convidados, respostas, envio, finalização, encerramento e cancelamento;`n- permissões `request-for-quotations.read` e `request-for-quotations.manage`;`n- migration `20261021132811_AddRequestForQuotations` e persistência de preço unitário SQLite em inteiro escalado de 6 casas;`n- workspace WPF de RFQ integrado ao módulo Compras.'
+          Replace-Required $changelog '- suíte automatizada: 198/198;' '- suíte automatizada: 235/235;'
+          Replace-Required $changelog '- Domain 46/46, Application 99/99, Persistence 47/47, Infrastructure 6/6;' '- Domain 63/63, Application 115/115, Persistence 51/51, Infrastructure 6/6;'
+          Replace-Required $changelog '- 13 migrations: apply -> rollback 0 -> reapply passando;' '- 15 migrations: apply -> rollback 0 -> reapply passando;'
+          Replace-Required $changelog '- CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;' '- CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;`n- CI #160 validou o slice vertical de RFQ com 235/235 testes, snapshot EF consistente e 15 migrations em apply -> rollback 0 -> reapply;'
+
+          git rm '.github/workflows/record-rfq-milestone.yml'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add local-erp/README.md local-erp/docs/ROADMAP.md local-erp/tasks/BACKLOG.md local-erp/docs/DATABASE.md local-erp/docs/TESTING.md local-erp/docs/REQUEST-FOR-QUOTATION-SPEC.md local-erp/docs/RFQ-VALIDATION.md local-erp/CHANGELOG.md
+          git commit -m 'docs(purchases): record RFQ vertical slice'
+          git push origin HEAD:erp-local-ci
