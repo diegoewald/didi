@@ -69,11 +69,40 @@ public partial class CostCentersCatalogViewModel(CostCenterService costCenterSer
         }
     }
 
+    public void ApplyCostCenter(CostCenterResult costCenter)
+    {
+        ArgumentNullException.ThrowIfNull(costCenter);
+
+        var item = CostCenterListItemViewModel.FromResult(costCenter);
+        var existing = CostCenters.FirstOrDefault(candidate => candidate.Id == item.Id);
+        if (existing is not null)
+        {
+            CostCenters.Remove(existing);
+        }
+
+        var insertIndex = 0;
+        while (insertIndex < CostCenters.Count && Compare(CostCenters[insertIndex], item) < 0)
+        {
+            insertIndex++;
+        }
+
+        CostCenters.Insert(insertIndex, item);
+        HasLoaded = true;
+        ErrorMessage = null;
+        NotifyDerivedState();
+    }
+
     partial void OnIsLoadingChanged(bool value) => NotifyDerivedState();
 
     partial void OnHasLoadedChanged(bool value) => NotifyDerivedState();
 
     partial void OnErrorMessageChanged(string? value) => NotifyDerivedState();
+
+    private static int Compare(CostCenterListItemViewModel left, CostCenterListItemViewModel right)
+    {
+        var byName = string.Compare(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
+        return byName != 0 ? byName : left.Id.CompareTo(right.Id);
+    }
 
     private void NotifyDerivedState()
     {

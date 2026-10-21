@@ -176,6 +176,9 @@
           <TabItem Header="Categorias">
             <views:CategoriesCatalogView x:Name="CategoriesCatalogPanel" DataContext="{Binding CategoriesCatalog}" />
           </TabItem>
+          <TabItem Header="Centros de custo">
+            <views:CostCentersCatalogView x:Name="CostCentersCatalogPanel" DataContext="{Binding CostCentersCatalog}" />
+          </TabItem>
         </TabControl>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">

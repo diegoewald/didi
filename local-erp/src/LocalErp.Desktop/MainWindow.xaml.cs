@@ -2,6 +2,7 @@ using System.Windows;
 using LocalErp.Application.Account;
 using LocalErp.Application.Categories;
 using LocalErp.Application.Companies;
+using LocalErp.Application.CostCenters;
 using LocalErp.Application.Materials;
 using LocalErp.Application.Products;
 using LocalErp.Application.Roles;
@@ -30,6 +31,7 @@ public partial class MainWindow : Window
         ProductService productService,
         MeasurementUnitService measurementUnitService,
         CategoryService categoryService,
+        CostCenterService costCenterService,
         UserService userService,
         RoleService roleService)
     {
@@ -43,6 +45,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(productService);
         ArgumentNullException.ThrowIfNull(measurementUnitService);
         ArgumentNullException.ThrowIfNull(categoryService);
+        ArgumentNullException.ThrowIfNull(costCenterService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -53,6 +56,7 @@ public partial class MainWindow : Window
         ProductsCatalogPanel.Configure(productService);
         MeasurementUnitsCatalogPanel.Configure(measurementUnitService);
         CategoriesCatalogPanel.Configure(categoryService);
+        CostCentersCatalogPanel.Configure(costCenterService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
@@ -85,6 +89,10 @@ public partial class MainWindow : Window
         else if (CatalogsTabControl.SelectedIndex == 5 && !viewModel.CategoriesCatalog.HasLoaded)
         {
             await viewModel.CategoriesCatalog.LoadAsync();
+        }
+        else if (CatalogsTabControl.SelectedIndex == 6 && !viewModel.CostCentersCatalog.HasLoaded)
+        {
+            await viewModel.CostCentersCatalog.LoadAsync();
         }
     }
 
