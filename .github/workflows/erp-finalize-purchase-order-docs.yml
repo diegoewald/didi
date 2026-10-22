@@ -1,0 +1,51 @@
+name: ERP Finalize Purchase Order Documentation
+
+on:
+  push:
+    branches:
+      - erp-purchase-order-persistence
+    paths:
+      - '.github/workflows/erp-finalize-purchase-order-docs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Update project state documentation
+        shell: pwsh
+        run: |
+          function Replace-Exact([string]$path, [string]$old, [string]$new) {
+            $text = Get-Content $path -Raw
+            if (-not $text.Contains($old)) { throw "Expected text not found in $path: $old" }
+            $text = $text.Replace($old, $new)
+            Set-Content $path -Value $text -NoNewline -Encoding utf8
+          }
+
+          $backlog = 'local-erp/tasks/BACKLOG.md'
+          Replace-Exact $backlog '- [ ] Pedido de Compra: integrar `PurchaseOrders`/`PurchaseOrderLines`, FKs/unicidades e reserva transacional de `SequenceNumber` ao EF Core;' '- [x] Pedido de Compra: integrar `PurchaseOrders`/`PurchaseOrderLines`, FKs/unicidades e reserva transacional de `SequenceNumber` ao EF Core;'
+          Replace-Exact $backlog '- [ ] Pedido de Compra: criar e validar a 17ª migration com round trip, concorrência e apply -> rollback 0 -> reapply;' '- [x] Pedido de Compra: criar e validar a 17ª migration `20261022153544_AddPurchaseOrders` com round trip, concorrência e apply -> rollback 0 -> reapply;'
+          Replace-Exact $backlog '- [ ] implementar persistência EF e sequência transacional do Pedido de Compra;' '- [x] implementar persistência EF e sequência transacional do Pedido de Compra;'
+          Replace-Exact $backlog 'Baseline automatizado atual: **264/264 testes** (Domain 75, Application 129, Persistence 54, Infrastructure 6), **16 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #191.' 'Baseline automatizado atual: **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.'
+          Replace-Exact $backlog 'O quinto slice de **Pedido de Compra** está especificado e possui núcleo Domain/Application validado: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias e numeração delegada a um contrato de persistência transacional. Persistência EF/migration e WPF ainda não estão implementados.' 'O quinto slice de **Pedido de Compra** está especificado e possui Domain/Application/persistência validados: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. A UI WPF ainda não está implementada.'
+          Replace-Exact $backlog 'A próxima prioridade funcional é **persistir Pedido de Compra com sequência transacional segura**, validar a 17ª migration e só então integrar a UI WPF. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.' 'A próxima prioridade funcional é **integrar o workspace WPF de Pedido de Compra** sobre os casos de uso e a persistência já validados. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.'
+
+          $roadmap = 'local-erp/docs/ROADMAP.md'
+          Replace-Exact $roadmap '- [ ] compras: especificar Pedido de Compra antes de gerar documento a partir da adjudicação.' "- [x] compras: quinto slice de Pedido de Compra especificado em ``docs/PURCHASE-ORDER-SPEC.md``;`n- [x] compras: Domain/Application de Pedido de Compra implementados com snapshots, estados ``Draft/Issued/Cancelled`` e permissões ``purchase-orders.read/manage``;`n- [x] compras: persistência EF e migration ``20261022153544_AddPurchaseOrders`` validadas, com FKs/unicidades, preço escalado e sequência protegida por transação imediata SQLite;`n- [ ] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras."
+          Replace-Exact $roadmap 'A próxima prioridade funcional é **especificar Pedido de Compra** antes de criar entidade, status, numeração ou geração a partir da adjudicação.' "## Marco do núcleo e persistência de Pedido de Compra — 2026-10-22`n`nO quinto slice vertical de Compras transforma adjudicação ``Finalized`` em ``PurchaseOrder`` de um único fornecedor. O agregado preserva snapshots de fornecedor, descrição, quantidade, unidade, preço e data prometida; controla ``Draft/Issued/Cancelled``; permite somente observação em rascunho; e mantém emissão/cancelamento rastreáveis sem introduzir aprovação, recebimento, estoque, financeiro ou fiscal.`n`n``SqlitePurchaseOrderRepository`` reserva ``SequenceNumber`` crescente dentro de transação SQLite imediata, evitando ``MAX + 1`` desprotegido. A persistência garante unicidade de sequência, de ``(RequestForQuotationAwardId, SupplierId)`` e de ``RequestForQuotationAwardLineId``; ``UnitPrice`` segue o ADR-0005 como inteiro escalado de seis casas. A migration ``20261022153544_AddPurchaseOrders`` é a 17ª migration.`n`nA validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria."
+
+          Replace-Exact 'local-erp/docs/PURCHASE-ORDER-SPEC.md' 'Status: **especificado; implementação pendente**.' 'Status: **Domain, Application e persistência implementados e validados; UI WPF pendente**.'
+
+      - name: Remove temporary workflow and commit documentation
+        shell: bash
+        run: |
+          git rm .github/workflows/erp-finalize-purchase-order-docs.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add local-erp/tasks/BACKLOG.md local-erp/docs/ROADMAP.md local-erp/docs/PURCHASE-ORDER-SPEC.md
+          git commit -m "docs(purchases): record purchase order persistence"
+          git push origin HEAD:erp-purchase-order-persistence
