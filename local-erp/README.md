@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação, Cotação/RFQ e Comparação de Cotações operacionais
+- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação, Cotação/RFQ, Comparação e Adjudicação manual operacionais
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 238/238 testes passando
-- Migrations: 15 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors e 253/253 testes passando
+- Migrations: 16 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -80,9 +80,9 @@ Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira 
 
 Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída.
 
-O módulo Compras possui três slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ** e **Comparação de Cotações**. O RFQ nasce de uma Solicitação `Submitted`, seleciona linhas de origem, convida fornecedores e registra respostas. A comparação é uma projeção somente leitura que exibe fornecedores convidados, estado das respostas, moedas e ofertas finalizadas por linha, sem converter moedas, ranquear propostas ou escolher vencedor.
+O módulo Compras possui quatro slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ**, **Comparação de Cotações** e **Adjudicação manual**. A adjudicação ocorre somente após o RFQ `Closed`, permite escolher manualmente no máximo uma oferta finalizada por linha inteira, deixa linhas sem seleção e permanece separada de Pedido de Compra. Não há ranking, recomendação automática, conversão cambial, split de quantidade ou criação automática de PO.
 
-A próxima frente funcional é **especificar o quarto slice de Compras antes de nova implementação**, definindo explicitamente como funcionará decisão/adjudicação e sua relação com Pedido de Compra. Aprovação, vencedor persistido e geração de Pedido de Compra permanecem fora do código até essa regra ser documentada. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+A próxima frente funcional é **especificar Pedido de Compra antes de nova implementação**, definindo campos, estados, agrupamento das linhas adjudicadas, vínculo com fornecedor, preço/moeda, alteração/cancelamento e relação futura com recebimento. Aprovação e recebimento permanecem fora do código até suas regras serem documentadas. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
 
 ## Objetivos de engenharia
 

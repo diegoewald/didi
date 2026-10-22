@@ -71,7 +71,11 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: terceiro slice de Comparação de Cotações especificado em `docs/QUOTATION-COMPARISON-SPEC.md`;
 - [x] compras: projeção Application de comparação somente leitura implementada com `request-for-quotations.read`, respostas `Draft` excluídas das ofertas e ordenação determinística;
 - [x] compras: janela WPF de comparação integrada ao RFQ, com fornecedores, estado/moeda e matriz por linha sem ranking ou seleção automática;
-- [ ] compras: especificar o quarto slice de decisão/adjudicação e sua relação com Pedido de Compra antes de persistir vencedor ou gerar pedido.
+- [x] compras: quarto slice de Adjudicação manual especificado em `docs/RFQ-AWARD-SPEC.md`;
+- [x] compras: Domain/Application de decisão `Draft/Finalized` implementados com permissão específica `request-for-quotations.award`;
+- [x] compras: persistência EF e migration `20261022105027_AddRequestForQuotationAwards` validadas com unicidade/FKs e migration smoke;
+- [x] compras: janela WPF de adjudicação integrada ao RFQ `Closed`, com seleção manual por linha, linhas opcionais sem adjudicação e modo somente leitura após finalização;
+- [ ] compras: especificar Pedido de Compra antes de gerar documento a partir da adjudicação.
 
 ## Fases posteriores
 
@@ -203,3 +207,14 @@ A UI WPF abre `QuotationComparisonWindow` a partir do RFQ selecionado e apresent
 O CI #166 validou **238/238 testes** (Domain 63, Application 118, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e 15 migrations em apply -> rollback 0 -> reapply.
 
 A próxima prioridade funcional é especificar o quarto slice de **decisão/adjudicação** e sua relação com **Pedido de Compra**, incluindo granularidade da escolha, possibilidade de múltiplos fornecedores, justificativa/histórico e transição para pedido, antes de persistir qualquer decisão.
+
+
+## Marco de Adjudicação manual de RFQ — 2026-10-22
+
+O quarto slice vertical de Compras registra uma decisão manual após o RFQ `Closed`. `RequestForQuotationAward` usa estados `Draft/Finalized`; cada linha do RFQ pode permanecer sem seleção ou apontar para exatamente uma `SupplierQuotationLine` pertencente a uma resposta `Finalized` da mesma linha e do mesmo RFQ. Não existe split de quantidade, ranking, menor preço automático, conversão cambial ou aprovação.
+
+A permissão de mutação é `request-for-quotations.award`, separada de `request-for-quotations.manage`; leitura continua usando `request-for-quotations.read`. A migration `20261022105027_AddRequestForQuotationAwards` é a 16ª migration e garante uma decisão por RFQ, referências externas `RESTRICT` e unicidade das seleções.
+
+`RequestForQuotationAwardWindow` oferece início explícito da decisão, observação, seleção por linha e finalização. Nenhuma opção é escolhida automaticamente e a decisão finalizada fica somente leitura. O CI #188 validou **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), build WPF sem warnings/erros, snapshot EF limpo e 16 migrations em apply -> rollback 0 -> reapply.
+
+A próxima prioridade funcional é **especificar Pedido de Compra** antes de criar entidade, status, numeração ou geração a partir da adjudicação.

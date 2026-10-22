@@ -57,7 +57,11 @@ O projeto segue versionamento semântico.
 - migration `20261021132811_AddRequestForQuotations` e persistência de preço unitário SQLite em inteiro escalado de 6 casas;
 - workspace WPF de RFQ integrado ao módulo Compras;
 - terceiro slice de Comparação de Cotações com projeção Application somente leitura;
-- janela WPF `QuotationComparisonWindow` integrada ao RFQ, exibindo fornecedores, estado/moeda e ofertas finalizadas por linha sem ranking ou adjudicação.
+- janela WPF `QuotationComparisonWindow` integrada ao RFQ, exibindo fornecedores, estado/moeda e ofertas finalizadas por linha sem ranking ou adjudicação;
+- quarto slice de Adjudicação manual com `RequestForQuotationAward`, `RequestForQuotationAwardLine` e estados `Draft/Finalized`;
+- permissão `request-for-quotations.award`, separada das permissões de leitura/gestão do RFQ;
+- migration `20261022105027_AddRequestForQuotationAwards`, repositório EF e constraints de uma decisão por RFQ/seleções;
+- janela WPF `RequestForQuotationAwardWindow` com início explícito, seleção manual por linha e modo somente leitura após finalização, sem criação de Pedido de Compra.
 
 ### Changed
 
@@ -85,10 +89,10 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 238/238;
-- Domain 63/63, Application 118/118, Persistence 51/51, Infrastructure 6/6;
+- suíte automatizada: 253/253;
+- Domain 69/69, Application 124/124, Persistence 54/54, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 15 migrations: apply -> rollback 0 -> reapply passando;
+- 16 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
@@ -103,6 +107,7 @@ O projeto segue versionamento semântico.
 - CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;
 - CI #160 validou o slice vertical de RFQ com 235/235 testes, snapshot EF consistente e 15 migrations em apply -> rollback 0 -> reapply;
 - CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;
+- CI #188 validou Adjudicação manual de RFQ, compilação WPF, 253/253 testes, snapshot EF limpo e 16 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15

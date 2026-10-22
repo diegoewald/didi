@@ -142,6 +142,17 @@ As relações históricas usam FKs reais. Linhas e filhos internos do agregado u
 `SupplierQuotationLine.UnitPrice` é `decimal` no Domain/Application e usa conversor EF para `INTEGER` (`long`) escalado por 1.000.000 no SQLite, conforme ADR-0005. A conversão é `checked`; valores negativos ou com mais de seis casas são rejeitados pelo domínio e nenhum caminho monetário usa `double`.
 
 A migration `20261021132811_AddRequestForQuotations` introduz esse schema.
+## Adjudicação de RFQ
+
+O quarto slice de Compras adiciona duas tabelas:
+
+- `RequestForQuotationAwards` — decisão por RFQ, com status `Draft/Finalized`, ator/timestamp de criação, observação e ator/timestamp de finalização;
+- `RequestForQuotationAwardLines` — seleção por linha do RFQ, apontando para a `SupplierQuotationLine` finalizada escolhida.
+
+`RequestForQuotationAwards.RequestForQuotationId` é único e usa FK `RESTRICT` para `RequestForQuotations`; usuários de criação/finalização também usam `RESTRICT`. As linhas internas usam `CASCADE` somente para o próprio award e referências a `RequestForQuotationLines`/`SupplierQuotationLines` usam `RESTRICT`. O banco também garante unicidade `(RequestForQuotationAwardId, RequestForQuotationLineId)` e de `SupplierQuotationLineId`.
+
+A migration `20261022105027_AddRequestForQuotationAwards` introduz esse schema.
+
 ## SQLite: pontos de atenção
 
 - `Foreign Keys=True` é definido explicitamente na connection string;
@@ -153,9 +164,9 @@ A migration `20261021132811_AddRequestForQuotations` introduz esse schema.
 - `Quantity` de Solicitação de Compra não é valor monetário e usa `decimal(18,4)` no modelo EF;
 - nunca usar `double` para valores financeiros apenas para contornar limitação do provider.
 
-## Baseline de migrations — 2026-10-21
+## Baseline de migrations — 2026-10-22
 
-Quinze migrations validadas no CI:
+Dezesseis migrations validadas no CI:
 
 1. `20261015121025_InitialCreate`;
 2. `20261015130329_AddLocalUsers`;
@@ -171,9 +182,10 @@ Quinze migrations validadas no CI:
 12. `20261020113000_AddCategories`;
 13. `20261021100000_AddCostCenters`;
 14. `20261021123000_AddPurchaseRequests`;
-15. `20261021132811_AddRequestForQuotations`.
+15. `20261021132811_AddRequestForQuotations`;
+16. `20261022105027_AddRequestForQuotationAwards`.
 
-O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #160 validou Solicitação de Compra + RFQ sem mudanças pendentes, **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6) e o ciclo completo das **15 migrations**.
+O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #188 validou Solicitação, RFQ, Comparação e Adjudicação sem mudanças pendentes, **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6) e o ciclo completo das **16 migrations**.
 
 O aviso conhecido do rollback de `AddAuthenticationThrottling` sobre `PRAGMA foreign_keys = 0` permanece não bloqueante e deve ser revisto antes de release sem alterar histórico de migration de forma insegura.
 

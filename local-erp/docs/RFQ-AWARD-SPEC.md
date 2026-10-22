@@ -1,6 +1,6 @@
 # Decisão de Adjudicação de RFQ — especificação do quarto slice de Compras
 
-Status: **especificado; implementação do núcleo pendente**.
+Status: **concluído e validado no CI #188**.
 
 Este documento define o quarto slice vertical de Compras. O objetivo é registrar, de forma manual e auditável, qual resposta finalizada foi escolhida para cada linha de um RFQ encerrado, sem transformar essa decisão em Pedido de Compra e sem introduzir aprovação, ranking ou recomendação automática.
 
@@ -225,3 +225,12 @@ O slice estará concluído quando:
 ## 16. Etapa seguinte
 
 Somente depois da decisão de adjudicação estar operacional deverá ser especificado o **Pedido de Compra**. Essa futura especificação deverá decidir campos obrigatórios do pedido, agrupamento de linhas adjudicadas, numeração, status, alteração/cancelamento, vínculo com fornecedor, preço/moeda, datas, aprovação e relação com recebimento.
+
+
+## 17. Validação observada
+
+O quarto slice foi implementado de Domain a WPF. A migration `20261022105027_AddRequestForQuotationAwards` adiciona `RequestForQuotationAwards` e `RequestForQuotationAwardLines`; referências externas usam `RESTRICT`, linhas internas usam `CASCADE` somente em relação ao próprio agregado, `RequestForQuotationId` é único e a mesma `SupplierQuotationLineId` não pode ser reutilizada.
+
+A janela WPF `RequestForQuotationAwardWindow` é aberta pelo RFQ encerrado, não pré-seleciona proposta, lista somente ofertas finalizadas válidas para cada linha, permite “Sem adjudicação”, salva observação e seleção em `Draft` e fica somente leitura após `Finalized`. O slice não cria Pedido de Compra.
+
+O CI #188 validou **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e **16 migrations** em apply -> rollback 0 -> reapply. A compilação WPF validou XAML, handlers e DI; smoke visual/interativo em Windows real permanece pendência de pré-release.

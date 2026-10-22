@@ -20,17 +20,17 @@
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline atual — 2026-10-21
+## Baseline atual — 2026-10-22
 
-- Domain: 63/63;
-- Application: 118/118;
-- Persistence: 51/51;
+- Domain: 69/69;
+- Application: 124/124;
+- Persistence: 54/54;
 - Infrastructure: 6/6;
-- Total automatizado: 238/238;
+- Total automatizado: 253/253;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 15; apply -> rollback 0 -> reapply passando.
+- Migrations: 16; apply -> rollback 0 -> reapply passando.
 
 ### Cobertura de empresa/filial
 
@@ -115,7 +115,9 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - migration `20261021132811_AddRequestForQuotations` integrada ao snapshot e ao migration smoke;
 - CI #160 validou o slice vertical de RFQ com 235/235 testes e 15 migrations;
 - comparação de cotações: projeção autorizada, fornecedores sem resposta preservados, preços de `Draft` ignorados, moedas não convertidas e matriz por linha;
-- CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo.
+- CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo;
+- adjudicação: domínio `Draft/Finalized`, autorização específica, validação de oferta finalizada da mesma linha/RFQ, persistência com uma decisão por RFQ e WPF manual sem pré-seleção;
+- CI #188 validou `RequestForQuotationAwardWindow`, **253/253 testes** e 16 migrations com snapshot EF limpo.
 A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
@@ -153,6 +155,7 @@ Executar smoke manual em Windows incluindo:
 - Solicitação de Compra: lista/filtro, rascunho, linhas, envio, cancelamento, unidade inativa histórica e permissões insuficientes;
 - Cotação/RFQ: criação a partir de Solicitação `Submitted`, linhas, fornecedores, envio, respostas, preços/datas, finalização, encerramento/cancelamento e permissões insuficientes;
 - Comparação de Cotações: abertura a partir do RFQ, fornecedores sem resposta, resposta `Draft` sem preço comparável, moedas distintas, linhas sem oferta e rolagem horizontal;
+- Adjudicação: RFQ `Closed`, início explícito, “Sem adjudicação”, seleção/substituição/remoção por linha, permissão insuficiente, finalização e modo somente leitura;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;
