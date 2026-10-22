@@ -21,7 +21,7 @@ jobs:
         run: |
           function Replace-Exact([string]$path, [string]$old, [string]$new) {
             $text = Get-Content $path -Raw
-            if (-not $text.Contains($old)) { throw "Expected text not found in $path: $old" }
+            if (-not $text.Contains($old)) { throw "Expected text not found in ${path}: $old" }
             $text = $text.Replace($old, $new)
             Set-Content $path -Value $text -NoNewline -Encoding utf8
           }
