@@ -146,6 +146,9 @@
               <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
                 <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
                         Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
+                <Button Content="Adjudicação" Click="OpenAward_Click" Padding="12,7" MinWidth="105" Margin="0,0,8,0" Cursor="Hand"
+                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
+                        Visibility="{Binding IsClosed, Converter={StaticResource BoolToVisibilityConverter}}" />
                 <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"
                         Visibility="{Binding IsDraft, Converter={StaticResource BoolToVisibilityConverter}}" />
                 <Button Content="Encerrar" Click="CloseRfq_Click" Padding="12,7" MinWidth="88" Margin="0,0,8,0" Cursor="Hand"
