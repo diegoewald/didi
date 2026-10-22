@@ -14,15 +14,19 @@ public partial class RequestForQuotationsWorkspaceView : UserControl
     private Guid? _editingQuotationLineId;
     private bool _isBusy;
     private RequestForQuotationComparisonService? _comparisonService;
+    private RequestForQuotationAwardService? _awardService;
 
     public RequestForQuotationsWorkspaceView()
     {
         InitializeComponent();
     }
 
-    public void Configure(RequestForQuotationComparisonService comparisonService)
+    public void Configure(
+        RequestForQuotationComparisonService comparisonService,
+        RequestForQuotationAwardService awardService)
     {
         _comparisonService = comparisonService ?? throw new ArgumentNullException(nameof(comparisonService));
+        _awardService = awardService ?? throw new ArgumentNullException(nameof(awardService));
     }
 
     private RequestForQuotationsWorkspaceViewModel? ViewModel => DataContext as RequestForQuotationsWorkspaceViewModel;
@@ -120,6 +124,36 @@ public partial class RequestForQuotationsWorkspaceView : UserControl
 
         HideOperationMessages();
         var window = new QuotationComparisonWindow(_comparisonService, current.Id)
+        {
+            Owner = Window.GetWindow(this),
+        };
+        window.ShowDialog();
+    }
+
+    private void OpenAward_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy || ViewModel?.CurrentRequestForQuotation is not RequestForQuotationResult current)
+        {
+            return;
+        }
+
+        if (current.Status != LocalErp.Domain.Purchasing.RequestForQuotationStatus.Closed)
+        {
+            ShowOperationError("A adjudicação só está disponível para RFQs encerrados.");
+            return;
+        }
+
+        if (_comparisonService is null || _awardService is null)
+        {
+            ShowOperationError("A adjudicação não está disponível nesta sessão.");
+            return;
+        }
+
+        HideOperationMessages();
+        var window = new RequestForQuotationAwardWindow(
+            _comparisonService,
+            _awardService,
+            current.Id)
         {
             Owner = Window.GetWindow(this),
         };
