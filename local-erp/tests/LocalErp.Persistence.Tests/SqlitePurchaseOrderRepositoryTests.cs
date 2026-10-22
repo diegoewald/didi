@@ -12,6 +12,8 @@ namespace LocalErp.Persistence.Tests;
 public sealed class SqlitePurchaseOrderRepositoryTests
 {
     private static readonly DateTime Now = new(2026, 10, 22, 15, 30, 0, DateTimeKind.Utc);
+    private static readonly int[] ExpectedSequencesAscending = [1, 2];
+    private static readonly int[] ExpectedSequencesDescending = [2, 1];
 
     [TestMethod]
     public async Task RepositoryReservesSequencePersistsSnapshotsAndUpdatesLifecycle()
@@ -80,10 +82,14 @@ public sealed class SqlitePurchaseOrderRepositoryTests
             Task.Run(() => repository.AddWithNextSequenceAsync(
                 sequenceNumber => CreatePurchaseOrder(sequenceNumber, secondFixture))));
 
-        CollectionAssert.AreEquivalent(new[] { 1, 2 }, results.Select(item => item.SequenceNumber).ToArray());
+        CollectionAssert.AreEquivalent(
+            ExpectedSequencesAscending,
+            results.Select(item => item.SequenceNumber).ToArray());
 
         var persisted = await repository.ListAsync();
-        CollectionAssert.AreEqual(new[] { 2, 1 }, persisted.Select(item => item.SequenceNumber).ToArray());
+        CollectionAssert.AreEqual(
+            ExpectedSequencesDescending,
+            persisted.Select(item => item.SequenceNumber).ToArray());
     }
 
     [TestMethod]
