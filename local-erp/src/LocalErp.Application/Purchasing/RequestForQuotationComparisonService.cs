@@ -17,6 +17,7 @@ public sealed record RequestForQuotationComparisonSupplierResult(
 
 public sealed record RequestForQuotationComparisonOfferResult(
     Guid SupplierId,
+    Guid? SupplierQuotationLineId,
     decimal? UnitPrice,
     DateOnly? PromisedDeliveryDate,
     string? Notes);
@@ -160,14 +161,15 @@ public sealed class RequestForQuotationComparisonService(
     {
         if (!finalizedBySupplier.TryGetValue(supplierId, out var quotation))
         {
-            return new RequestForQuotationComparisonOfferResult(supplierId, null, null, null);
+            return new RequestForQuotationComparisonOfferResult(supplierId, null, null, null, null);
         }
 
         var line = quotation.Lines.SingleOrDefault(item => item.RequestForQuotationLineId == requestForQuotationLineId);
         return line is null
-            ? new RequestForQuotationComparisonOfferResult(supplierId, null, null, null)
+            ? new RequestForQuotationComparisonOfferResult(supplierId, null, null, null, null)
             : new RequestForQuotationComparisonOfferResult(
                 supplierId,
+                line.Id,
                 line.UnitPrice,
                 line.PromisedDeliveryDate,
                 line.Notes);
