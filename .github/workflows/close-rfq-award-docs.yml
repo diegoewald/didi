@@ -1,0 +1,156 @@
+name: Close RFQ award docs
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/close-rfq-award-docs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-local-ci
+          fetch-depth: 0
+
+      - name: Record validated RFQ award milestone
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              Path(path).write_text(text, encoding='utf-8', newline='\n')
+
+          def replace_required(path, old, new, count=1):
+              text = read(path)
+              if old not in text:
+                  raise SystemExit(f'Expected text not found in {path}: {old!r}')
+              write(path, text.replace(old, new, count))
+
+          # README
+          path = 'local-erp/README.md'
+          replace_required(path,
+              '- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação, Cotação/RFQ e Comparação de Cotações operacionais',
+              '- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação, Cotação/RFQ, Comparação e Adjudicação manual operacionais')
+          replace_required(path,
+              '- CI Windows: build Release com 0 warnings / 0 errors e 238/238 testes passando',
+              '- CI Windows: build Release com 0 warnings / 0 errors e 253/253 testes passando')
+          replace_required(path,
+              '- Migrations: 15 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado',
+              '- Migrations: 16 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado')
+          replace_required(path,
+              'O módulo Compras possui três slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ** e **Comparação de Cotações**. O RFQ nasce de uma Solicitação `Submitted`, seleciona linhas de origem, convida fornecedores e registra respostas. A comparação é uma projeção somente leitura que exibe fornecedores convidados, estado das respostas, moedas e ofertas finalizadas por linha, sem converter moedas, ranquear propostas ou escolher vencedor.\n\nA próxima frente funcional é **especificar o quarto slice de Compras antes de nova implementação**, definindo explicitamente como funcionará decisão/adjudicação e sua relação com Pedido de Compra. Aprovação, vencedor persistido e geração de Pedido de Compra permanecem fora do código até essa regra ser documentada. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.',
+              'O módulo Compras possui quatro slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ**, **Comparação de Cotações** e **Adjudicação manual**. A adjudicação ocorre somente após o RFQ `Closed`, permite escolher manualmente no máximo uma oferta finalizada por linha inteira, deixa linhas sem seleção e permanece separada de Pedido de Compra. Não há ranking, recomendação automática, conversão cambial, split de quantidade ou criação automática de PO.\n\nA próxima frente funcional é **especificar Pedido de Compra antes de nova implementação**, definindo campos, estados, agrupamento das linhas adjudicadas, vínculo com fornecedor, preço/moeda, alteração/cancelamento e relação futura com recebimento. Aprovação e recebimento permanecem fora do código até suas regras serem documentadas. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.')
+
+          # Award spec
+          path = 'local-erp/docs/RFQ-AWARD-SPEC.md'
+          replace_required(path,
+              'Status: **especificado; implementação do núcleo pendente**.',
+              'Status: **concluído e validado no CI #188**.')
+          text = read(path)
+          if '## 17. Validação observada' not in text:
+              text += '\n\n## 17. Validação observada\n\nO quarto slice foi implementado de Domain a WPF. A migration `20261022105027_AddRequestForQuotationAwards` adiciona `RequestForQuotationAwards` e `RequestForQuotationAwardLines`; referências externas usam `RESTRICT`, linhas internas usam `CASCADE` somente em relação ao próprio agregado, `RequestForQuotationId` é único e a mesma `SupplierQuotationLineId` não pode ser reutilizada.\n\nA janela WPF `RequestForQuotationAwardWindow` é aberta pelo RFQ encerrado, não pré-seleciona proposta, lista somente ofertas finalizadas válidas para cada linha, permite “Sem adjudicação”, salva observação e seleção em `Draft` e fica somente leitura após `Finalized`. O slice não cria Pedido de Compra.\n\nO CI #188 validou **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e **16 migrations** em apply -> rollback 0 -> reapply. A compilação WPF validou XAML, handlers e DI; smoke visual/interativo em Windows real permanece pendência de pré-release.\n'
+              write(path, text)
+
+          # Roadmap
+          path = 'local-erp/docs/ROADMAP.md'
+          replace_required(path,
+              '- [ ] compras: especificar o quarto slice de decisão/adjudicação e sua relação com Pedido de Compra antes de persistir vencedor ou gerar pedido.',
+              '- [x] compras: quarto slice de Adjudicação manual especificado em `docs/RFQ-AWARD-SPEC.md`;\n- [x] compras: Domain/Application de decisão `Draft/Finalized` implementados com permissão específica `request-for-quotations.award`;\n- [x] compras: persistência EF e migration `20261022105027_AddRequestForQuotationAwards` validadas com unicidade/FKs e migration smoke;\n- [x] compras: janela WPF de adjudicação integrada ao RFQ `Closed`, com seleção manual por linha, linhas opcionais sem adjudicação e modo somente leitura após finalização;\n- [ ] compras: especificar Pedido de Compra antes de gerar documento a partir da adjudicação.')
+          text = read(path)
+          if '## Marco de Adjudicação manual de RFQ — 2026-10-22' not in text:
+              text += '\n\n## Marco de Adjudicação manual de RFQ — 2026-10-22\n\nO quarto slice vertical de Compras registra uma decisão manual após o RFQ `Closed`. `RequestForQuotationAward` usa estados `Draft/Finalized`; cada linha do RFQ pode permanecer sem seleção ou apontar para exatamente uma `SupplierQuotationLine` pertencente a uma resposta `Finalized` da mesma linha e do mesmo RFQ. Não existe split de quantidade, ranking, menor preço automático, conversão cambial ou aprovação.\n\nA permissão de mutação é `request-for-quotations.award`, separada de `request-for-quotations.manage`; leitura continua usando `request-for-quotations.read`. A migration `20261022105027_AddRequestForQuotationAwards` é a 16ª migration e garante uma decisão por RFQ, referências externas `RESTRICT` e unicidade das seleções.\n\n`RequestForQuotationAwardWindow` oferece início explícito da decisão, observação, seleção por linha e finalização. Nenhuma opção é escolhida automaticamente e a decisão finalizada fica somente leitura. O CI #188 validou **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), build WPF sem warnings/erros, snapshot EF limpo e 16 migrations em apply -> rollback 0 -> reapply.\n\nA próxima prioridade funcional é **especificar Pedido de Compra** antes de criar entidade, status, numeração ou geração a partir da adjudicação.\n'
+              write(path, text)
+
+          # Backlog
+          path = 'local-erp/tasks/BACKLOG.md'
+          replace_required(path,
+              '- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo Solicitação de Compra, RFQ e Comparação de Cotações;',
+              '- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo Solicitação de Compra, RFQ, Comparação de Cotações e Adjudicação;')
+          replace_required(path,
+              '- [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;',
+              '- [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;\n- [x] adjudicação RFQ integrada ao snapshot EF e migration `20261022105027_AddRequestForQuotationAwards`, com uma decisão por RFQ e FKs/unicidade validadas;')
+          replace_required(path,
+              '- [ ] especificar o quarto slice de decisão/adjudicação e sua relação com Pedido de Compra antes de persistir vencedor ou gerar pedido;',
+              '- [x] especificar Adjudicação manual em `docs/RFQ-AWARD-SPEC.md`;\n- [x] implementar Domain/Application e permissão `request-for-quotations.award`;\n- [x] integrar persistência EF, 16ª migration e testes de round trip/FKs/unicidade;\n- [x] integrar janela WPF de adjudicação ao RFQ `Closed`;\n- [ ] especificar Pedido de Compra antes de gerar documento a partir da adjudicação;')
+          replace_required(path,
+              '## Baseline atual — 2026-10-21',
+              '## Baseline atual — 2026-10-22')
+          replace_required(path,
+              'Baseline automatizado atual: **238/238 testes** (Domain 63, Application 118, Persistence 51, Infrastructure 6), **15 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #166.',
+              'Baseline automatizado atual: **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), **16 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #188.')
+          replace_required(path,
+              'O terceiro slice de **Comparação de Cotações** está implementado como leitura: fornecedores convidados, status/moeda das respostas e ofertas finalizadas por linha são exibidos sem ranking, conversão cambial ou seleção automática.\n\nA próxima prioridade funcional é **especificar o quarto slice de Compras antes de qualquer nova implementação**, definindo decisão/adjudicação e a relação com Pedido de Compra. Aprovação e geração de Pedido de Compra permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.',
+              'O terceiro slice de **Comparação de Cotações** está implementado como leitura: fornecedores convidados, status/moeda das respostas e ofertas finalizadas por linha são exibidos sem ranking, conversão cambial ou seleção automática.\n\nO quarto slice de **Adjudicação manual** também está implementado de Domain a WPF: somente RFQ `Closed`, uma oferta `Finalized` por linha inteira, linhas opcionais sem adjudicação, permissão própria, persistência auditável e decisão imutável após finalização. Nenhum Pedido de Compra é criado.\n\nA próxima prioridade funcional é **especificar Pedido de Compra antes de qualquer nova implementação**. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.')
+
+          # Testing
+          path = 'local-erp/docs/TESTING.md'
+          replace_required(path, '## Baseline atual — 2026-10-21', '## Baseline atual — 2026-10-22')
+          replace_required(path, '- Domain: 63/63;', '- Domain: 69/69;')
+          replace_required(path, '- Application: 118/118;', '- Application: 124/124;')
+          replace_required(path, '- Persistence: 51/51;', '- Persistence: 54/54;')
+          replace_required(path, '- Total automatizado: 238/238;', '- Total automatizado: 253/253;')
+          replace_required(path, '- Migrations: 15; apply -> rollback 0 -> reapply passando.', '- Migrations: 16; apply -> rollback 0 -> reapply passando.')
+          replace_required(path,
+              '- CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo.\nA compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.',
+              '- CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo;\n- adjudicação: domínio `Draft/Finalized`, autorização específica, validação de oferta finalizada da mesma linha/RFQ, persistência com uma decisão por RFQ e WPF manual sem pré-seleção;\n- CI #188 validou `RequestForQuotationAwardWindow`, **253/253 testes** e 16 migrations com snapshot EF limpo.\nA compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.')
+          replace_required(path,
+              '- Comparação de Cotações: abertura a partir do RFQ, fornecedores sem resposta, resposta `Draft` sem preço comparável, moedas distintas, linhas sem oferta e rolagem horizontal;',
+              '- Comparação de Cotações: abertura a partir do RFQ, fornecedores sem resposta, resposta `Draft` sem preço comparável, moedas distintas, linhas sem oferta e rolagem horizontal;\n- Adjudicação: RFQ `Closed`, início explícito, “Sem adjudicação”, seleção/substituição/remoção por linha, permissão insuficiente, finalização e modo somente leitura;')
+
+          # Database
+          path = 'local-erp/docs/DATABASE.md'
+          text = read(path)
+          if '## Adjudicação de RFQ' not in text:
+              marker = '## SQLite: pontos de atenção'
+              if marker not in text:
+                  raise SystemExit('SQLite marker not found in DATABASE.md')
+              section = '''## Adjudicação de RFQ\n\nO quarto slice de Compras adiciona duas tabelas:\n\n- `RequestForQuotationAwards` — decisão por RFQ, com status `Draft/Finalized`, ator/timestamp de criação, observação e ator/timestamp de finalização;\n- `RequestForQuotationAwardLines` — seleção por linha do RFQ, apontando para a `SupplierQuotationLine` finalizada escolhida.\n\n`RequestForQuotationAwards.RequestForQuotationId` é único e usa FK `RESTRICT` para `RequestForQuotations`; usuários de criação/finalização também usam `RESTRICT`. As linhas internas usam `CASCADE` somente para o próprio award e referências a `RequestForQuotationLines`/`SupplierQuotationLines` usam `RESTRICT`. O banco também garante unicidade `(RequestForQuotationAwardId, RequestForQuotationLineId)` e de `SupplierQuotationLineId`.\n\nA migration `20261022105027_AddRequestForQuotationAwards` introduz esse schema.\n\n'''
+              text = text.replace(marker, section + marker, 1)
+              write(path, text)
+          replace_required(path, '## Baseline de migrations — 2026-10-21', '## Baseline de migrations — 2026-10-22')
+          replace_required(path, 'Quinze migrations validadas no CI:', 'Dezesseis migrations validadas no CI:')
+          replace_required(path,
+              '15. `20261021132811_AddRequestForQuotations`.',
+              '15. `20261021132811_AddRequestForQuotations`;\n16. `20261022105027_AddRequestForQuotationAwards`.')
+          replace_required(path,
+              'O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #160 validou Solicitação de Compra + RFQ sem mudanças pendentes, **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6) e o ciclo completo das **15 migrations**.',
+              'O CI executa `has-pending-model-changes` e apply -> rollback 0 -> reapply. O CI #188 validou Solicitação, RFQ, Comparação e Adjudicação sem mudanças pendentes, **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6) e o ciclo completo das **16 migrations**.')
+
+          # Changelog
+          path = 'local-erp/CHANGELOG.md'
+          replace_required(path,
+              '- janela WPF `QuotationComparisonWindow` integrada ao RFQ, exibindo fornecedores, estado/moeda e ofertas finalizadas por linha sem ranking ou adjudicação.',
+              '- janela WPF `QuotationComparisonWindow` integrada ao RFQ, exibindo fornecedores, estado/moeda e ofertas finalizadas por linha sem ranking ou adjudicação;\n- quarto slice de Adjudicação manual com `RequestForQuotationAward`, `RequestForQuotationAwardLine` e estados `Draft/Finalized`;\n- permissão `request-for-quotations.award`, separada das permissões de leitura/gestão do RFQ;\n- migration `20261022105027_AddRequestForQuotationAwards`, repositório EF e constraints de uma decisão por RFQ/seleções;\n- janela WPF `RequestForQuotationAwardWindow` com início explícito, seleção manual por linha e modo somente leitura após finalização, sem criação de Pedido de Compra.')
+          replace_required(path, '- suíte automatizada: 238/238;', '- suíte automatizada: 253/253;')
+          replace_required(path,
+              '- Domain 63/63, Application 118/118, Persistence 51/51, Infrastructure 6/6;',
+              '- Domain 69/69, Application 124/124, Persistence 54/54, Infrastructure 6/6;')
+          replace_required(path,
+              '- 15 migrations: apply -> rollback 0 -> reapply passando;',
+              '- 16 migrations: apply -> rollback 0 -> reapply passando;')
+          replace_required(path,
+              '- CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;',
+              '- CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;\n- CI #188 validou Adjudicação manual de RFQ, compilação WPF, 253/253 testes, snapshot EF limpo e 16 migrations;')
+          PY
+
+      - name: Commit milestone and remove temporary files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/close-rfq-award-docs.yml
+          git rm local-erp/docs/RFQ-AWARD-IMPLEMENTATION.md
+          git add local-erp/README.md local-erp/docs/RFQ-AWARD-SPEC.md local-erp/docs/ROADMAP.md local-erp/tasks/BACKLOG.md local-erp/docs/TESTING.md local-erp/docs/DATABASE.md local-erp/CHANGELOG.md
+          git commit -m "docs(purchases): close RFQ award slice"
+          git push origin HEAD:erp-local-ci
