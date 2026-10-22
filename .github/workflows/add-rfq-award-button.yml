@@ -1,0 +1,51 @@
+name: Add RFQ award button
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/add-rfq-award-button.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-local-ci
+          fetch-depth: 0
+
+      - name: Add award action to RFQ workspace
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('local-erp/src/LocalErp.Desktop/Views/RequestForQuotationsWorkspaceView.xaml')
+          text = path.read_text(encoding='utf-8')
+          old = '''                <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
+                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
+                <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"'''
+          new = '''                <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
+                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
+                <Button Content="Adjudicação" Click="OpenAward_Click" Padding="12,7" MinWidth="105" Margin="0,0,8,0" Cursor="Hand"
+                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
+                        Visibility="{Binding IsClosed, Converter={StaticResource BoolToVisibilityConverter}}" />
+                <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"'''
+          if old not in text:
+              raise SystemExit('Expected RFQ action block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          PY
+
+      - name: Commit patch and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/add-rfq-award-button.yml
+          git add local-erp/src/LocalErp.Desktop/Views/RequestForQuotationsWorkspaceView.xaml
+          git commit -m "feat(purchases): expose RFQ award action"
+          git push origin HEAD:erp-local-ci
