@@ -68,7 +68,10 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: domínio e Application de RFQ/respostas implementados com permissões `request-for-quotations.read/manage`;
 - [x] compras: persistência EF e migration `20261021132811_AddRequestForQuotations` validadas, incluindo preço unitário como inteiro escalado de 6 casas no SQLite;
 - [x] compras: workspace WPF de RFQ integrado ao shell, com origem em Solicitação `Submitted`, linhas, fornecedores, respostas, envio, finalização, encerramento e cancelamento;
-- [ ] compras: especificar o terceiro slice antes de implementar comparação/seleção, aprovação ou Pedido de Compra.
+- [x] compras: terceiro slice de Comparação de Cotações especificado em `docs/QUOTATION-COMPARISON-SPEC.md`;
+- [x] compras: projeção Application de comparação somente leitura implementada com `request-for-quotations.read`, respostas `Draft` excluídas das ofertas e ordenação determinística;
+- [x] compras: janela WPF de comparação integrada ao RFQ, com fornecedores, estado/moeda e matriz por linha sem ranking ou seleção automática;
+- [ ] compras: especificar o quarto slice de decisão/adjudicação e sua relação com Pedido de Compra antes de persistir vencedor ou gerar pedido.
 
 ## Fases posteriores
 
@@ -190,3 +193,13 @@ A persistência usa a migration `20261021132811_AddRequestForQuotations`. O pre�
 O CI #160 validou **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e **15 migrations** em apply -> rollback 0 -> reapply.
 
 O slice não define vencedor, menor preço obrigatório, quantidade mínima de fornecedores, aprovação, Pedido de Compra, impostos, frete, câmbio, estoque, financeiro ou fiscal. A próxima prioridade funcional é especificar o **terceiro slice de Compras** antes de introduzir qualquer uma dessas regras.
+
+## Marco de Comparação de Cotações — 2026-10-21
+
+O terceiro slice vertical de Compras foi implementado como projeção somente leitura sobre RFQ, Solicitação de origem, fornecedores e respostas existentes. `RequestForQuotationComparisonService` exige `request-for-quotations.read`, preserva fornecedores sem resposta, usa somente respostas `Finalized` como ofertas comparáveis e mantém moedas distintas sem conversão ou ranking.
+
+A UI WPF abre `QuotationComparisonWindow` a partir do RFQ selecionado e apresenta cabeçalho, fornecedores convidados e matriz por linha com preço/data prometida, sem qualquer comando de adjudicação, aceite ou geração de Pedido de Compra. Nenhuma entidade, tabela, coluna ou migration foi adicionada por este slice.
+
+O CI #166 validou **238/238 testes** (Domain 63, Application 118, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e 15 migrations em apply -> rollback 0 -> reapply.
+
+A próxima prioridade funcional é especificar o quarto slice de **decisão/adjudicação** e sua relação com **Pedido de Compra**, incluindo granularidade da escolha, possibilidade de múltiplos fornecedores, justificativa/histórico e transição para pedido, antes de persistir qualquer decisão.

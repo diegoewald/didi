@@ -23,10 +23,10 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 ## Baseline atual — 2026-10-21
 
 - Domain: 63/63;
-- Application: 115/115;
+- Application: 118/118;
 - Persistence: 51/51;
 - Infrastructure: 6/6;
-- Total automatizado: 235/235;
+- Total automatizado: 238/238;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
@@ -113,7 +113,9 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Application: permissões `request-for-quotations.read/manage`, validação de Solicitação `Submitted`, fornecedor ativo e referências pertencentes ao agregado;
 - Persistence: round trip do agregado, FKs/unicidade e armazenamento exato de `UnitPrice` em inteiro escalado;
 - migration `20261021132811_AddRequestForQuotations` integrada ao snapshot e ao migration smoke;
-- CI #160 validou 235/235 testes e 15 migrations, além da compilação completa da workspace WPF de RFQ.
+- CI #160 validou o slice vertical de RFQ com 235/235 testes e 15 migrations;
+- comparação de cotações: projeção autorizada, fornecedores sem resposta preservados, preços de `Draft` ignorados, moedas não convertidas e matriz por linha;
+- CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo.
 A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
 
 ### Cobertura de robustez do shell
@@ -150,6 +152,7 @@ Executar smoke manual em Windows incluindo:
 - catálogo de Centros de Custo: loading/erro/vazio, criação, rename com Enter/Escape, ativação/desativação, confirmação e `cost-centers.read/manage` insuficientes;
 - Solicitação de Compra: lista/filtro, rascunho, linhas, envio, cancelamento, unidade inativa histórica e permissões insuficientes;
 - Cotação/RFQ: criação a partir de Solicitação `Submitted`, linhas, fornecedores, envio, respostas, preços/datas, finalização, encerramento/cancelamento e permissões insuficientes;
+- Comparação de Cotações: abertura a partir do RFQ, fornecedores sem resposta, resposta `Draft` sem preço comparável, moedas distintas, linhas sem oferta e rolagem horizontal;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

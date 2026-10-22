@@ -55,7 +55,9 @@ O projeto segue versionamento semântico.
 - segundo slice de Cotação/RFQ com linhas de origem, fornecedores convidados, respostas, envio, finalização, encerramento e cancelamento;
 - permissões `request-for-quotations.read` e `request-for-quotations.manage`;
 - migration `20261021132811_AddRequestForQuotations` e persistência de preço unitário SQLite em inteiro escalado de 6 casas;
-- workspace WPF de RFQ integrado ao módulo Compras.
+- workspace WPF de RFQ integrado ao módulo Compras;
+- terceiro slice de Comparação de Cotações com projeção Application somente leitura;
+- janela WPF `QuotationComparisonWindow` integrada ao RFQ, exibindo fornecedores, estado/moeda e ofertas finalizadas por linha sem ranking ou adjudicação.
 
 ### Changed
 
@@ -83,8 +85,8 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 235/235;
-- Domain 63/63, Application 115/115, Persistence 51/51, Infrastructure 6/6;
+- suíte automatizada: 238/238;
+- Domain 63/63, Application 118/118, Persistence 51/51, Infrastructure 6/6;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 15 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
@@ -100,6 +102,7 @@ O projeto segue versionamento semântico.
 - CI #128 validou o núcleo de Centros de Custo e a décima terceira migration;
 - CI #131 validou o catálogo WPF de Centros de Custo e preservou 198/198 testes, snapshot EF e as 13 migrations;
 - CI #160 validou o slice vertical de RFQ com 235/235 testes, snapshot EF consistente e 15 migrations em apply -> rollback 0 -> reapply;
+- CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;
 - smoke visual/interativo em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15

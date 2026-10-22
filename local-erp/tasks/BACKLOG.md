@@ -2,7 +2,7 @@
 
 ## P0 — Pré-release / validação de ambiente
 
-- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo o fluxo de Solicitação de Compra;
+- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo Solicitação de Compra, RFQ e Comparação de Cotações;
 - [ ] executar benchmark do password hashing em hardware Windows representativo do ambiente alvo.
 
 ## P1 — Segurança e administração
@@ -121,7 +121,10 @@
 - [x] implementar Domain/Application de RFQ e respostas com autorização deny-by-default;
 - [x] integrar persistência EF, preço unitário escalado, migration e testes de round trip/FKs;
 - [x] integrar workspace WPF de RFQ ao módulo Compras;
-- [ ] especificar o terceiro slice de Compras antes de implementar comparação/seleção, aprovação ou Pedido de Compra;
+- [x] especificar o terceiro slice de Comparação de Cotações em `docs/QUOTATION-COMPARISON-SPEC.md`;
+- [x] implementar read model autorizado e determinístico de comparação sem nova persistência;
+- [x] integrar janela WPF somente leitura de comparação ao RFQ;
+- [ ] especificar o quarto slice de decisão/adjudicação e sua relação com Pedido de Compra antes de persistir vencedor ou gerar pedido;
 - [ ] manter fornecedor, preço, recebimento, estoque, financeiro e fiscal fora de Solicitação de Compra até requisitos explícitos.
 
 ## P2 — Engenharia
@@ -140,8 +143,10 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **235/235 testes** (Domain 63, Application 115, Persistence 51, Infrastructure 6), **15 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #160.
+Baseline automatizado atual: **238/238 testes** (Domain 63, Application 118, Persistence 51, Infrastructure 6), **15 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #166.
 
 O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.
 
-A próxima prioridade funcional é **especificar o terceiro slice de Compras antes de qualquer nova implementação**. Comparação/seleção, aprovação e Pedido de Compra permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+O terceiro slice de **Comparação de Cotações** está implementado como leitura: fornecedores convidados, status/moeda das respostas e ofertas finalizadas por linha são exibidos sem ranking, conversão cambial ou seleção automática.
+
+A próxima prioridade funcional é **especificar o quarto slice de Compras antes de qualquer nova implementação**, definindo decisão/adjudicação e a relação com Pedido de Compra. Aprovação e geração de Pedido de Compra permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.

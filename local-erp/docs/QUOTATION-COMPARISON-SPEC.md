@@ -1,6 +1,6 @@
 # Comparação de cotações — especificação do terceiro slice de Compras
 
-Status: **Application validada no CI #165; UI WPF implementada e aguardando validação completa**.
+Status: **concluído e validado no CI #166**.
 
 Este documento define o terceiro slice vertical de Compras. Ele usa os RFQs e respostas já registrados para oferecer uma comparação operacional somente leitura, sem transformar comparação em adjudicação, aprovação ou geração de Pedido de Compra.
 
@@ -169,3 +169,9 @@ O slice estará concluído quando:
 ## 14. Próxima etapa após este slice
 
 Somente após a comparação estar operacional o projeto deve especificar uma etapa de **decisão/adjudicação** ou **Pedido de Compra**. Essa especificação futura deverá decidir explicitamente se a escolha é por RFQ inteiro ou por linha, se múltiplos fornecedores podem ser escolhidos, quais justificativas/históricos são obrigatórios e como a decisão se relaciona ao Pedido de Compra.
+
+## 15. Validação observada
+
+O CI #166 validou o slice completo de comparação com **238/238 testes** (Domain 63, Application 118, Persistence 51, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e as **15 migrations** em apply -> rollback 0 -> reapply. A compilação inclui a janela WPF `QuotationComparisonWindow` e sua integração ao workspace de RFQ.
+
+A validação automatizada não substitui o smoke visual/interativo em Windows real previsto para pré-release.
