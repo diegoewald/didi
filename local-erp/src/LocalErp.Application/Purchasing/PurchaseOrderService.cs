@@ -254,7 +254,7 @@ public sealed class PurchaseOrderService(
             ?? throw new KeyNotFoundException($"Measurement unit '{measurementUnitId}' was not found.");
     }
 
-    private static IReadOnlyList<ResolvedAwardLine> ResolveAwardedLinesForSupplier(
+    private static List<ResolvedAwardLine> ResolveAwardedLinesForSupplier(
         RequestForQuotationAward award,
         RequestForQuotation requestForQuotation,
         Guid supplierId)
