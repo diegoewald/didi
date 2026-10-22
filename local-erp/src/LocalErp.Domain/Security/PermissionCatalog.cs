@@ -18,6 +18,7 @@ public static class PermissionCatalog
     public const string PurchaseRequestsManage = "purchase-requests.manage";
     public const string RequestForQuotationsRead = "request-for-quotations.read";
     public const string RequestForQuotationsManage = "request-for-quotations.manage";
+    public const string RequestForQuotationsAward = "request-for-quotations.award";
     public const string SuppliersRead = "suppliers.read";
     public const string SuppliersManage = "suppliers.manage";
     public const string UnitsRead = "units.read";
@@ -43,6 +44,7 @@ public static class PermissionCatalog
         PurchaseRequestsManage,
         RequestForQuotationsRead,
         RequestForQuotationsManage,
+        RequestForQuotationsAward,
         SuppliersRead,
         SuppliersManage,
         UnitsRead,
