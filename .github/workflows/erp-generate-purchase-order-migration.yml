@@ -9,7 +9,7 @@ on:
       - '.github/workflows/erp-generate-purchase-order-migration.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: erp-purchase-order-migration-${{ github.ref }}
@@ -42,8 +42,16 @@ jobs:
       - name: Build Release before migration
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
-      - name: Generate AddPurchaseOrders migration
-        run: dotnet ef migrations add AddPurchaseOrders --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+      - name: Generate AddPurchaseOrders migration when missing
+        shell: pwsh
+        run: |
+          $migration = Get-ChildItem 'src/LocalErp.Persistence/Migrations' -Filter '*_AddPurchaseOrders.cs' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $migration) {
+            dotnet ef migrations add AddPurchaseOrders --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } else {
+            Write-Host "Migration already committed: $($migration.Name)"
+          }
 
       - name: Verify generated snapshot
         run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
@@ -64,6 +72,22 @@ jobs:
 
       - name: Reapply migrations
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
+
+      - name: Commit generated migration
+        if: success()
+        shell: pwsh
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add local-erp/src/LocalErp.Persistence/Migrations
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "No generated migration changes to commit."
+            exit 0
+          }
+          git commit -m "feat(purchases): add purchase order migration"
+          git push origin HEAD:erp-purchase-order-persistence
 
       - name: Upload generated migrations
         if: always()
