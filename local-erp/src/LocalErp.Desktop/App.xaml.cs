@@ -75,6 +75,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<MeasurementUnitService>();
                 services.AddTransient<CategoryService>();
                 services.AddTransient<CostCenterService>();
+                services.AddTransient<PurchaseOrderService>();
                 services.AddTransient<PurchaseRequestService>();
                 services.AddTransient<RequestForQuotationService>();
                 services.AddTransient<RequestForQuotationLookupService>();

@@ -75,7 +75,10 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: Domain/Application de decisão `Draft/Finalized` implementados com permissão específica `request-for-quotations.award`;
 - [x] compras: persistência EF e migration `20261022105027_AddRequestForQuotationAwards` validadas com unicidade/FKs e migration smoke;
 - [x] compras: janela WPF de adjudicação integrada ao RFQ `Closed`, com seleção manual por linha, linhas opcionais sem adjudicação e modo somente leitura após finalização;
-- [ ] compras: especificar Pedido de Compra antes de gerar documento a partir da adjudicação.
+- [x] compras: quinto slice de Pedido de Compra especificado em `docs/PURCHASE-ORDER-SPEC.md`;
+- [x] compras: Domain/Application de Pedido de Compra implementados com snapshots, estados `Draft/Issued/Cancelled` e permissões `purchase-orders.read/manage`;
+- [x] compras: persistência EF e migration `20261022154117_AddPurchaseOrders` validadas, com FKs/unicidades, preço escalado e sequência protegida por transação imediata SQLite;
+- [ ] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.
 
 ## Fases posteriores
 
@@ -217,4 +220,10 @@ A permissão de mutação é `request-for-quotations.award`, separada de `reques
 
 `RequestForQuotationAwardWindow` oferece início explícito da decisão, observação, seleção por linha e finalização. Nenhuma opção é escolhida automaticamente e a decisão finalizada fica somente leitura. O CI #188 validou **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), build WPF sem warnings/erros, snapshot EF limpo e 16 migrations em apply -> rollback 0 -> reapply.
 
-A próxima prioridade funcional é **especificar Pedido de Compra** antes de criar entidade, status, numeração ou geração a partir da adjudicação.
+## Marco do núcleo e persistência de Pedido de Compra — 2026-10-22
+
+O quinto slice vertical de Compras transforma adjudicação `Finalized` em `PurchaseOrder` de um único fornecedor. O agregado preserva snapshots de fornecedor, descrição, quantidade, unidade, preço e data prometida; controla `Draft/Issued/Cancelled`; permite somente observação em rascunho; e mantém emissão/cancelamento rastreáveis sem introduzir aprovação, recebimento, estoque, financeiro ou fiscal.
+
+`SqlitePurchaseOrderRepository` reserva `SequenceNumber` crescente dentro de transação SQLite imediata, evitando `MAX + 1` desprotegido. A persistência garante unicidade de sequência, de `(RequestForQuotationAwardId, SupplierId)` e de `RequestForQuotationAwardLineId`; `UnitPrice` segue o ADR-0005 como inteiro escalado de seis casas. A migration `20261022154117_AddPurchaseOrders` é a 17ª migration.
+
+A validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria.

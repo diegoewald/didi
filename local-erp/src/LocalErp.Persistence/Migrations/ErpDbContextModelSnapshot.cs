@@ -130,6 +130,132 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("Products", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CancelledByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("IssuedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("IssuedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequestForQuotationAwardId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SequenceNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SupplierNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CancelledByUserId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("IssuedByUserId");
+
+                    b.HasIndex("SequenceNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("RequestForQuotationAwardId", "SupplierId")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseOrders", (string)null);
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseOrderLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DescriptionSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("LineNumber")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("MeasurementUnitId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MeasurementUnitNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("PromisedDeliveryDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("PurchaseOrderId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequestForQuotationAwardLineId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("UnitPrice")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MeasurementUnitId");
+
+                    b.HasIndex("RequestForQuotationAwardLineId")
+                        .IsUnique();
+
+                    b.HasIndex("PurchaseOrderId", "LineNumber")
+                        .IsUnique();
+
+                    b.ToTable("PurchaseOrderLines", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -660,6 +786,58 @@ namespace LocalErp.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseOrder", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CancelledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("IssuedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LocalErp.Domain.Purchasing.RequestForQuotationAward", null)
+                        .WithMany()
+                        .HasForeignKey("RequestForQuotationAwardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Suppliers.Supplier", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseOrderLine", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Units.MeasurementUnit", null)
+                        .WithMany()
+                        .HasForeignKey("MeasurementUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Purchasing.PurchaseOrder", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("PurchaseOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Purchasing.RequestForQuotationAwardLine", null)
+                        .WithMany()
+                        .HasForeignKey("RequestForQuotationAwardLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
                 {
                     b.HasOne("LocalErp.Domain.Users.User", null)
@@ -876,6 +1054,11 @@ namespace LocalErp.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseOrder", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("LocalErp.Domain.Purchasing.PurchaseRequest", b =>
