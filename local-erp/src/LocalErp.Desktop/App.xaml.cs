@@ -79,6 +79,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<RequestForQuotationService>();
                 services.AddTransient<RequestForQuotationLookupService>();
                 services.AddTransient<RequestForQuotationComparisonService>();
+                services.AddTransient<RequestForQuotationAwardService>();
                 services.AddTransient<UserService>();
                 services.AddTransient<AccountService>();
                 services.AddTransient<AuthenticationService>();
@@ -246,35 +247,33 @@ public partial class App : System.Windows.Application
     {
         ArgumentNullException.ThrowIfNull(e);
 
-        Log.Error(e.Exception, "Unobserved task exception");
+        Log.Error(e.Exception, "Unobserved task exception reached TaskScheduler");
         e.SetObserved();
     }
 
     private static void ShowFatalError(string message, string title)
     {
-        try
-        {
-            MessageBox.Show(
-                message,
-                title,
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
-        }
-        catch (Exception exception)
-        {
-            Log.Error(exception, "Failed to display fatal error dialog");
-        }
+        MessageBox.Show(
+            message,
+            title,
+            MessageBoxButton.OK,
+            MessageBoxImage.Error,
+            MessageBoxResult.OK,
+            MessageBoxOptions.None);
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        UnregisterGlobalExceptionHandlers();
-
         try
         {
-            Log.Information("Local ERP shutting down");
-            _host.StopAsync(TimeSpan.FromSeconds(5)).GetAwaiter().GetResult();
+            UnregisterGlobalExceptionHandlers();
+            _host.StopAsync().GetAwaiter().GetResult();
             _host.Dispose();
+            Log.Information("Local ERP stopped");
+        }
+        catch (Exception exception)
+        {
+            Log.Error(exception, "Error while stopping Local ERP host");
         }
         finally
         {
