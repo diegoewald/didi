@@ -1,0 +1,46 @@
+name: Scaffold RFQ award migration
+
+on:
+  push:
+    branches:
+      - erp-local-ci
+    paths:
+      - '.github/workflows/scaffold-rfq-award-migration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  scaffold:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-local-ci
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore EF tool
+        working-directory: local-erp
+        run: dotnet tool restore
+
+      - name: Restore dependencies
+        working-directory: local-erp
+        run: dotnet restore LocalErp.sln
+
+      - name: Scaffold migration
+        working-directory: local-erp
+        run: dotnet ef migrations add AddRequestForQuotationAwards --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+
+      - name: Commit generated migration and remove scaffolder
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/scaffold-rfq-award-migration.yml
+          git add local-erp/src/LocalErp.Persistence/Migrations
+          git commit -m "feat(purchases): add RFQ award migration"
+          git push origin HEAD:erp-local-ci
