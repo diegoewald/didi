@@ -310,8 +310,8 @@ public partial class RequestForQuotationAwardWindow : Window
 
     private static RequestForQuotationAwardLineViewModel BuildLine(
         RequestForQuotationComparisonLineResult line,
-        IReadOnlyDictionary<Guid, RequestForQuotationComparisonSupplierResult> supplierById,
-        IReadOnlyDictionary<Guid, Guid> selections,
+        Dictionary<Guid, RequestForQuotationComparisonSupplierResult> supplierById,
+        Dictionary<Guid, Guid> selections,
         bool canEdit)
     {
         var options = new List<RequestForQuotationAwardOptionViewModel>
