@@ -98,6 +98,8 @@
 - [x] `PurchaseRequests`/`PurchaseRequestLines` integrados ao snapshot EF, FKs e migration smoke;
 - [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;
 - [x] adjudicação RFQ integrada ao snapshot EF e migration `20261022105027_AddRequestForQuotationAwards`, com uma decisão por RFQ e FKs/unicidade validadas;
+- [ ] Pedido de Compra: integrar `PurchaseOrders`/`PurchaseOrderLines`, FKs/unicidades e reserva transacional de `SequenceNumber` ao EF Core;
+- [ ] Pedido de Compra: criar e validar a 17ª migration com round trip, concorrência e apply -> rollback 0 -> reapply;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P1 — Primeiro módulo operacional
@@ -129,8 +131,12 @@
 - [x] implementar Domain/Application e permissão `request-for-quotations.award`;
 - [x] integrar persistência EF, 16ª migration e testes de round trip/FKs/unicidade;
 - [x] integrar janela WPF de adjudicação ao RFQ `Closed`;
-- [ ] especificar Pedido de Compra antes de gerar documento a partir da adjudicação;
-- [ ] manter fornecedor, preço, recebimento, estoque, financeiro e fiscal fora de Solicitação de Compra até requisitos explícitos.
+- [x] especificar Pedido de Compra em `docs/PURCHASE-ORDER-SPEC.md` antes de gerar documento a partir da adjudicação;
+- [x] implementar Domain/Application do Pedido de Compra com snapshots, `Draft/Issued/Cancelled`, `purchase-orders.read/manage` e termos reconstruídos da adjudicação;
+- [x] cobrir criação, imutabilidade, emissão, cancelamento, autorização e agrupamento por fornecedor com testes;
+- [ ] implementar persistência EF e sequência transacional do Pedido de Compra;
+- [ ] integrar workspace WPF do Pedido de Compra depois da persistência validada;
+- [ ] manter recebimento, estoque, financeiro e fiscal fora do Pedido de Compra até requisitos explícitos.
 
 ## P2 — Engenharia
 
@@ -148,12 +154,14 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **253/253 testes** (Domain 69, Application 124, Persistence 54, Infrastructure 6), **16 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #188.
+Baseline automatizado atual: **264/264 testes** (Domain 75, Application 129, Persistence 54, Infrastructure 6), **16 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validado pelo CI #191.
 
 O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.
 
 O terceiro slice de **Comparação de Cotações** está implementado como leitura: fornecedores convidados, status/moeda das respostas e ofertas finalizadas por linha são exibidos sem ranking, conversão cambial ou seleção automática.
 
-O quarto slice de **Adjudicação manual** também está implementado de Domain a WPF: somente RFQ `Closed`, uma oferta `Finalized` por linha inteira, linhas opcionais sem adjudicação, permissão própria, persistência auditável e decisão imutável após finalização. Nenhum Pedido de Compra é criado.
+O quarto slice de **Adjudicação manual** também está implementado de Domain a WPF: somente RFQ `Closed`, uma oferta `Finalized` por linha inteira, linhas opcionais sem adjudicação, permissão própria, persistência auditável e decisão imutável após finalização.
 
-A próxima prioridade funcional é **especificar Pedido de Compra antes de qualquer nova implementação**. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+O quinto slice de **Pedido de Compra** está especificado e possui núcleo Domain/Application validado: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias e numeração delegada a um contrato de persistência transacional. Persistência EF/migration e WPF ainda não estão implementados.
+
+A próxima prioridade funcional é **persistir Pedido de Compra com sequência transacional segura**, validar a 17ª migration e só então integrar a UI WPF. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
