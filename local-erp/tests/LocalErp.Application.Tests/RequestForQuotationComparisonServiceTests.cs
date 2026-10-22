@@ -42,9 +42,11 @@ public sealed class RequestForQuotationComparisonServiceTests
         Assert.AreEqual("Peça histórica", line.MeasurementUnitName);
         Assert.AreEqual("Item técnico", line.Description);
         var finalizedOffer = line.Offers.Single(item => item.SupplierId == fixture.FirstSupplier.Id);
+        Assert.IsNotNull(finalizedOffer.SupplierQuotationLineId);
         Assert.AreEqual(25.123456m, finalizedOffer.UnitPrice);
         Assert.AreEqual(new DateOnly(2026, 11, 10), finalizedOffer.PromisedDeliveryDate);
         var draftOffer = line.Offers.Single(item => item.SupplierId == fixture.SecondSupplier.Id);
+        Assert.IsNull(draftOffer.SupplierQuotationLineId);
         Assert.IsNull(draftOffer.UnitPrice);
     }
 
@@ -58,8 +60,12 @@ public sealed class RequestForQuotationComparisonServiceTests
         Assert.AreEqual("BRL", result.Suppliers.Single(item => item.SupplierId == fixture.FirstSupplier.Id).CurrencyCode);
         Assert.AreEqual("USD", result.Suppliers.Single(item => item.SupplierId == fixture.SecondSupplier.Id).CurrencyCode);
         var line = result.Lines.Single();
-        Assert.AreEqual(25.123456m, line.Offers.Single(item => item.SupplierId == fixture.FirstSupplier.Id).UnitPrice);
-        Assert.AreEqual(0m, line.Offers.Single(item => item.SupplierId == fixture.SecondSupplier.Id).UnitPrice);
+        var firstOffer = line.Offers.Single(item => item.SupplierId == fixture.FirstSupplier.Id);
+        var secondOffer = line.Offers.Single(item => item.SupplierId == fixture.SecondSupplier.Id);
+        Assert.IsNotNull(firstOffer.SupplierQuotationLineId);
+        Assert.IsNotNull(secondOffer.SupplierQuotationLineId);
+        Assert.AreEqual(25.123456m, firstOffer.UnitPrice);
+        Assert.AreEqual(0m, secondOffer.UnitPrice);
     }
 
     [TestMethod]
