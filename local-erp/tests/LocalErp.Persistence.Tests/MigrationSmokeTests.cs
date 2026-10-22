@@ -24,6 +24,7 @@ public sealed class MigrationSmokeTests
     private const string AddCostCentersMigration = "20261021100000_AddCostCenters";
     private const string AddPurchaseRequestsMigration = "20261021123000_AddPurchaseRequests";
     private const string AddRequestForQuotationsMigration = "20261021132811_AddRequestForQuotations";
+    private const string AddRequestForQuotationAwardsMigration = "20261022105027_AddRequestForQuotationAwards";
 
     [TestMethod]
     public void MigrationsCanApplyRollbackAndReapply()
@@ -97,6 +98,7 @@ public sealed class MigrationSmokeTests
         CollectionAssert.Contains(appliedMigrations, AddCostCentersMigration);
         CollectionAssert.Contains(appliedMigrations, AddPurchaseRequestsMigration);
         CollectionAssert.Contains(appliedMigrations, AddRequestForQuotationsMigration);
+        CollectionAssert.Contains(appliedMigrations, AddRequestForQuotationAwardsMigration);
     }
 
     private static void AssertCoreTables(ErpDbContext context, bool expected)
@@ -121,6 +123,8 @@ public sealed class MigrationSmokeTests
         AssertTableExists(context, "RequestForQuotationSuppliers", expected);
         AssertTableExists(context, "SupplierQuotations", expected);
         AssertTableExists(context, "SupplierQuotationLines", expected);
+        AssertTableExists(context, "RequestForQuotationAwards", expected);
+        AssertTableExists(context, "RequestForQuotationAwardLines", expected);
     }
 
     private static void AssertRbacTablesExist(ErpDbContext context, bool expected)
