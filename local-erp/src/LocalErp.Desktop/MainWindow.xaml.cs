@@ -34,6 +34,7 @@ public partial class MainWindow : Window
         CategoryService categoryService,
         CostCenterService costCenterService,
         RequestForQuotationComparisonService requestForQuotationComparisonService,
+        RequestForQuotationAwardService requestForQuotationAwardService,
         UserService userService,
         RoleService roleService)
     {
@@ -49,6 +50,7 @@ public partial class MainWindow : Window
         ArgumentNullException.ThrowIfNull(categoryService);
         ArgumentNullException.ThrowIfNull(costCenterService);
         ArgumentNullException.ThrowIfNull(requestForQuotationComparisonService);
+        ArgumentNullException.ThrowIfNull(requestForQuotationAwardService);
         ArgumentNullException.ThrowIfNull(userService);
         ArgumentNullException.ThrowIfNull(roleService);
 
@@ -60,7 +62,9 @@ public partial class MainWindow : Window
         MeasurementUnitsCatalogPanel.Configure(measurementUnitService);
         CategoriesCatalogPanel.Configure(categoryService);
         CostCentersCatalogPanel.Configure(costCenterService);
-        RequestForQuotationsWorkspacePanel.Configure(requestForQuotationComparisonService);
+        RequestForQuotationsWorkspacePanel.Configure(
+            requestForQuotationComparisonService,
+            requestForQuotationAwardService);
         AdministrationUsersPanel.Configure(userService, roleService);
         DataContext = viewModel;
     }
