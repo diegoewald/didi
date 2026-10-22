@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - erp-local-ci
+      - erp-purchase-order-persistence
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
@@ -43,11 +44,15 @@ jobs:
       - name: Build Release
         run: dotnet build LocalErp.sln --configuration Release --no-restore
 
+      - name: Generate purchase order migration on feature branch
+        if: github.ref == 'refs/heads/erp-purchase-order-persistence'
+        run: dotnet ef migrations add AddPurchaseOrders --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext --output-dir Migrations
+
       - name: Build password hash benchmark tool
         run: dotnet build tools/LocalErp.PasswordHashBenchmark/LocalErp.PasswordHashBenchmark.csproj --configuration Release
 
       - name: Run tests
-        run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+        run: dotnet test LocalErp.sln --configuration Release --logger "trx;LogFileName=tests.trx"
 
       - name: Verify migration snapshot
         run: dotnet ef migrations has-pending-model-changes --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
