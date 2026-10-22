@@ -277,6 +277,76 @@ namespace LocalErp.Persistence.Migrations
                     b.ToTable("RequestForQuotations", (string)null);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationAward", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CreatedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FinalizedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("FinalizedByUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequestForQuotationId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("FinalizedByUserId");
+
+                    b.HasIndex("RequestForQuotationId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("RequestForQuotationAwards", (string)null);
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationAwardLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequestForQuotationAwardId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("RequestForQuotationLineId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SupplierQuotationLineId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestForQuotationLineId");
+
+                    b.HasIndex("SupplierQuotationLineId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestForQuotationAwardId", "RequestForQuotationLineId")
+                        .IsUnique();
+
+                    b.ToTable("RequestForQuotationAwardLines", (string)null);
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationLine", b =>
                 {
                     b.Property<Guid>("Id")
@@ -654,6 +724,47 @@ namespace LocalErp.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationAward", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("FinalizedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("LocalErp.Domain.Purchasing.RequestForQuotation", null)
+                        .WithMany()
+                        .HasForeignKey("RequestForQuotationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationAwardLine", b =>
+                {
+                    b.HasOne("LocalErp.Domain.Purchasing.RequestForQuotationAward", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("RequestForQuotationAwardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Purchasing.RequestForQuotationLine", null)
+                        .WithMany()
+                        .HasForeignKey("RequestForQuotationLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("LocalErp.Domain.Purchasing.SupplierQuotationLine", null)
+                        .WithMany()
+                        .HasForeignKey("SupplierQuotationLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationLine", b =>
                 {
                     b.HasOne("LocalErp.Domain.Purchasing.PurchaseRequestLine", null)
@@ -779,6 +890,11 @@ namespace LocalErp.Persistence.Migrations
                     b.Navigation("SupplierQuotations");
 
                     b.Navigation("Suppliers");
+                });
+
+            modelBuilder.Entity("LocalErp.Domain.Purchasing.RequestForQuotationAward", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("LocalErp.Domain.Purchasing.SupplierQuotation", b =>
