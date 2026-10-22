@@ -24,20 +24,29 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+
           path = Path('local-erp/src/LocalErp.Desktop/Views/RequestForQuotationsWorkspaceView.xaml')
-          text = path.read_text(encoding='utf-8')
-          old = '''                <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
-                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
-                <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"'''
-          new = '''                <Button Content="Comparar" Click="OpenComparison_Click" Padding="12,7" MinWidth="90" Margin="0,0,8,0" Cursor="Hand"
-                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" />
-                <Button Content="Adjudicação" Click="OpenAward_Click" Padding="12,7" MinWidth="105" Margin="0,0,8,0" Cursor="Hand"
-                        Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"
-                        Visibility="{Binding IsClosed, Converter={StaticResource BoolToVisibilityConverter}}" />
-                <Button Content="Enviar RFQ" Click="Send_Click" Padding="12,7" MinWidth="95" Margin="0,0,8,0" Cursor="Hand"'''
-          if old not in text:
-              raise SystemExit('Expected RFQ action block not found')
-          path.write_text(text.replace(old, new, 1), encoding='utf-8', newline='\n')
+          lines = path.read_text(encoding='utf-8').splitlines()
+          if any('Click="OpenAward_Click"' in line for line in lines):
+              raise SystemExit('Award action already exists')
+
+          start = next((i for i, line in enumerate(lines) if 'Click="OpenComparison_Click"' in line), None)
+          if start is None:
+              raise SystemExit('Comparison action not found')
+
+          close = next((i for i in range(start, min(start + 5, len(lines))) if '/>' in lines[i]), None)
+          if close is None:
+              raise SystemExit('Comparison action closing line not found')
+
+          indent = lines[start][:len(lines[start]) - len(lines[start].lstrip())]
+          continuation = indent + '        '
+          award = [
+              indent + '<Button Content="Adjudicação" Click="OpenAward_Click" Padding="12,7" MinWidth="105" Margin="0,0,8,0" Cursor="Hand"',
+              continuation + 'Background="{StaticResource Brush.Surface}" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1"',
+              continuation + 'Visibility="{Binding IsClosed, Converter={StaticResource BoolToVisibilityConverter}}" />',
+          ]
+          lines[close + 1:close + 1] = award
+          path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
 
       - name: Commit patch and remove temporary workflow
