@@ -99,7 +99,7 @@
 - [x] RFQ, linhas, fornecedores convidados, respostas e linhas de resposta integrados ao snapshot EF e migration `20261021132811_AddRequestForQuotations`;
 - [x] adjudicação RFQ integrada ao snapshot EF e migration `20261022105027_AddRequestForQuotationAwards`, com uma decisão por RFQ e FKs/unicidade validadas;
 - [x] Pedido de Compra: integrar `PurchaseOrders`/`PurchaseOrderLines`, FKs/unicidades e reserva transacional de `SequenceNumber` ao EF Core;
-- [x] Pedido de Compra: criar e validar a 17ª migration `20261022153544_AddPurchaseOrders` com round trip, concorrência e apply -> rollback 0 -> reapply;
+- [x] Pedido de Compra: criar e validar a 17ª migration `20261022154117_AddPurchaseOrders` com round trip, concorrência e apply -> rollback 0 -> reapply;
 - [ ] revisar o aviso conhecido do rollback de `AddAuthenticationThrottling` antes de release, sem reescrever histórico de migration de forma insegura.
 
 ## P1 — Primeiro módulo operacional
