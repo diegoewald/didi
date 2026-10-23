@@ -5,12 +5,12 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 ## Estado
 
 - Versão: `0.1.0`
-- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras em andamento com Solicitação, Cotação/RFQ, Comparação e Adjudicação manual operacionais
+- Fase: segurança/administração e cadastros-base fechados; Fase 7 de Compras com Solicitação, Cotação/RFQ, Comparação, Adjudicação manual e Pedido de Compra operacionais
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors e 253/253 testes passando
-- Migrations: 16 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
+- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, smoke WPF e smoke do pacote publicado passando
+- Migrations: 17 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
 
@@ -80,9 +80,19 @@ Código, hierarquia, vínculo obrigatório com empresa/filial, regra financeira 
 
 Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo estão operacionais na UI. A Fase 6 de cadastros-base está concluída.
 
-O módulo Compras possui quatro slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ**, **Comparação de Cotações** e **Adjudicação manual**. A adjudicação ocorre somente após o RFQ `Closed`, permite escolher manualmente no máximo uma oferta finalizada por linha inteira, deixa linhas sem seleção e permanece separada de Pedido de Compra. Não há ranking, recomendação automática, conversão cambial, split de quantidade ou criação automática de PO.
+O módulo Compras possui cinco slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ**, **Comparação de Cotações**, **Adjudicação manual** e **Pedido de Compra**. O Pedido de Compra nasce somente de adjudicação `Finalized`, mantém um fornecedor por documento, snapshots imutáveis dos termos adjudicados, numeração interna crescente e estados `Draft/Issued/Cancelled`. Emissão é somente estado interno; não existe envio automático ao fornecedor.
 
-A próxima frente funcional é **especificar Pedido de Compra antes de nova implementação**, definindo campos, estados, agrupamento das linhas adjudicadas, vínculo com fornecedor, preço/moeda, alteração/cancelamento e relação futura com recebimento. Aprovação e recebimento permanecem fora do código até suas regras serem documentadas. Consulta/retenção operacional da auditoria, smoke WPF em Windows real e benchmark de senha em hardware representativo continuam pendências próprias.
+Aprovação, recebimento, estoque, financeiro, fiscal e integrações externas continuam fora do código até que suas regras sejam especificadas. O próximo gate de produto é o smoke visual/interativo manual do fluxo completo em Windows real; o pacote portátil de QA já permite executar esse gate sem instalar o SDK .NET. Benchmark de senha em hardware representativo e verificação automatizada de dependências vulneráveis permanecem pendências próprias.
+
+## Pacote Windows de QA
+
+Para smoke manual em uma máquina Windows, gere um pacote portátil self-contained com o migration bundle da mesma release:
+
+```powershell
+./scripts/package-release.ps1 -Configuration Release -Runtime win-x64
+```
+
+O pacote não é o instalador empresarial final: ele não possui assinatura, Velopack ou fluxo seguro de upgrade de base existente. Veja [Empacotamento](docs/PACKAGING.md).
 
 ## Objetivos de engenharia
 
@@ -130,6 +140,7 @@ scripts/
 ./scripts/run.ps1
 ./scripts/new-migration.ps1 NomeDaMigration
 ./scripts/benchmark-password-hashing.ps1
+./scripts/package-release.ps1 -Configuration Release -Runtime win-x64
 ```
 
 Ou diretamente:
@@ -163,6 +174,7 @@ Banco, logs, anexos e backups reais nunca devem ser versionados.
 - [Segurança](docs/SECURITY.md)
 - [Testes](docs/TESTING.md)
 - [Instalação](docs/INSTALLATION.md)
+- [Empacotamento](docs/PACKAGING.md)
 - [Atualização](docs/UPDATE-STRATEGY.md)
 - [Backup e restauração](docs/BACKUP-RESTORE.md)
 - [Diretrizes de UX](docs/UX-GUIDELINES.md)

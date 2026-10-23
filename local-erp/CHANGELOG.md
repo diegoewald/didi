@@ -10,6 +10,7 @@ O projeto segue versionamento semântico.
 
 - fundação .NET 10/WPF, SQLite/EF Core, WAL e tooling de migrations;
 - smoke WPF automatizado no CI Windows com dados descartáveis, cobrindo bootstrap, autenticação, shell, abas básicas de Compras e logout;
+- pacote portátil Windows de QA com publicação `win-x64` self-contained, migration bundle, inicializador seguro de banco novo, metadados de release e hashes SHA-256;
 - autenticação local, sessão, RBAC deny-by-default e bootstrap atômico;
 - throttling/lockout, mitigação de timing e `SecurityAuditEvents`;
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
@@ -110,6 +111,7 @@ O projeto segue versionamento semântico.
 - CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;
 - CI #188 validou Adjudicação manual de RFQ, compilação WPF, 253/253 testes, snapshot EF limpo e 16 migrations;
 - CI técnico #199 validou o smoke WPF automatizado, 271/271 testes, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply;
+- CI técnico #204 validou geração do pacote portátil, inicialização de banco novo, recusa de banco existente e smoke WPF sobre o executável/migration bundle publicados;
 - smoke WPF automatizado está integrado ao CI; smoke visual/interativo manual em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
