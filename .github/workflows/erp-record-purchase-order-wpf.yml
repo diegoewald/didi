@@ -15,76 +15,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-
       - name: Update project state
         shell: bash
         run: |
-          python - <<'PY'
+          cat > /tmp/update_docs.py <<'PY'
           from pathlib import Path
-
           def replace_exact(path, old, new):
               p = Path(path)
-              text = p.read_text(encoding='utf-8')
+              text = p.read_text(encoding="utf-8")
               if old not in text:
-                  raise RuntimeError(f'Expected text not found in {path}: {old!r}')
-              p.write_text(text.replace(old, new), encoding='utf-8')
-
-          backlog = 'local-erp/tasks/BACKLOG.md'
-          replace_exact(backlog,
-              '- [ ] integrar workspace WPF do Pedido de Compra depois da persistência validada;',
-              '- [x] integrar workspace WPF do Pedido de Compra depois da persistência validada;')
-          replace_exact(backlog, '## Baseline atual — 2026-10-22', '## Baseline atual — 2026-10-23')
-          replace_exact(backlog,
-              'Baseline automatizado atual: **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.',
-              'Baseline automatizado atual: **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.')
-          replace_exact(backlog,
-              'O quinto slice de **Pedido de Compra** está especificado e possui Domain/Application/persistência validados: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. A UI WPF ainda não está implementada.',
-              'O quinto slice de **Pedido de Compra** está implementado de Domain a WPF: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. O workspace WPF lista e filtra pedidos, mostra numeração `PC-000001`, cria somente a partir de adjudicações elegíveis, preserva linhas/valores como somente leitura, permite observação em `Draft`, emissão interna e cancelamento com justificativa, mantendo o histórico de emissão mesmo após cancelamento.')
-          replace_exact(backlog,
-              'A próxima prioridade funcional é **integrar o workspace WPF de Pedido de Compra** sobre os casos de uso e a persistência já validados. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.',
-              'A próxima prioridade é **executar o smoke visual/interativo em Windows real do fluxo completo de Compras**, incluindo Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra. Qualquer próximo slice funcional de Compras deve ser especificado antes de código; aprovação, recebimento, estoque, financeiro, fiscal e integrações com fornecedor permanecem fora do escopo até haver regras explícitas. O benchmark em hardware representativo continua como pendência de pré-release.')
-
-          roadmap = 'local-erp/docs/ROADMAP.md'
-          replace_exact(roadmap,
-              '- [ ] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.',
-              '- [x] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.')
-          old_tail = 'A validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria.'
-          new_tail = '''A validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria.
-
-## Marco da UI WPF de Pedido de Compra — 2026-10-23
-
-O módulo `Compras` passou a ter a terceira aba `Pedidos`. O workspace lista e filtra `Draft/Issued/Cancelled`, exibe numeração interna `PC-000001`, fornecedor, moeda, total e data, e abre o documento com suas linhas imutáveis e histórico de ciclo de vida.
-
-A criação usa `PurchaseOrderCreationLookupService`, que exige `purchase-orders.manage` e oferece somente combinações de adjudicação `Finalized` + fornecedor ativo ainda não convertidas. A UI recebe apenas identificadores e dados de apresentação; fornecedor, quantidade, unidade, preço, moeda e data prometida continuam sendo reconstruídos por `PurchaseOrderService` a partir das fontes confiáveis. Observação só pode ser alterada em `Draft`; emissão e cancelamento continuam passando pela Application/Domain. A tela deixa explícito que `Emitir` altera apenas o estado interno e não envia e-mail, EDI, API ou outra comunicação ao fornecedor. Um pedido emitido e depois cancelado preserva visualmente a data original de emissão.
-
-O CI Windows validou **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e as 17 migrations em apply -> rollback 0 -> reapply. O próximo gate é o **smoke visual/interativo em Windows real do fluxo completo de Compras**. Qualquer novo slice funcional deve ser especificado antes da implementação; recebimento, estoque, financeiro, fiscal, aprovação e integrações externas continuam fora do escopo atual.'''
-          replace_exact(roadmap, old_tail, new_tail)
-
-          replace_exact('local-erp/docs/PURCHASE-ORDER-SPEC.md',
-              'Status: **Domain, Application e persistência implementados e validados; UI WPF pendente**.',
-              'Status: **implementado de Domain a WPF; smoke visual/interativo em Windows real pendente**.')
-
-          debt = 'local-erp/tasks/TECH-DEBT.md'
-          replace_exact(debt,
-              '- Segurança, administração, Empresa, Filial, Fornecedor, Material, Produto, Unidade de Medida, Categoria e Centro de Custo estão implementados e validados. A Fase 6 de cadastros-base está concluída; a próxima frente funcional depende da definição do fluxo mínimo de Compras com regras reais de negócio.',
-              '- Segurança, administração, cadastros-base e os cinco slices atuais de Compras — Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra — estão implementados e validados. Qualquer próximo slice funcional de Compras deve ser especificado antes de código.')
-          replace_exact(debt,
-              '- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo e o encerramento por falha global precisam entrar no smoke manual.',
-              '- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual.')
-          replace_exact(debt,
-              '- O módulo de Compras não deve ser modelado por suposição. Antes do primeiro slice é necessário definir estados, atores, invariantes e o menor fluxo real que o ERP precisa suportar.',
-              '- Não estender Compras para aprovação, recebimento, estoque, financeiro, fiscal ou integrações externas por suposição. Cada próximo slice deve definir estados, atores, invariantes e limites de escopo antes da implementação.')
+                  raise RuntimeError(f"Expected text not found in {path}: {old!r}")
+              p.write_text(text.replace(old, new), encoding="utf-8")
+          backlog = "local-erp/tasks/BACKLOG.md"
+          replace_exact(backlog, "- [ ] integrar workspace WPF do Pedido de Compra depois da persistência validada;", "- [x] integrar workspace WPF do Pedido de Compra depois da persistência validada;")
+          replace_exact(backlog, "## Baseline atual — 2026-10-22", "## Baseline atual — 2026-10-23")
+          replace_exact(backlog, "Baseline automatizado atual: **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.", "Baseline automatizado atual: **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.")
+          replace_exact(backlog, "O quinto slice de **Pedido de Compra** está especificado e possui Domain/Application/persistência validados: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. A UI WPF ainda não está implementada.", "O quinto slice de **Pedido de Compra** está implementado de Domain a WPF: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. O workspace WPF lista e filtra pedidos, mostra numeração `PC-000001`, cria somente a partir de adjudicações elegíveis, preserva linhas/valores como somente leitura, permite observação em `Draft`, emissão interna e cancelamento com justificativa, mantendo o histórico de emissão mesmo após cancelamento.")
+          replace_exact(backlog, "A próxima prioridade funcional é **integrar o workspace WPF de Pedido de Compra** sobre os casos de uso e a persistência já validados. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.", "A próxima prioridade é **executar o smoke visual/interativo em Windows real do fluxo completo de Compras**, incluindo Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra. Qualquer próximo slice funcional de Compras deve ser especificado antes de código; aprovação, recebimento, estoque, financeiro, fiscal e integrações com fornecedor permanecem fora do escopo até haver regras explícitas. O benchmark em hardware representativo continua como pendência de pré-release.")
+          roadmap = "local-erp/docs/ROADMAP.md"
+          replace_exact(roadmap, "- [ ] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.", "- [x] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.")
+          old_tail = "A validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria."
+          milestone = "\n\n## Marco da UI WPF de Pedido de Compra — 2026-10-23\n\nO módulo `Compras` passou a ter a terceira aba `Pedidos`. O workspace lista e filtra `Draft/Issued/Cancelled`, exibe numeração interna `PC-000001`, fornecedor, moeda, total e data, e abre o documento com suas linhas imutáveis e histórico de ciclo de vida.\n\nA criação usa `PurchaseOrderCreationLookupService`, que exige `purchase-orders.manage` e oferece somente combinações de adjudicação `Finalized` + fornecedor ativo ainda não convertidas. A UI recebe apenas identificadores e dados de apresentação; fornecedor, quantidade, unidade, preço, moeda e data prometida continuam sendo reconstruídos por `PurchaseOrderService` a partir das fontes confiáveis. Observação só pode ser alterada em `Draft`; emissão e cancelamento continuam passando pela Application/Domain. A tela deixa explícito que `Emitir` altera apenas o estado interno e não envia e-mail, EDI, API ou outra comunicação ao fornecedor. Um pedido emitido e depois cancelado preserva visualmente a data original de emissão.\n\nO CI Windows validou **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e as 17 migrations em apply -> rollback 0 -> reapply. O próximo gate é o **smoke visual/interativo em Windows real do fluxo completo de Compras**. Qualquer novo slice funcional deve ser especificado antes da implementação; recebimento, estoque, financeiro, fiscal, aprovação e integrações externas continuam fora do escopo atual."
+          replace_exact(roadmap, old_tail, old_tail + milestone)
+          replace_exact("local-erp/docs/PURCHASE-ORDER-SPEC.md", "Status: **Domain, Application e persistência implementados e validados; UI WPF pendente**.", "Status: **implementado de Domain a WPF; smoke visual/interativo em Windows real pendente**.")
+          debt = "local-erp/tasks/TECH-DEBT.md"
+          replace_exact(debt, "- Segurança, administração, Empresa, Filial, Fornecedor, Material, Produto, Unidade de Medida, Categoria e Centro de Custo estão implementados e validados. A Fase 6 de cadastros-base está concluída; a próxima frente funcional depende da definição do fluxo mínimo de Compras com regras reais de negócio.", "- Segurança, administração, cadastros-base e os cinco slices atuais de Compras — Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra — estão implementados e validados. Qualquer próximo slice funcional de Compras deve ser especificado antes de código.")
+          replace_exact(debt, "- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo e o encerramento por falha global precisam entrar no smoke manual.", "- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual.")
+          replace_exact(debt, "- O módulo de Compras não deve ser modelado por suposição. Antes do primeiro slice é necessário definir estados, atores, invariantes e o menor fluxo real que o ERP precisa suportar.", "- Não estender Compras para aprovação, recebimento, estoque, financeiro, fiscal ou integrações externas por suposição. Cada próximo slice deve definir estados, atores, invariantes e limites de escopo antes da implementação.")
           PY
-
+          python /tmp/update_docs.py
       - name: Commit documentation and remove temporary workflow
         shell: bash
         run: |
           git rm .github/workflows/erp-record-purchase-order-wpf.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add local-erp/tasks/BACKLOG.md \
-                  local-erp/docs/ROADMAP.md \
-                  local-erp/docs/PURCHASE-ORDER-SPEC.md \
-                  local-erp/tasks/TECH-DEBT.md
+          git add local-erp/tasks/BACKLOG.md local-erp/docs/ROADMAP.md local-erp/docs/PURCHASE-ORDER-SPEC.md local-erp/tasks/TECH-DEBT.md
           git commit -m "docs(purchases): record purchase order WPF milestone"
           git push origin HEAD:erp-purchase-order-wpf
