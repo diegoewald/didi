@@ -97,6 +97,8 @@ public partial class MainWindow : Window
             await viewModel.PurchaseRequestsWorkspace.LoadAsync();
         else if (PurchasingTabControl.SelectedIndex == 1 && !viewModel.RequestForQuotationsWorkspace.HasLoaded)
             await viewModel.RequestForQuotationsWorkspace.LoadAsync();
+        else if (PurchasingTabControl.SelectedIndex == 2 && !viewModel.PurchaseOrdersWorkspace.HasLoaded)
+            await viewModel.PurchaseOrdersWorkspace.LoadAsync();
     }
 
     private void ChangePassword_Click(object sender, RoutedEventArgs e)

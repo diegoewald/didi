@@ -1,6 +1,6 @@
 # Pedido de Compra — especificação do quinto slice de Compras
 
-Status: **Domain, Application e persistência implementados e validados; UI WPF pendente**.
+Status: **implementado de Domain a WPF; smoke visual/interativo em Windows real pendente**.
 
 Este documento define o quinto slice vertical de Compras. O objetivo é transformar uma decisão de adjudicação `Finalized` em um documento de compra próprio, rastreável e local-first, sem antecipar aprovação, recebimento, estoque, financeiro, fiscal ou integrações com fornecedor.
 
