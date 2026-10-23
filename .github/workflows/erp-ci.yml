@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - erp-local-ci
+      - erp-shell-keyboard
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
