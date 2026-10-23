@@ -53,13 +53,17 @@ function Find-ByAutomationId {
     return $element
 }
 
-function Find-ByName {
-    param($Root, [string]$Name)
-    $condition = [System.Windows.Automation.PropertyCondition]::new(
-        [System.Windows.Automation.AutomationElement]::NameProperty,
-        $Name)
+function Find-ByNameAndControlType {
+    param($Root, [string]$Name, $ControlType)
+    $condition = [System.Windows.Automation.AndCondition]::new(
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::NameProperty,
+            $Name),
+        [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+            $ControlType))
     $element = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if ($null -eq $element) { throw "Automation element named '$Name' was not found." }
+    if ($null -eq $element) { throw "Automation element '$Name' with control type '$ControlType' was not found." }
     return $element
 }
 
@@ -75,12 +79,48 @@ function Invoke-Element {
     ([System.Windows.Automation.InvokePattern]$pattern).Invoke()
 }
 
+function Invoke-Button {
+    param($Root, [string]$Name)
+    Invoke-Element (Find-ByNameAndControlType $Root $Name ([System.Windows.Automation.ControlType]::Button))
+}
+
 function Select-Tab {
     param($Root, [string]$Name)
-    $tab = Find-ByName $Root $Name
+    $tab = Find-ByNameAndControlType $Root $Name ([System.Windows.Automation.ControlType]::TabItem)
     $pattern = $tab.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
     ([System.Windows.Automation.SelectionItemPattern]$pattern).Select()
     Start-Sleep -Milliseconds 700
+}
+
+function Write-SmokeDiagnostics {
+    if ($null -ne $process -and -not $process.HasExited) {
+        Write-Host 'Visible Local ERP windows at failure:'
+        $condition = [System.Windows.Automation.PropertyCondition]::new(
+            [System.Windows.Automation.AutomationElement]::ProcessIdProperty,
+            $process.Id)
+        $windows = [System.Windows.Automation.AutomationElement]::RootElement.FindAll(
+            [System.Windows.Automation.TreeScope]::Children,
+            $condition)
+        foreach ($window in $windows) {
+            Write-Host " - $($window.Current.Name)"
+            $errorText = $window.FindFirst(
+                [System.Windows.Automation.TreeScope]::Descendants,
+                [System.Windows.Automation.PropertyCondition]::new(
+                    [System.Windows.Automation.AutomationElement]::AutomationIdProperty,
+                    'ErrorText'))
+            if ($null -ne $errorText -and -not [string]::IsNullOrWhiteSpace($errorText.Current.Name)) {
+                Write-Host "   ErrorText: $($errorText.Current.Name)"
+            }
+        }
+    }
+
+    $logFile = Get-ChildItem (Join-Path $smokeRoot 'Logs\localerp-*.log') -File -ErrorAction SilentlyContinue |
+        Sort-Object LastWriteTimeUtc -Descending |
+        Select-Object -First 1
+    if ($null -ne $logFile) {
+        Write-Host 'Local ERP smoke log:'
+        Get-Content $logFile.FullName | ForEach-Object { Write-Host $_ }
+    }
 }
 
 try {
@@ -90,7 +130,7 @@ try {
 
     $connection = "Data Source=$dbPath;Mode=ReadWriteCreate;Foreign Keys=True;Default Timeout=15"
     & dotnet ef database update --project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --startup-project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --context ErpDbContext --connection $connection --configuration $Configuration --no-build
-    if ($LASTEXITCODE -ne 0) { throw "Failed to prepare the isolated smoke database." }
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to prepare the isolated smoke database.' }
     if (-not (Test-Path $appExe)) { throw "Desktop executable not found at '$appExe'. Build the solution first." }
 
     $process = Start-Process -FilePath $appExe -PassThru
@@ -101,28 +141,34 @@ try {
     Set-Value (Find-ByAutomationId $bootstrap 'ConfirmPasswordInput') 'SmokePassword-2026!'
     Invoke-Element (Find-ByAutomationId $bootstrap 'CreateButton')
 
-    $login = Wait-Window $process.Id 'Entrar — Local ERP'
-    Set-Value (Find-ByAutomationId $login 'UsernameTextBox') 'ci-smoke-admin'
-    Set-Value (Find-ByAutomationId $login 'PasswordInput') 'SmokePassword-2026!'
-    Invoke-Element (Find-ByAutomationId $login 'SignInButton')
-
+    # Bootstrap creates the administrator and authenticates the same session, so Main opens directly.
     $main = Wait-Window $process.Id 'Local ERP'
-    Invoke-Element (Find-ByName $main 'Compras')
+    Invoke-Button $main 'Compras'
     Start-Sleep -Milliseconds 800
     Select-Tab $main 'Solicitações'
     Select-Tab $main 'Cotações'
     Select-Tab $main 'Pedidos'
 
-    Invoke-Element (Find-ByName $main 'Sair')
-    $loginAfterLogout = Wait-Window $process.Id 'Entrar — Local ERP'
-    Invoke-Element (Find-ByAutomationId $loginAfterLogout 'CancelButton')
+    # Logout exercises the unauthenticated route and then an explicit credential sign-in.
+    Invoke-Button $main 'Sair'
+    $login = Wait-Window $process.Id 'Entrar — Local ERP'
+    Set-Value (Find-ByAutomationId $login 'UsernameTextBox') 'ci-smoke-admin'
+    Set-Value (Find-ByAutomationId $login 'PasswordInput') 'SmokePassword-2026!'
+    Invoke-Element (Find-ByAutomationId $login 'SignInButton')
+
+    $mainAfterLogin = Wait-Window $process.Id 'Local ERP'
+    Invoke-Button $mainAfterLogin 'Sair'
+    $loginAfterSecondLogout = Wait-Window $process.Id 'Entrar — Local ERP'
+    Invoke-Element (Find-ByAutomationId $loginAfterSecondLogout 'CancelButton')
 
     if (-not $process.WaitForExit(10000)) {
         throw 'Local ERP did not exit after the logout/login cancel smoke path.'
     }
     if ($process.ExitCode -ne 0) { throw "Local ERP exited with code $($process.ExitCode)." }
 
-    $logFile = Get-ChildItem (Join-Path $smokeRoot 'Logs\localerp-*.log') -File | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+    $logFile = Get-ChildItem (Join-Path $smokeRoot 'Logs\localerp-*.log') -File |
+        Sort-Object LastWriteTimeUtc -Descending |
+        Select-Object -First 1
     if ($null -eq $logFile) { throw 'Smoke log file was not created.' }
     $log = Get-Content $logFile.FullName -Raw
     foreach ($route in @('AdministratorBootstrapRequired', 'SignInRequired', 'Main')) {
@@ -130,9 +176,17 @@ try {
             throw "Expected startup route '$route' was not recorded."
         }
     }
+    if ([Regex]::Matches($log, 'Startup access route resolved as Main').Count -lt 2) {
+        throw 'The authenticated Main route was not reached both after bootstrap and explicit sign-in.'
+    }
     if ($log -match '\[FTL\]') { throw 'Fatal log entry detected during WPF smoke.' }
 
-    Write-Host 'WPF smoke passed: bootstrap -> login -> main -> Compras tabs -> logout.'
+    Write-Host 'WPF smoke passed: bootstrap -> Main -> Compras tabs -> logout -> login -> Main -> logout.'
+}
+catch {
+    Write-Host "WPF smoke failed: $($_.Exception.Message)"
+    Write-SmokeDiagnostics
+    throw
 }
 finally {
     if ($null -ne $process -and -not $process.HasExited) {
