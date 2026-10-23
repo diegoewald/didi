@@ -242,3 +242,9 @@ O CI Windows validou **270/270 testes** (Domain 75, Application 130, Persistence
 O CI Windows passou a executar `scripts/smoke-wpf.ps1` com um diretório `LOCALERP_DATA_ROOT` temporário e banco SQLite descartável. O gate aplica as migrations reais, abre o executável WPF e valida por UI Automation o bootstrap do primeiro administrador, a autenticação automática pós-bootstrap, a abertura da `MainWindow`, a navegação por `Compras` e pelas abas `Solicitações`, `Cotações` e `Pedidos`, logout, login explícito e retorno ao shell.
 
 O baseline subiu para **271/271 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 7), mantendo 17 migrations e snapshot EF limpo. Esse smoke reduz regressões de startup/composição/navegação, mas não substitui o smoke visual/interativo manual de ergonomia, foco, DPI e do fluxo completo com Comparação, Adjudicação e mutações de Pedido de Compra.
+
+## Marco do pacote Windows portátil de QA — 2026-10-23
+
+O projeto passou a gerar `LocalErp-0.1.0-win-x64.zip` por `scripts/package-release.ps1`. O pacote contém o Desktop WPF publicado como self-contained, migration bundle da mesma release, inicializador restrito a banco novo, manifesto de release e hashes SHA-256.
+
+O CI #204 validou o pacote de ponta a ponta: 271/271 testes, smoke WPF normal, snapshot EF limpo, 17 migrations em apply -> rollback 0 -> reapply, criação de banco novo pelo bundle, recusa explícita de banco existente e um segundo smoke WPF executando o binário publicado com o bundle publicado. Esse marco destrava o smoke manual em máquina Windows sem depender do SDK .NET, mas não conclui instalador, assinatura, atualização automática, backup ou recuperação segura de upgrade.

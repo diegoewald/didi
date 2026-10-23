@@ -18,7 +18,7 @@
 
 ## Validação Windows
 
-O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
+O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, smoke WPF, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply. Depois gera o pacote portátil Windows self-contained, valida a inicialização de banco novo e executa novamente o smoke usando o executável e o migration bundle publicados.
 
 ## Baseline atual — 2026-10-23
 
@@ -31,12 +31,19 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
 - Migrations: 17; apply -> rollback 0 -> reapply passando.
+- Package QA: `win-x64` self-contained + migration bundle + hashes; inicialização de banco novo e smoke do binário publicado passando.
 
 ### Smoke WPF automatizado
 
 Depois da suíte, o CI Windows executa `scripts/smoke-wpf.ps1`. O script usa `LOCALERP_DATA_ROOT` para isolar todos os dados em um diretório temporário, aplica as migrations reais em um banco descartável e usa Windows UI Automation para percorrer bootstrap -> Main -> Compras -> Solicitações/Cotações/Pedidos -> logout -> login explícito -> Main -> logout. O log precisa registrar as rotas de startup esperadas e não pode conter entrada fatal.
 
 Esse gate valida inicialização, DI, autenticação e navegação básica, mas não substitui o smoke manual de ergonomia, foco, DPI ou o fluxo completo de Compras com dados. Detalhes: `docs/WPF-SMOKE.md`.
+
+### Pacote Windows de QA automatizado
+
+`scripts/package-release.ps1` publica o WPF como `win-x64` self-contained, gera `LocalErp.DatabaseMigrator.exe` com `dotnet ef migrations bundle`, cria `release-info.json`, `SHA256SUMS.txt`, o ZIP e o SHA-256 externo. O CI valida `Initialize-FreshDatabase.ps1` em base descartável e exige que uma segunda execução recuse modificar banco já existente.
+
+Em seguida, o mesmo `scripts/smoke-wpf.ps1` é executado contra `app/LocalErp.Desktop.exe` e contra o migration bundle que estão dentro do pacote. Assim, o gate cobre a distribuição real de QA em vez de validar somente `bin/Release`. Esse artefato continua sem assinatura e não substitui o futuro instalador Velopack nem o fluxo seguro de upgrade de banco existente. Detalhes: `docs/PACKAGING.md`.
 
 ### Cobertura de empresa/filial
 
