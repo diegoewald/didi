@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - erp-local-ci
+      - erp-dependency-audit
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
@@ -39,6 +40,58 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore LocalErp.sln
+
+      - name: Audit NuGet dependencies
+        shell: pwsh
+        run: ./scripts/check-vulnerable-packages.ps1 -NoRestore
+
+      - name: Validate vulnerability gate behavior
+        shell: pwsh
+        run: |
+          $reportPath = Join-Path $env:RUNNER_TEMP 'localerp-synthetic-vulnerability.json'
+          @'
+          {
+            "version": 1,
+            "projects": [
+              {
+                "path": "Synthetic.csproj",
+                "frameworks": [
+                  {
+                    "framework": "net10.0",
+                    "topLevelPackages": [
+                      {
+                        "id": "Synthetic.Vulnerable",
+                        "resolvedVersion": "1.0.0",
+                        "vulnerabilities": [
+                          {
+                            "severity": "high",
+                            "advisoryurl": "https://example.invalid/advisory"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+          '@ | Set-Content $reportPath -Encoding utf8
+
+          $blocked = $false
+          try {
+            ./scripts/check-vulnerable-packages.ps1 -ReportPath $reportPath
+          }
+          catch {
+            $blocked = $true
+            Write-Host "Expected synthetic vulnerability rejection: $($_.Exception.Message)"
+          }
+          finally {
+            Remove-Item $reportPath -Force -ErrorAction SilentlyContinue
+          }
+
+          if (-not $blocked) {
+            throw 'The vulnerability gate accepted a synthetic vulnerable package.'
+          }
 
       - name: Build Release
         run: dotnet build LocalErp.sln --configuration Release --no-restore
