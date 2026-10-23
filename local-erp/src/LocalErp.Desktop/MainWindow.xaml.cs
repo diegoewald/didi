@@ -89,7 +89,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (Keyboard.Modifiers == ModifierKeys.Control && TryGetNavigationIndex(e.Key, out var navigationIndex))
+        if (Keyboard.Modifiers == ModifierKeys.Control &&
+            ShellKeyboardNavigation.TryGetNavigationIndex(e.Key, out var navigationIndex))
         {
             e.Handled = true;
             await NavigateByShortcutAsync(navigationIndex);
@@ -106,24 +107,6 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
-    }
-
-    private static bool TryGetNavigationIndex(Key key, out int index)
-    {
-        index = key switch
-        {
-            Key.D1 or Key.NumPad1 => 0,
-            Key.D2 or Key.NumPad2 => 1,
-            Key.D3 or Key.NumPad3 => 2,
-            Key.D4 or Key.NumPad4 => 3,
-            Key.D5 or Key.NumPad5 => 4,
-            Key.D6 or Key.NumPad6 => 5,
-            Key.D7 or Key.NumPad7 => 6,
-            Key.D8 or Key.NumPad8 => 7,
-            _ => -1
-        };
-
-        return index >= 0;
     }
 
     private async Task NavigateByShortcutAsync(int index)
@@ -157,26 +140,35 @@ public partial class MainWindow : Window
             return false;
         }
 
-        var currentIndex = tabControl.SelectedIndex >= 0 ? tabControl.SelectedIndex : 0;
-        var nextIndex = (currentIndex + direction + tabControl.Items.Count) % tabControl.Items.Count;
-        tabControl.SelectedIndex = nextIndex;
+        tabControl.SelectedIndex = ShellKeyboardNavigation.GetNextTabIndex(
+            tabControl.SelectedIndex,
+            tabControl.Items.Count,
+            direction);
         FocusSelectedTab(tabControl);
         return true;
     }
 
     private void CycleShellFocus()
     {
-        if (NavigationItemsControl.IsKeyboardFocusWithin)
+        var currentRegion = NavigationItemsControl.IsKeyboardFocusWithin
+            ? ShellFocusRegion.Navigation
+            : ShellContentRegion.IsKeyboardFocusWithin
+                ? ShellFocusRegion.Content
+                : ShellFocusRegion.Account;
+
+        switch (ShellKeyboardNavigation.GetNextFocusRegion(currentRegion))
         {
-            FocusActiveContent();
-        }
-        else if (ShellContentRegion.IsKeyboardFocusWithin)
-        {
-            ChangePasswordButton.Focus();
-        }
-        else
-        {
-            FocusNavigationRegion();
+            case ShellFocusRegion.Navigation:
+                FocusNavigationRegion();
+                break;
+            case ShellFocusRegion.Content:
+                FocusActiveContent();
+                break;
+            case ShellFocusRegion.Account:
+                ChangePasswordButton.Focus();
+                break;
+            default:
+                throw new InvalidOperationException("Unknown shell focus region.");
         }
     }
 
