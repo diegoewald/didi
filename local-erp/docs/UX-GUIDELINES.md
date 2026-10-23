@@ -35,7 +35,6 @@ Quando surgirem grandes volumes:
 - ações em lote explícitas;
 - exportação desacoplada da tela.
 
-
 ## Navegação por teclado do shell
 
 - o foco inicial da `MainWindow` vai para a primeira ação da navegação lateral;
@@ -46,4 +45,5 @@ Quando surgirem grandes volumes:
 - `F6` alterna ciclicamente o foco entre navegação lateral, conteúdo e ações da conta;
 - os atalhos `Ctrl+1…8` são expostos por tooltip e `AutomationProperties.HelpText` nos itens da navegação;
 - o shell não captura `Esc` globalmente: cancelamento e fechamento continuam pertencendo à tela ou diálogo ativo;
+- atalhos aceleram a navegação, mas não substituem a ordem de tabulação nem o acesso equivalente por controles visíveis;
 - foco visível, ordem real de tabulação, DPI, teclado físico e ergonomia ainda devem ser conferidos no smoke visual/interativo em Windows real.
