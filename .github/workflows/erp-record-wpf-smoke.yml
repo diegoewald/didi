@@ -59,17 +59,26 @@ jobs:
 
           testing = 'local-erp/docs/TESTING.md'
           replace_exact(testing, '## Baseline atual — 2026-10-22', '## Baseline atual — 2026-10-23')
-          replace_exact(testing, '- Domain: **69/69**', '- Domain: **75/75**')
-          replace_exact(testing, '- Application: **124/124**', '- Application: **130/130**')
-          replace_exact(testing, '- Persistence: **54/54**', '- Persistence: **59/59**')
-          replace_exact(testing, '- Infrastructure: **6/6**', '- Infrastructure: **7/7**')
-          replace_exact(testing, '- Total: **253/253**', '- Total: **271/271**')
-          replace_exact(testing, '- migration smoke com **16 migrations** em `apply -> rollback 0 -> reapply`.', '- migration smoke com **17 migrations** em `apply -> rollback 0 -> reapply`.')
+          replace_exact(testing, '- Domain: 69/69;', '- Domain: 75/75;')
+          replace_exact(testing, '- Application: 124/124;', '- Application: 130/130;')
+          replace_exact(testing, '- Persistence: 54/54;', '- Persistence: 59/59;')
+          replace_exact(testing, '- Infrastructure: 6/6;', '- Infrastructure: 7/7;')
+          replace_exact(testing, '- Total automatizado: 253/253;', '- Total automatizado: 271/271;')
+          replace_exact(testing, '- Migrations: 16; apply -> rollback 0 -> reapply passando.', '- Migrations: 17; apply -> rollback 0 -> reapply passando.')
+          replace_exact(
+              testing,
+              'A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.',
+              'A compilação WPF valida XAML, handlers, composição de tipos e DI compilável; o smoke WPF automatizado valida bootstrap, autenticação, shell e navegação básica de Compras. Ambos não substituem o smoke visual/interativo manual em Windows real.')
+          adjudication_bullet = '- Adjudicação: RFQ `Closed`, início explícito, “Sem adjudicação”, seleção/substituição/remoção por linha, permissão insuficiente, finalização e modo somente leitura;'
+          replace_exact(
+              testing,
+              adjudication_bullet,
+              adjudication_bullet + '\n- Pedido de Compra: criação a partir de adjudicação finalizada, fornecedor elegível, linhas/totais imutáveis, observação em Draft, emissão interna, cancelamento com justificativa e modo somente leitura;')
           p = Path(testing)
           text = p.read_text(encoding='utf-8')
           marker = '### Smoke WPF automatizado'
           if marker not in text:
-              insert_before = '## Cobertura funcional automatizada atual'
+              insert_before = '### Cobertura de empresa/filial'
               section = ('### Smoke WPF automatizado\n\n'
                          'Depois da suíte, o CI Windows executa `scripts/smoke-wpf.ps1`. O script usa `LOCALERP_DATA_ROOT` para isolar todos os dados em um diretório temporário, aplica as migrations reais em um banco descartável e usa Windows UI Automation para percorrer bootstrap -> Main -> Compras -> Solicitações/Cotações/Pedidos -> logout -> login explícito -> Main -> logout. O log precisa registrar as rotas de startup esperadas e não pode conter entrada fatal.\n\n'
                          'Esse gate valida inicialização, DI, autenticação e navegação básica, mas não substitui o smoke manual de ergonomia, foco, DPI ou o fluxo completo de Compras com dados. Detalhes: `docs/WPF-SMOKE.md`.\n\n')
