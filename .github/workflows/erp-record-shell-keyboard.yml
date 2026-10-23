@@ -1,0 +1,24 @@
+name: ERP Record Shell Keyboard Milestone
+
+on:
+  push:
+    branches:
+      - erp-shell-keyboard
+    paths:
+      - '.github/workflows/erp-record-shell-keyboard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: erp-shell-keyboard
+          fetch-depth: 0
+      - name: Record shell keyboard documentation
+        shell: pwsh
+        run: ./.github/scripts/record-shell-keyboard-docs.ps1
