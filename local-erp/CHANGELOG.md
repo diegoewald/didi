@@ -12,6 +12,7 @@ O projeto segue versionamento semântico.
 - smoke WPF automatizado no CI Windows com dados descartáveis, cobrindo bootstrap, autenticação, shell, abas básicas de Compras e logout;
 - pacote portátil Windows de QA com publicação `win-x64` self-contained, migration bundle, inicializador seguro de banco novo, metadados de release e hashes SHA-256;
 - auditoria automatizada de vulnerabilidades NuGet diretas/transitivas, com parser JSON e teste sintético de rejeição no CI;
+- coverage automatizado com coletor Microsoft, `dotnet-coverage`, Cobertura/JSON e artifact dedicado, sem threshold percentual arbitrário;
 - autenticação local, sessão, RBAC deny-by-default e bootstrap atômico;
 - throttling/lockout, mitigação de timing e `SecurityAuditEvents`;
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
@@ -115,6 +116,7 @@ O projeto segue versionamento semântico.
 - CI técnico #199 validou o smoke WPF automatizado, 271/271 testes, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply;
 - CI técnico #204 validou geração do pacote portátil, inicialização de banco novo, recusa de banco existente e smoke WPF sobre o executável/migration bundle publicados;
 - CI técnico #207 validou zero vulnerabilidades NuGet conhecidas, rejeição de uma fixture vulnerável, 271/271 testes e todos os gates de WPF, EF/migrations e package;
+- CI técnico #210 validou 96,76% de coverage de linhas (7.578/7.832), branches corretamente indisponíveis, 271/271 testes e todos os gates anteriores;
 - smoke WPF automatizado está integrado ao CI; smoke visual/interativo manual em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15

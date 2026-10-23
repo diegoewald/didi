@@ -256,3 +256,8 @@ O CI #204 validou o pacote de ponta a ponta: 271/271 testes, smoke WPF normal, s
 O CI passou a executar `scripts/check-vulnerable-packages.ps1` após o restore, usando o relatório JSON de `dotnet package list --vulnerable --include-transitive`. A política explícita usa `NuGetAuditMode=all` e `NuGetAuditLevel=low`; qualquer advisory conhecido, direto ou transitivo, bloqueia o baseline validado.
 
 O CI técnico #207 confirmou que o conjunto real de dependências está sem vulnerabilidades conhecidas e também validou o caminho negativo com uma fixture sintética de severidade `high`, que foi corretamente rejeitada. O mesmo run preservou 271/271 testes, build sem warnings/erros, smoke WPF, snapshot EF, 17 migrations e smoke do pacote publicado.
+
+
+## Marco do coverage automatizado — 2026-10-23
+
+`scripts/coverage.ps1` usa o coletor Microsoft `Code Coverage` e `dotnet-coverage` 18.12.0 para produzir Cobertura/JSON. O CI #210 validou **96,76% de linhas (7.578/7.832)**: Application 96,34%, Domain 88,18%, Infrastructure 57,50% e Persistence 98,91%. Branch coverage é registrado como indisponível porque o relatório não contém dados reais de branches; não há threshold percentual arbitrário. O Desktop permanece validado pelos smokes WPF.
