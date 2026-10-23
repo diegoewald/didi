@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - erp-local-ci
+      - erp-package-release
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
@@ -70,29 +71,50 @@ jobs:
       - name: Reapply migrations
         run: dotnet ef database update --project src/LocalErp.Persistence/LocalErp.Persistence.csproj --startup-project src/LocalErp.Persistence/LocalErp.Persistence.csproj --context ErpDbContext
 
-      - name: Package clean source snapshot
+      - name: Build Windows portable QA package
         shell: pwsh
-        working-directory: .\
-        run: |
-          $stage = Join-Path $env:RUNNER_TEMP 'local-erp-package'
-          $zip = Join-Path $env:RUNNER_TEMP 'local-erp-v0.1.0-auth-milestone.zip'
-          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item $zip -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Path $stage | Out-Null
-          Copy-Item -Path 'local-erp' -Destination $stage -Recurse
-          foreach ($name in @('bin', 'obj', 'TestResults')) {
-            Get-ChildItem -Path $stage -Directory -Recurse -Filter $name -ErrorAction SilentlyContinue |
-              Sort-Object FullName -Descending |
-              Remove-Item -Recurse -Force
-          }
-          Compress-Archive -Path (Join-Path $stage 'local-erp') -DestinationPath $zip -CompressionLevel Optimal
+        run: ./scripts/package-release.ps1 -Configuration Release -Runtime win-x64 -OutputDirectory (Join-Path $env:RUNNER_TEMP 'localerp-release')
 
-      - name: Upload source snapshot
+      - name: Validate fresh database initializer
+        shell: pwsh
+        run: |
+          $releaseRoot = Join-Path $env:RUNNER_TEMP 'localerp-release'
+          $package = Get-ChildItem $releaseRoot -Directory -Filter 'LocalErp-*-win-x64' | Select-Object -First 1
+          if ($null -eq $package) { throw 'Packaged release directory was not found.' }
+          $initializer = Join-Path $package.FullName 'database\Initialize-FreshDatabase.ps1'
+          $testRoot = Join-Path $env:RUNNER_TEMP 'LocalErpFreshInit'
+          Remove-Item $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+          & $initializer -DataRoot $testRoot
+          if (-not (Test-Path (Join-Path $testRoot 'Data\localerp.db') -PathType Leaf)) {
+            throw 'Fresh database initializer did not create localerp.db.'
+          }
+          $refusedExisting = $false
+          try {
+            & $initializer -DataRoot $testRoot
+          }
+          catch {
+            $refusedExisting = $true
+            Write-Host "Expected existing-database refusal: $($_.Exception.Message)"
+          }
+          if (-not $refusedExisting) { throw 'Fresh database initializer did not refuse an existing database.' }
+          Remove-Item $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+
+      - name: Run packaged WPF smoke
+        shell: pwsh
+        run: |
+          $releaseRoot = Join-Path $env:RUNNER_TEMP 'localerp-release'
+          $package = Get-ChildItem $releaseRoot -Directory -Filter 'LocalErp-*-win-x64' | Select-Object -First 1
+          if ($null -eq $package) { throw 'Packaged release directory was not found.' }
+          $app = Join-Path $package.FullName 'app\LocalErp.Desktop.exe'
+          $migrator = Join-Path $package.FullName 'database\LocalErp.DatabaseMigrator.exe'
+          ./scripts/smoke-wpf.ps1 -Configuration Release -ExecutablePath $app -MigrationBundlePath $migrator
+
+      - name: Upload Windows portable QA package
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: localerp-auth-milestone-source
-          path: ${{ runner.temp }}/local-erp-v0.1.0-auth-milestone.zip
+          name: localerp-windows-portable
+          path: ${{ runner.temp }}/localerp-release/LocalErp-*.zip*
           if-no-files-found: error
           retention-days: 7
 
