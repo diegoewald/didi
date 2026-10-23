@@ -18,7 +18,8 @@ public partial class MainWindowViewModel : ObservableObject
         CategoriesCatalogViewModel categoriesCatalog,
         CostCentersCatalogViewModel costCentersCatalog,
         PurchaseRequestsWorkspaceViewModel purchaseRequestsWorkspace,
-        RequestForQuotationsWorkspaceViewModel requestForQuotationsWorkspace)
+        RequestForQuotationsWorkspaceViewModel requestForQuotationsWorkspace,
+        PurchaseOrdersWorkspaceViewModel purchaseOrdersWorkspace)
     {
         ArgumentNullException.ThrowIfNull(session);
         UsersAdministration = usersAdministration ?? throw new ArgumentNullException(nameof(usersAdministration));
@@ -31,6 +32,7 @@ public partial class MainWindowViewModel : ObservableObject
         CostCentersCatalog = costCentersCatalog ?? throw new ArgumentNullException(nameof(costCentersCatalog));
         PurchaseRequestsWorkspace = purchaseRequestsWorkspace ?? throw new ArgumentNullException(nameof(purchaseRequestsWorkspace));
         RequestForQuotationsWorkspace = requestForQuotationsWorkspace ?? throw new ArgumentNullException(nameof(requestForQuotationsWorkspace));
+        PurchaseOrdersWorkspace = purchaseOrdersWorkspace ?? throw new ArgumentNullException(nameof(purchaseOrdersWorkspace));
 
         NavigationItems =
         [
@@ -60,6 +62,7 @@ public partial class MainWindowViewModel : ObservableObject
     public CostCentersCatalogViewModel CostCentersCatalog { get; }
     public PurchaseRequestsWorkspaceViewModel PurchaseRequestsWorkspace { get; }
     public RequestForQuotationsWorkspaceViewModel RequestForQuotationsWorkspace { get; }
+    public PurchaseOrdersWorkspaceViewModel PurchaseOrdersWorkspace { get; }
     public string VersionLabel { get; }
     public string CurrentUsername { get; }
 

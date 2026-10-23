@@ -132,6 +132,9 @@
           <TabItem Header="Cotações">
             <views:RequestForQuotationsWorkspaceView x:Name="RequestForQuotationsWorkspacePanel" DataContext="{Binding RequestForQuotationsWorkspace}" />
           </TabItem>
+          <TabItem Header="Pedidos">
+            <views:PurchaseOrdersWorkspaceView DataContext="{Binding PurchaseOrdersWorkspace}" />
+          </TabItem>
         </TabControl>
 
         <views:AdministrationUsersView x:Name="AdministrationUsersPanel" DataContext="{Binding UsersAdministration}">
