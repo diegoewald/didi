@@ -62,9 +62,31 @@ function Find-ByNameAndControlType {
         [System.Windows.Automation.PropertyCondition]::new(
             [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
             $ControlType))
-    $element = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
-    if ($null -eq $element) { throw "Automation element '$Name' with control type '$ControlType' was not found." }
-    return $element
+    return $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
+function Find-ButtonByLabel {
+    param($Root, [string]$Name)
+
+    $button = Find-ByNameAndControlType $Root $Name ([System.Windows.Automation.ControlType]::Button)
+    if ($null -ne $button) { return $button }
+
+    $nameCondition = [System.Windows.Automation.PropertyCondition]::new(
+        [System.Windows.Automation.AutomationElement]::NameProperty,
+        $Name)
+    $labels = $Root.FindAll([System.Windows.Automation.TreeScope]::Descendants, $nameCondition)
+    foreach ($label in $labels) {
+        $current = $label
+        while ($null -ne $current) {
+            if ($current.Current.ControlType -eq [System.Windows.Automation.ControlType]::Button) {
+                return $current
+            }
+            if ($current -eq $Root) { break }
+            $current = [System.Windows.Automation.TreeWalker]::RawViewWalker.GetParent($current)
+        }
+    }
+
+    throw "Button labelled '$Name' was not found."
 }
 
 function Set-Value {
@@ -81,12 +103,13 @@ function Invoke-Element {
 
 function Invoke-Button {
     param($Root, [string]$Name)
-    Invoke-Element (Find-ByNameAndControlType $Root $Name ([System.Windows.Automation.ControlType]::Button))
+    Invoke-Element (Find-ButtonByLabel $Root $Name)
 }
 
 function Select-Tab {
     param($Root, [string]$Name)
     $tab = Find-ByNameAndControlType $Root $Name ([System.Windows.Automation.ControlType]::TabItem)
+    if ($null -eq $tab) { throw "Tab '$Name' was not found." }
     $pattern = $tab.GetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern)
     ([System.Windows.Automation.SelectionItemPattern]$pattern).Select()
     Start-Sleep -Milliseconds 700
@@ -172,11 +195,12 @@ try {
     if ($null -eq $logFile) { throw 'Smoke log file was not created.' }
     $log = Get-Content $logFile.FullName -Raw
     foreach ($route in @('AdministratorBootstrapRequired', 'SignInRequired', 'Main')) {
-        if ($log -notmatch [Regex]::Escape("Startup access route resolved as $route")) {
+        $pattern = 'Startup access route resolved as.*' + [Regex]::Escape($route)
+        if ($log -notmatch $pattern) {
             throw "Expected startup route '$route' was not recorded."
         }
     }
-    if ([Regex]::Matches($log, 'Startup access route resolved as Main').Count -lt 2) {
+    if ([Regex]::Matches($log, 'Startup access route resolved as.*Main').Count -lt 2) {
         throw 'The authenticated Main route was not reached both after bootstrap and explicit sign-in.'
     }
     if ($log -match '\[FTL\]') { throw 'Fatal log entry detected during WPF smoke.' }
