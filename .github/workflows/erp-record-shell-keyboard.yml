@@ -21,4 +21,4 @@ jobs:
           fetch-depth: 0
       - name: Record shell keyboard documentation
         shell: pwsh
-        run: ./.github/scripts/record-shell-keyboard-docs.ps1
+        run: python ./.github/scripts/record-shell-keyboard-docs.py
