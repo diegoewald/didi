@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - erp-local-ci
-      - erp-coverage-baseline
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
