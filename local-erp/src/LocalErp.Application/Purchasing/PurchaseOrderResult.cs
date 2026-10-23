@@ -2,6 +2,14 @@ using LocalErp.Domain.Purchasing;
 
 namespace LocalErp.Application.Purchasing;
 
+public sealed record PurchaseOrderCreationCandidateResult(
+    Guid RequestForQuotationAwardId,
+    Guid RequestForQuotationId,
+    DateTime AwardFinalizedAtUtc,
+    Guid SupplierId,
+    string SupplierName,
+    int AwardedLineCount);
+
 public sealed record PurchaseOrderLineResult(
     Guid Id,
     int LineNumber,
