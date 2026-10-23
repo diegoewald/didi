@@ -7,8 +7,16 @@ public sealed record AppDataPaths(
     string BackupsDirectory,
     string AttachmentsDirectory)
 {
+    public const string RootOverrideEnvironmentVariable = "LOCALERP_DATA_ROOT";
+
     public static AppDataPaths CreateDefault()
     {
+        var configuredRoot = Environment.GetEnvironmentVariable(RootOverrideEnvironmentVariable);
+        if (!string.IsNullOrWhiteSpace(configuredRoot))
+        {
+            return FromRoot(configuredRoot);
+        }
+
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var root = Path.Combine(localAppData, "LocalErp");
 

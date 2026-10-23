@@ -20,17 +20,23 @@
 
 O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply.
 
-## Baseline atual — 2026-10-22
+## Baseline atual — 2026-10-23
 
-- Domain: 69/69;
-- Application: 124/124;
-- Persistence: 54/54;
-- Infrastructure: 6/6;
-- Total automatizado: 253/253;
+- Domain: 75/75;
+- Application: 130/130;
+- Persistence: 59/59;
+- Infrastructure: 7/7;
+- Total automatizado: 271/271;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - EF Core: sem mudanças pendentes no modelo;
-- Migrations: 16; apply -> rollback 0 -> reapply passando.
+- Migrations: 17; apply -> rollback 0 -> reapply passando.
+
+### Smoke WPF automatizado
+
+Depois da suíte, o CI Windows executa `scripts/smoke-wpf.ps1`. O script usa `LOCALERP_DATA_ROOT` para isolar todos os dados em um diretório temporário, aplica as migrations reais em um banco descartável e usa Windows UI Automation para percorrer bootstrap -> Main -> Compras -> Solicitações/Cotações/Pedidos -> logout -> login explícito -> Main -> logout. O log precisa registrar as rotas de startup esperadas e não pode conter entrada fatal.
+
+Esse gate valida inicialização, DI, autenticação e navegação básica, mas não substitui o smoke manual de ergonomia, foco, DPI ou o fluxo completo de Compras com dados. Detalhes: `docs/WPF-SMOKE.md`.
 
 ### Cobertura de empresa/filial
 
@@ -118,7 +124,7 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - CI #166 validou a janela WPF `QuotationComparisonWindow`, **238/238 testes** e as mesmas 15 migrations sem mudança de modelo;
 - adjudicação: domínio `Draft/Finalized`, autorização específica, validação de oferta finalizada da mesma linha/RFQ, persistência com uma decisão por RFQ e WPF manual sem pré-seleção;
 - CI #188 validou `RequestForQuotationAwardWindow`, **253/253 testes** e 16 migrations com snapshot EF limpo.
-A compilação WPF valida XAML, handlers, composição de tipos e DI compilável, mas não substitui smoke visual/interativo em Windows real.
+A compilação WPF valida XAML, handlers, composição de tipos e DI compilável; o smoke WPF automatizado valida bootstrap, autenticação, shell e navegação básica de Compras. Ambos não substituem o smoke visual/interativo manual em Windows real.
 
 ### Cobertura de robustez do shell
 
@@ -156,6 +162,7 @@ Executar smoke manual em Windows incluindo:
 - Cotação/RFQ: criação a partir de Solicitação `Submitted`, linhas, fornecedores, envio, respostas, preços/datas, finalização, encerramento/cancelamento e permissões insuficientes;
 - Comparação de Cotações: abertura a partir do RFQ, fornecedores sem resposta, resposta `Draft` sem preço comparável, moedas distintas, linhas sem oferta e rolagem horizontal;
 - Adjudicação: RFQ `Closed`, início explícito, “Sem adjudicação”, seleção/substituição/remoção por linha, permissão insuficiente, finalização e modo somente leitura;
+- Pedido de Compra: criação a partir de adjudicação finalizada, fornecedor elegível, linhas/totais imutáveis, observação em Draft, emissão interna, cancelamento com justificativa e modo somente leitura;
 - verificar que desativar empresa não modifica automaticamente filiais;
 - foco, Enter, fechamento durante mutação, DPI e aparência em Windows real;
 - em build de diagnóstico, validar que uma exceção não tratada do dispatcher gera log, mensagem genérica e encerramento controlado;

@@ -2,7 +2,8 @@
 
 ## P0 — Pré-release / validação de ambiente
 
-- [ ] executar smoke visual/interativo do WPF em Windows real, incluindo Solicitação de Compra, RFQ, Comparação de Cotações e Adjudicação;
+- [x] executar smoke automatizado do WPF no CI Windows cobrindo bootstrap, autenticação, shell, abas de Compras e logout com banco descartável;
+- [ ] executar smoke visual/interativo manual do WPF em Windows real, incluindo Solicitação de Compra, RFQ, Comparação de Cotações, Adjudicação e Pedido de Compra;
 - [ ] executar benchmark do password hashing em hardware Windows representativo do ambiente alvo.
 
 ## P1 — Segurança e administração
@@ -146,7 +147,8 @@
 - [ ] coverage quando a suíte tiver volume suficiente;
 - [ ] verificação automatizada de dependências vulneráveis;
 - [ ] script de package/release;
-- [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
+- [x] smoke automatizado mínimo de UI para bootstrap, autenticação, shell e navegação básica de Compras;
+- [ ] ampliar automação de UI somente para fluxos cujo custo de manutenção se justificar.
 
 ## Baseline atual — 2026-10-23
 
@@ -154,7 +156,7 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.
+Baseline automatizado atual: **271/271 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 7), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, smoke WPF automatizado, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.
 
 O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.
 

@@ -22,8 +22,8 @@
 - A repetição entre os catálogos WPF agora inclui Centros de Custo. Qualquer consolidação em componente comum deve ser feita em refactor próprio, após definir abstração que reduza complexidade sem misturar regras específicas.
 - A migration `20261017234500_AddAdministrativeAuditContext` usa rebuild explícito de tabela por limitação SQLite; preservar esse padrão quando necessário.
 - O rollback de `20261016131952_AddAuthenticationThrottling` ainda emite aviso do EF Core por executar `PRAGMA foreign_keys = 0` fora de transação. O rollback conclui com sucesso, mas a estratégia deve ser revisada antes de release sem alterar migration histórica de forma insegura.
-- O smoke visual/interativo do WPF em Windows real permanece obrigatório; compilação do XAML no CI não valida ergonomia, foco, DPI ou fluxo real.
-- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual.
+- O CI Windows agora possui smoke WPF automatizado com banco descartável para bootstrap, autenticação, abertura do shell, navegação pelas abas de Compras e logout. Esse gate não valida ergonomia, foco, DPI nem o fluxo completo com dados e, portanto, não substitui o smoke visual/interativo manual em Windows real.
+- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual completo.
 - O benchmark de password hashing ainda deve ser repetido em hardware Windows representativo.
 - Verificação automatizada de dependências vulneráveis e script de package/release permanecem pendências de engenharia.
 - Não estender Compras para aprovação, recebimento, estoque, financeiro, fiscal ou integrações externas por suposição. Cada próximo slice deve definir estados, atores, invariantes e limites de escopo antes da implementação.
