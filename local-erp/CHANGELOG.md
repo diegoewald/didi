@@ -13,6 +13,7 @@ O projeto segue versionamento semântico.
 - pacote portátil Windows de QA com publicação `win-x64` self-contained, migration bundle, inicializador seguro de banco novo, metadados de release e hashes SHA-256;
 - auditoria automatizada de vulnerabilidades NuGet diretas/transitivas, com parser JSON e teste sintético de rejeição no CI;
 - coverage automatizado com coletor Microsoft, `dotnet-coverage`, Cobertura/JSON e artifact dedicado, sem threshold percentual arbitrário;
+- navegação por teclado do shell com `Ctrl+1…8`, `Ctrl+Tab`/`Ctrl+Shift+Tab`, `F6`, foco inicial explícito, setas na barra lateral e testes dedicados do Desktop;
 - autenticação local, sessão, RBAC deny-by-default e bootstrap atômico;
 - throttling/lockout, mitigação de timing e `SecurityAuditEvents`;
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
@@ -94,8 +95,8 @@ O projeto segue versionamento semântico.
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
 - NuGet audit: zero vulnerabilidades conhecidas diretas/transitivas; fixture sintética vulnerável rejeitada;
-- suíte automatizada: 271/271;
-- Domain 75/75, Application 130/130, Persistence 59/59, Infrastructure 7/7;
+- suíte automatizada: 285/285;
+- Domain 75/75, Application 130/130, Persistence 59/59, Infrastructure 7/7, Desktop 14/14;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
 - 17 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
@@ -117,6 +118,7 @@ O projeto segue versionamento semântico.
 - CI técnico #204 validou geração do pacote portátil, inicialização de banco novo, recusa de banco existente e smoke WPF sobre o executável/migration bundle publicados;
 - CI técnico #207 validou zero vulnerabilidades NuGet conhecidas, rejeição de uma fixture vulnerável, 271/271 testes e todos os gates de WPF, EF/migrations e package;
 - CI técnico #210 validou 96,76% de coverage de linhas (7.578/7.832), branches corretamente indisponíveis, 271/271 testes e todos os gates anteriores;
+- CI técnico #218 validou a navegação por teclado do shell com 285/285 testes, build sem warnings/erros, coverage de 73,51% agora incluindo Desktop, dois smokes WPF, snapshot EF, 17 migrations e pacote QA;
 - smoke WPF automatizado está integrado ao CI; smoke visual/interativo manual em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15

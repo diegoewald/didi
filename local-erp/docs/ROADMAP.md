@@ -261,3 +261,12 @@ O CI técnico #207 confirmou que o conjunto real de dependências está sem vuln
 ## Marco do coverage automatizado — 2026-10-23
 
 `scripts/coverage.ps1` usa o coletor Microsoft `Code Coverage` e `dotnet-coverage` 18.12.0 para produzir Cobertura/JSON. O CI #210 validou **96,76% de linhas (7.578/7.832)**: Application 96,34%, Domain 88,18%, Infrastructure 57,50% e Persistence 98,91%. Branch coverage é registrado como indisponível porque o relatório não contém dados reais de branches; não há threshold percentual arbitrário. O Desktop permanece validado pelos smokes WPF.
+
+
+## Marco de navegação por teclado do shell — 2026-10-23
+
+O shell WPF passou a ter foco inicial determinístico na navegação lateral, atalhos globais `Ctrl+1…8` para as oito seções, navegação direcional cíclica na barra lateral, `Ctrl+Tab`/`Ctrl+Shift+Tab` para percorrer abas de Cadastros/Compras e `F6` para alternar entre navegação, conteúdo e ações da conta. Os atalhos de seção também ficam expostos em tooltip e `AutomationProperties.HelpText`.
+
+As regras determinísticas foram isoladas em `ShellKeyboardNavigation` e cobertas por `LocalErp.Desktop.Tests`, acrescentando 14 testes. O CI técnico #218 fechou com **285/285 testes**, build Release/benchmark sem warnings ou erros, auditoria NuGet limpa, smoke WPF normal, snapshot EF limpo, 17 migrations em apply -> rollback 0 -> reapply, pacote QA e smoke do binário publicado.
+
+Ao carregar o assembly Desktop na coleta, o coverage total passou de 96,76% em quatro assemblies para **73,51% (7.598/10.336) em cinco assemblies**. Os quatro percentuais anteriores permaneceram estáveis; `LocalErp.Desktop` aparece com 0,80% porque somente a lógica determinística extraída é unitariamente testada. Essa diferença é registrada como ampliação honesta do escopo medido, não como regressão funcional. A ergonomia real de foco/teclado continua no smoke visual manual de pré-release.

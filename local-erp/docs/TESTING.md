@@ -6,7 +6,7 @@
 - Application: casos de uso, autenticação, bootstrap e autorização;
 - Persistence: mappings, constraints, migrations, concorrência e queries críticas;
 - Infrastructure: filesystem, paths e serviços técnicos;
-- Desktop: compilação WPF obrigatória em CI; UI automation somente quando justificar o custo.
+- Desktop: compilação WPF obrigatória, testes determinísticos das regras de teclado/foco e smoke UI Automation; automação adicional somente quando justificar o custo.
 
 ## Regra de bugfix
 
@@ -26,26 +26,33 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Application: 130/130;
 - Persistence: 59/59;
 - Infrastructure: 7/7;
-- Total automatizado: 271/271;
+- Desktop: 14/14;
+- Total automatizado: 285/285;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - NuGet audit: nenhuma vulnerabilidade conhecida em dependências diretas ou transitivas; fixture sintética vulnerável rejeitada pelo gate;
-- Coverage de linhas: 96,76% (7.578/7.832) em Domain/Application/Infrastructure/Persistence; branch coverage indisponível no Cobertura gerado; sem threshold percentual arbitrário;
+- Coverage de linhas: 73,51% (7.598/10.336) em Domain/Application/Infrastructure/Persistence/Desktop; branch coverage indisponível no Cobertura gerado; sem threshold percentual arbitrário;
 - EF Core: sem mudanças pendentes no modelo;
 - Migrations: 17; apply -> rollback 0 -> reapply passando.
 - Package QA: `win-x64` self-contained + migration bundle + hashes; inicialização de banco novo e smoke do binário publicado passando.
 
 ### Coverage automatizado
 
-`scripts/coverage.ps1` usa o coletor Microsoft `Code Coverage` e `dotnet-coverage` 18.12.0 para gerar `coverage.cobertura.xml` e `coverage-summary.json`, publicados como `localerp-code-coverage`. O CI #210 validou **96,76% de linhas (7.578/7.832)**: Application 96,34%, Domain 88,18%, Infrastructure 57,50% e Persistence 98,91%. O Desktop WPF não entra nesse relatório e continua validado pelos smokes.
+`scripts/coverage.ps1` usa o coletor Microsoft `Code Coverage` e `dotnet-coverage` 18.12.0 para gerar `coverage.cobertura.xml` e `coverage-summary.json`, publicados como `localerp-code-coverage`. Com `LocalErp.Desktop.Tests` carregando o assembly WPF, o CI técnico #218 passou a medir cinco assemblies e registrou **73,51% de linhas (7.598/10.336)**: Application 96,34%, Desktop 0,80%, Domain 88,18%, Infrastructure 57,50% e Persistence 98,91%. O baseline anterior de 96,76% cobria somente quatro assemblies e, portanto, não é comparável diretamente ao novo total; os percentuais desses quatro assemblies permaneceram estáveis.
 
-O Cobertura atual não contém dados reais de branches; por isso `branchDataAvailable=false` e o valor padrão não é interpretado como 100%. Não há threshold percentual: o gate falha apenas se a coleta estiver ausente, inválida ou sem linhas válidas.
+O Cobertura atual não contém dados reais de branches; por isso `branchDataAvailable=false` e o valor padrão não é interpretado como 100%. Não há threshold percentual: o gate falha apenas se a coleta estiver ausente, inválida ou sem linhas válidas. O percentual baixo do Desktop reflete que os testes novos cobrem somente as regras determinísticas de navegação por teclado; renderização, integração de foco e fluxo real continuam cobertos por build/smoke e pelo gate manual em Windows.
 
 ### Auditoria NuGet automatizada
 
 Após o restore, `scripts/check-vulnerable-packages.ps1 -NoRestore` executa `dotnet package list --vulnerable --include-transitive --format json`, interpreta o relatório e falha se qualquer pacote direto ou transitivo possuir advisory. Projetos limpos podem aparecer no JSON sem coleção `frameworks`; o parser trata essa forma como zero achados sem relaxar validação de relatório ausente ou inválido.
 
 O CI executa ainda uma fixture JSON com uma dependência sintética `high` e considera sucesso somente quando o script a rejeita. O CI técnico #207 validou simultaneamente o caso limpo real e o caminho de falha sintético.
+
+### Teclado e foco do shell
+
+`LocalErp.Desktop.Tests` adiciona 14 casos determinísticos para o mapeamento de `Ctrl+1…8`, wrap de `Ctrl+Tab`/`Ctrl+Shift+Tab` e ciclo de regiões usado por `F6`. O `MainWindow` continua compilado e inicializado pelos smokes WPF normal e empacotado, evitando validar a regra isolada sem validar também o wiring real do shell.
+
+A automação não injeta teclas físicas no desktop hospedado. O smoke manual em Windows real continua responsável por confirmar foco visível, ordem de tabulação percebida, setas, teclas modificadoras, DPI e ergonomia com teclado real.
 
 ### Smoke WPF automatizado
 
