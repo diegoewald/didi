@@ -9,7 +9,7 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, auditoria NuGet direta/transitiva, smoke WPF e smoke do pacote publicado passando
+- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, auditoria NuGet direta/transitiva, coverage de linhas 96,76%, smoke WPF e smoke do pacote publicado passando
 - Migrations: 17 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
@@ -82,7 +82,7 @@ Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e c
 
 O módulo Compras possui cinco slices verticais operacionais: **Solicitação de Compra**, **Cotação/RFQ**, **Comparação de Cotações**, **Adjudicação manual** e **Pedido de Compra**. O Pedido de Compra nasce somente de adjudicação `Finalized`, mantém um fornecedor por documento, snapshots imutáveis dos termos adjudicados, numeração interna crescente e estados `Draft/Issued/Cancelled`. Emissão é somente estado interno; não existe envio automático ao fornecedor.
 
-Aprovação, recebimento, estoque, financeiro, fiscal e integrações externas continuam fora do código até que suas regras sejam especificadas. O próximo gate de produto é o smoke visual/interativo manual do fluxo completo em Windows real; o pacote portátil de QA já permite executar esse gate sem instalar o SDK .NET. Benchmark de senha em hardware representativo e verificação automatizada de dependências vulneráveis permanecem pendências próprias.
+Aprovação, recebimento, estoque, financeiro, fiscal e integrações externas continuam fora do código até que suas regras sejam especificadas. O próximo gate de produto é o smoke visual/interativo manual do fluxo completo em Windows real; o pacote portátil de QA já permite executar esse gate sem instalar o SDK .NET. Benchmark de senha em hardware representativo permanece pendência de pré-release; auditoria NuGet e coverage automatizado já integram o CI.
 
 ## Pacote Windows de QA
 
@@ -141,6 +141,7 @@ scripts/
 ./scripts/new-migration.ps1 NomeDaMigration
 ./scripts/benchmark-password-hashing.ps1
 ./scripts/check-vulnerable-packages.ps1
+./scripts/coverage.ps1 -Configuration Release
 ./scripts/package-release.ps1 -Configuration Release -Runtime win-x64
 ```
 

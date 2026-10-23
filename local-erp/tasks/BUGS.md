@@ -4,7 +4,7 @@ Nenhum bug funcional confirmado no baseline atual.
 
 ## Validação atual
 
-O ERP é validado pelo `ERP Permanent CI` em Windows Server 2025 com .NET 10. O baseline técnico atual concluiu com sucesso build Release, build da ferramenta de benchmark, **271/271 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 7), smoke WPF automatizado, verificação de snapshot EF, ciclo apply -> rollback 0 -> reapply das **17 migrations**, auditoria NuGet sem vulnerabilidades conhecidas diretas/transitivas e validação do pacote portátil Windows self-contained com migration bundle.
+O ERP é validado pelo `ERP Permanent CI` em Windows Server 2025 com .NET 10. O baseline técnico atual concluiu com sucesso build Release, build da ferramenta de benchmark, **271/271 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 7), smoke WPF automatizado, verificação de snapshot EF, ciclo apply -> rollback 0 -> reapply das **17 migrations**, auditoria NuGet sem vulnerabilidades conhecidas diretas/transitivas, coverage de linhas em 96,76% com Cobertura/JSON válido e validação do pacote portátil Windows self-contained com migration bundle.
 
 O smoke WPF automatizado usa banco e diretório de dados descartáveis e validou bootstrap do primeiro administrador, autenticação automática pós-bootstrap, abertura da `MainWindow`, navegação pelas abas `Solicitações`, `Cotações` e `Pedidos`, logout, login explícito, retorno ao shell e encerramento sem log fatal. O CI técnico #199 validou esse fluxo; o smoke visual/interativo manual completo continua obrigatório antes de release.
 

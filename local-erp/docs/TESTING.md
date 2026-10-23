@@ -18,7 +18,7 @@
 
 ## Validação Windows
 
-O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, auditoria NuGet direta/transitiva com gate de rejeição sintética, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, smoke WPF, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply. Depois gera o pacote portátil Windows self-contained, valida a inicialização de banco novo e executa novamente o smoke usando o executável e o migration bundle publicados.
+O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, auditoria NuGet direta/transitiva com gate de rejeição sintética, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, coleta de coverage, smoke WPF, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply. Depois gera o pacote portátil Windows self-contained, valida a inicialização de banco novo e executa novamente o smoke usando o executável e o migration bundle publicados.
 
 ## Baseline atual — 2026-10-23
 
@@ -30,9 +30,16 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
 - NuGet audit: nenhuma vulnerabilidade conhecida em dependências diretas ou transitivas; fixture sintética vulnerável rejeitada pelo gate;
+- Coverage de linhas: 96,76% (7.578/7.832) em Domain/Application/Infrastructure/Persistence; branch coverage indisponível no Cobertura gerado; sem threshold percentual arbitrário;
 - EF Core: sem mudanças pendentes no modelo;
 - Migrations: 17; apply -> rollback 0 -> reapply passando.
 - Package QA: `win-x64` self-contained + migration bundle + hashes; inicialização de banco novo e smoke do binário publicado passando.
+
+### Coverage automatizado
+
+`scripts/coverage.ps1` usa o coletor Microsoft `Code Coverage` e `dotnet-coverage` 18.12.0 para gerar `coverage.cobertura.xml` e `coverage-summary.json`, publicados como `localerp-code-coverage`. O CI #210 validou **96,76% de linhas (7.578/7.832)**: Application 96,34%, Domain 88,18%, Infrastructure 57,50% e Persistence 98,91%. O Desktop WPF não entra nesse relatório e continua validado pelos smokes.
+
+O Cobertura atual não contém dados reais de branches; por isso `branchDataAvailable=false` e o valor padrão não é interpretado como 100%. Não há threshold percentual: o gate falha apenas se a coleta estiver ausente, inválida ou sem linhas válidas.
 
 ### Auditoria NuGet automatizada
 
