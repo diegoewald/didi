@@ -9,7 +9,7 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, auditoria NuGet direta/transitiva, coverage de linhas 96,76%, smoke WPF e smoke do pacote publicado passando
+- CI Windows: build Release com 0 warnings / 0 errors, 285/285 testes, auditoria NuGet direta/transitiva, coverage de linhas 73,51% sobre cinco assemblies, smoke WPF e smoke do pacote publicado passando
 - Migrations: 17 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
@@ -18,7 +18,7 @@ O primeiro acesso cria o administrador atomicamente e sem credencial padrão. In
 
 A Administração permite gerenciar usuários, roles e permissões com autorização deny-by-default na Application. As salvaguardas preservam ao menos uma capacidade efetiva de `roles.manage`. Reset administrativo e troca própria de senha usam a política central de 15–128 caracteres; a troca própria exige a senha atual e usa compare-and-set transacional do hash. Senhas da UI ficam apenas em `PasswordBox`/variáveis transitórias e não entram em ViewModel, sessão, log ou auditoria.
 
-O shell também registra falhas não tratadas do dispatcher WPF, do `AppDomain` e de tasks não observadas. Uma exceção fatal no dispatcher mostra somente mensagem genérica ao usuário, registra detalhes técnicos em log e encerra a aplicação para evitar continuar uma sessão potencialmente inconsistente. Isso complementa, e não substitui, tratamento local de erros recuperáveis.
+O shell também registra falhas não tratadas do dispatcher WPF, do `AppDomain` e de tasks não observadas. Uma exceção fatal no dispatcher mostra somente mensagem genérica ao usuário, registra detalhes técnicos em log e encerra a aplicação para evitar continuar uma sessão potencialmente inconsistente. Isso complementa, e não substitui, tratamento local de erros recuperáveis. A navegação do shell possui foco inicial explícito, `Ctrl+1…8` para seções, `Ctrl+Tab`/`Ctrl+Shift+Tab` para abas e `F6` para alternar regiões de foco.
 
 ## Cadastros-base
 
@@ -117,6 +117,7 @@ tests/
   LocalErp.Application.Tests/
   LocalErp.Infrastructure.Tests/
   LocalErp.Persistence.Tests/
+  LocalErp.Desktop.Tests/
 tools/
   LocalErp.PasswordHashBenchmark/
 docs/
