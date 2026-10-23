@@ -1,7 +1,11 @@
 [CmdletBinding()]
 param(
     [ValidateSet('Debug', 'Release')]
-    [string]$Configuration = 'Release'
+    [string]$Configuration = 'Release',
+
+    [string]$ExecutablePath,
+
+    [string]$MigrationBundlePath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -13,8 +17,20 @@ Add-Type -AssemblyName UIAutomationTypes
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $smokeRoot = Join-Path $env:TEMP ("LocalErp\WpfSmoke\" + [Guid]::NewGuid().ToString('N'))
 $dbPath = Join-Path $smokeRoot 'Data\localerp.db'
-$appExe = Join-Path $projectRoot "src\LocalErp.Desktop\bin\$Configuration\net10.0-windows\LocalErp.Desktop.exe"
+$appExe = if ([string]::IsNullOrWhiteSpace($ExecutablePath)) {
+    Join-Path $projectRoot "src\LocalErp.Desktop\bin\$Configuration\net10.0-windows\LocalErp.Desktop.exe"
+}
+else {
+    [IO.Path]::GetFullPath($ExecutablePath)
+}
+$migrationBundle = if ([string]::IsNullOrWhiteSpace($MigrationBundlePath)) {
+    $null
+}
+else {
+    [IO.Path]::GetFullPath($MigrationBundlePath)
+}
 $previousRoot = $env:LOCALERP_DATA_ROOT
+$previousEnvironment = $env:DOTNET_ENVIRONMENT
 $process = $null
 
 function Wait-Window {
@@ -150,13 +166,25 @@ try {
     Remove-Item $smokeRoot -Recurse -Force -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Path (Split-Path $dbPath -Parent) -Force | Out-Null
     $env:LOCALERP_DATA_ROOT = $smokeRoot
+    $env:DOTNET_ENVIRONMENT = 'Production'
 
-    $connection = "Data Source=$dbPath;Mode=ReadWriteCreate;Foreign Keys=True;Default Timeout=15"
-    & dotnet ef database update --project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --startup-project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --context ErpDbContext --connection $connection --configuration $Configuration --no-build
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to prepare the isolated smoke database.' }
-    if (-not (Test-Path $appExe)) { throw "Desktop executable not found at '$appExe'. Build the solution first." }
+    $escapedDbPath = $dbPath.Replace('"', '""')
+    $connection = 'Data Source="' + $escapedDbPath + '";Mode=ReadWriteCreate;Foreign Keys=True;Default Timeout=15'
+    if ($null -ne $migrationBundle) {
+        if (-not (Test-Path $migrationBundle -PathType Leaf)) {
+            throw "Migration bundle not found at '$migrationBundle'."
+        }
+        & $migrationBundle --connection $connection --no-color
+        if ($LASTEXITCODE -ne 0) { throw 'Packaged migration bundle failed to prepare the isolated smoke database.' }
+    }
+    else {
+        & dotnet ef database update --project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --startup-project (Join-Path $projectRoot 'src\LocalErp.Persistence\LocalErp.Persistence.csproj') --context ErpDbContext --connection $connection --configuration $Configuration --no-build
+        if ($LASTEXITCODE -ne 0) { throw 'Failed to prepare the isolated smoke database.' }
+    }
 
-    $process = Start-Process -FilePath $appExe -PassThru
+    if (-not (Test-Path $appExe -PathType Leaf)) { throw "Desktop executable not found at '$appExe'. Build or package the application first." }
+
+    $process = Start-Process -FilePath $appExe -WorkingDirectory (Split-Path $appExe -Parent) -PassThru
     $bootstrap = Wait-Window $process.Id 'Configuração inicial — Local ERP'
 
     Set-Value (Find-ByAutomationId $bootstrap 'UsernameTextBox') 'ci-smoke-admin'
@@ -217,5 +245,6 @@ finally {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
     }
     $env:LOCALERP_DATA_ROOT = $previousRoot
+    $env:DOTNET_ENVIRONMENT = $previousEnvironment
     Remove-Item $smokeRoot -Recurse -Force -ErrorAction SilentlyContinue
 }
