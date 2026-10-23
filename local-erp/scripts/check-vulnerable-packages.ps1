@@ -18,48 +18,79 @@ else {
     [IO.Path]::GetFullPath((Join-Path $projectRoot $Solution))
 }
 
+function Get-JsonPropertyValue {
+    param(
+        [Parameter(Mandatory)]
+        [object]$Object,
+
+        [Parameter(Mandatory)]
+        [string]$Name
+    )
+
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property) {
+        return $null
+    }
+
+    return $property.Value
+}
+
 function Get-VulnerabilityFindings {
     param(
         [Parameter(Mandatory)]
         [object]$Report
     )
 
-    if ($null -eq $Report.projects) {
+    $projects = Get-JsonPropertyValue -Object $Report -Name 'projects'
+    if ($null -eq $projects) {
         throw 'NuGet vulnerability report is missing the projects collection.'
     }
 
     $findings = [System.Collections.Generic.List[object]]::new()
 
-    foreach ($project in @($Report.projects)) {
-        $projectPath = if ($null -ne $project.path) { [string]$project.path } else { '<unknown-project>' }
+    foreach ($project in @($projects)) {
+        $projectPathValue = Get-JsonPropertyValue -Object $project -Name 'path'
+        $projectPath = if ($null -ne $projectPathValue) { [string]$projectPathValue } else { '<unknown-project>' }
 
-        foreach ($framework in @($project.frameworks)) {
-            $frameworkName = if ($null -ne $framework.framework) { [string]$framework.framework } else { '<unknown-framework>' }
+        $frameworks = Get-JsonPropertyValue -Object $project -Name 'frameworks'
+        if ($null -eq $frameworks) {
+            continue
+        }
+
+        foreach ($framework in @($frameworks)) {
+            $frameworkValue = Get-JsonPropertyValue -Object $framework -Name 'framework'
+            $frameworkName = if ($null -ne $frameworkValue) { [string]$frameworkValue } else { '<unknown-framework>' }
 
             foreach ($group in @(
                 @{ Name = 'direct'; Property = 'topLevelPackages' },
                 @{ Name = 'transitive'; Property = 'transitivePackages' }
             )) {
-                $property = $framework.PSObject.Properties[$group.Property]
-                if ($null -eq $property -or $null -eq $property.Value) {
+                $packages = Get-JsonPropertyValue -Object $framework -Name $group.Property
+                if ($null -eq $packages) {
                     continue
                 }
 
-                foreach ($package in @($property.Value)) {
-                    $vulnerabilitiesProperty = $package.PSObject.Properties['vulnerabilities']
-                    if ($null -eq $vulnerabilitiesProperty -or $null -eq $vulnerabilitiesProperty.Value) {
+                foreach ($package in @($packages)) {
+                    $vulnerabilities = Get-JsonPropertyValue -Object $package -Name 'vulnerabilities'
+                    if ($null -eq $vulnerabilities) {
                         continue
                     }
 
-                    foreach ($vulnerability in @($vulnerabilitiesProperty.Value)) {
+                    $packageId = Get-JsonPropertyValue -Object $package -Name 'id'
+                    $resolvedVersion = Get-JsonPropertyValue -Object $package -Name 'resolvedVersion'
+
+                    foreach ($vulnerability in @($vulnerabilities)) {
+                        $severity = Get-JsonPropertyValue -Object $vulnerability -Name 'severity'
+                        $advisoryUrl = Get-JsonPropertyValue -Object $vulnerability -Name 'advisoryurl'
+
                         $findings.Add([pscustomobject]@{
                             Project = $projectPath
                             Framework = $frameworkName
                             Dependency = $group.Name
-                            Package = [string]$package.id
-                            Version = [string]$package.resolvedVersion
-                            Severity = [string]$vulnerability.severity
-                            AdvisoryUrl = [string]$vulnerability.advisoryurl
+                            Package = if ($null -ne $packageId) { [string]$packageId } else { '<unknown-package>' }
+                            Version = if ($null -ne $resolvedVersion) { [string]$resolvedVersion } else { '<unknown-version>' }
+                            Severity = if ($null -ne $severity) { [string]$severity } else { '<unknown-severity>' }
+                            AdvisoryUrl = if ($null -ne $advisoryUrl) { [string]$advisoryUrl } else { '<unknown-advisory>' }
                         })
                     }
                 }
@@ -125,12 +156,13 @@ else {
             throw "dotnet package list vulnerability scan failed with exit code $LASTEXITCODE."
         }
 
-        if ([string]::IsNullOrWhiteSpace(($json -join [Environment]::NewLine))) {
+        $rawReport = $json -join [Environment]::NewLine
+        if ([string]::IsNullOrWhiteSpace($rawReport)) {
             throw 'NuGet vulnerability scan returned an empty report.'
         }
 
         try {
-            $report = ($json -join [Environment]::NewLine) | ConvertFrom-Json -Depth 100
+            $report = $rawReport | ConvertFrom-Json -Depth 100
         }
         catch {
             throw "NuGet vulnerability scan returned invalid JSON: $($_.Exception.Message)"
