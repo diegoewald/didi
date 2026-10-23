@@ -135,7 +135,7 @@
 - [x] implementar Domain/Application do Pedido de Compra com snapshots, `Draft/Issued/Cancelled`, `purchase-orders.read/manage` e termos reconstruídos da adjudicação;
 - [x] cobrir criação, imutabilidade, emissão, cancelamento, autorização e agrupamento por fornecedor com testes;
 - [x] implementar persistência EF e sequência transacional do Pedido de Compra;
-- [ ] integrar workspace WPF do Pedido de Compra depois da persistência validada;
+- [x] integrar workspace WPF do Pedido de Compra depois da persistência validada;
 - [ ] manter recebimento, estoque, financeiro e fiscal fora do Pedido de Compra até requisitos explícitos.
 
 ## P2 — Engenharia
@@ -148,13 +148,13 @@
 - [ ] script de package/release;
 - [ ] teste automatizado de UI somente para fluxos cujo custo se justificar.
 
-## Baseline atual — 2026-10-22
+## Baseline atual — 2026-10-23
 
 Empresa, filial, fornecedor, material, produto, unidade de medida, categoria e centro de custo permanecem operacionais nos cadastros-base.
 
 O primeiro slice de **Solicitação de Compra** está implementado de Domain a WPF. Ele usa `Draft`, `Submitted` e `Cancelled`, linha por descrição/quantidade/Unidade de Medida e permissões `purchase-requests.read/manage`. A tela de Compras lista e filtra solicitações, cria/abre rascunhos, edita observação e linhas, envia, cancela com justificativa e mantém `Submitted`/`Cancelled` em modo somente leitura. Unidades inativas continuam disponíveis para resolver nomes históricos, mas não podem ser selecionadas em novas alterações.
 
-Baseline automatizado atual: **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.
+Baseline automatizado atual: **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), **17 migrations**, build Release e benchmark tool com 0 warnings/erros, snapshot EF sem mudanças pendentes e apply -> rollback 0 -> reapply validados no CI Windows.
 
 O segundo slice de **Cotação/RFQ** também está implementado de Domain a WPF: origem em Solicitação `Submitted`, seleção de linhas, fornecedores convidados, envio, respostas em rascunho/finalizadas, preço unitário, data prometida, encerramento e cancelamento. Não existe seleção automática de vencedor nem geração de Pedido de Compra.
 
@@ -162,6 +162,6 @@ O terceiro slice de **Comparação de Cotações** está implementado como leitu
 
 O quarto slice de **Adjudicação manual** também está implementado de Domain a WPF: somente RFQ `Closed`, uma oferta `Finalized` por linha inteira, linhas opcionais sem adjudicação, permissão própria, persistência auditável e decisão imutável após finalização.
 
-O quinto slice de **Pedido de Compra** está especificado e possui Domain/Application/persistência validados: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. A UI WPF ainda não está implementada.
+O quinto slice de **Pedido de Compra** está implementado de Domain a WPF: um fornecedor por pedido, origem obrigatória em adjudicação `Finalized`, snapshots imutáveis dos termos adjudicados, estados `Draft/Issued/Cancelled`, permissões próprias, `PurchaseOrders`/`PurchaseOrderLines`, preço unitário escalado no SQLite e numeração crescente reservada sob transação imediata. O workspace WPF lista e filtra pedidos, mostra numeração `PC-000001`, cria somente a partir de adjudicações elegíveis, preserva linhas/valores como somente leitura, permite observação em `Draft`, emissão interna e cancelamento com justificativa, mantendo o histórico de emissão mesmo após cancelamento.
 
-A próxima prioridade funcional é **integrar o workspace WPF de Pedido de Compra** sobre os casos de uso e a persistência já validados. Aprovação, recebimento, estoque, financeiro e fiscal permanecem fora do código até haver regras explícitas. Smoke WPF e benchmark em hardware representativo permanecem pendências de pré-release.
+A próxima prioridade é **executar o smoke visual/interativo em Windows real do fluxo completo de Compras**, incluindo Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra. Qualquer próximo slice funcional de Compras deve ser especificado antes de código; aprovação, recebimento, estoque, financeiro, fiscal e integrações com fornecedor permanecem fora do escopo até haver regras explícitas. O benchmark em hardware representativo continua como pendência de pré-release.

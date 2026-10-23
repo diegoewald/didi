@@ -4,7 +4,7 @@
 
 - O shell ainda possui estilos locais; extrair design system somente quando a repetição justificar.
 - Backup/restauração e atualização possuem estratégia documentada, mas fluxo final de produto ainda não está implementado.
-- Segurança, administração, Empresa, Filial, Fornecedor, Material, Produto, Unidade de Medida, Categoria e Centro de Custo estão implementados e validados. A Fase 6 de cadastros-base está concluída; a próxima frente funcional depende da definição do fluxo mínimo de Compras com regras reais de negócio.
+- Segurança, administração, cadastros-base e os cinco slices atuais de Compras — Solicitação, RFQ, Comparação, Adjudicação e Pedido de Compra — estão implementados e validados. Qualquer próximo slice funcional de Compras deve ser especificado antes de código.
 - O tratamento global de exceções além do startup está implementado. Erros recuperáveis continuam responsabilidade do caso de uso/tela correspondente; não usar a barreira global como substituto de tratamento local.
 - A proteção administrativa cobre os caminhos atuais que podem eliminar `roles.manage`; futuras mutações do grafo RBAC devem reutilizar salvaguarda equivalente.
 - `SecurityAuditEvents` ainda não possui política aprovada de retenção/limpeza.
@@ -23,9 +23,9 @@
 - A migration `20261017234500_AddAdministrativeAuditContext` usa rebuild explícito de tabela por limitação SQLite; preservar esse padrão quando necessário.
 - O rollback de `20261016131952_AddAuthenticationThrottling` ainda emite aviso do EF Core por executar `PRAGMA foreign_keys = 0` fora de transação. O rollback conclui com sucesso, mas a estratégia deve ser revisada antes de release sem alterar migration histórica de forma insegura.
 - O smoke visual/interativo do WPF em Windows real permanece obrigatório; compilação do XAML no CI não valida ergonomia, foco, DPI ou fluxo real.
-- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo e o encerramento por falha global precisam entrar no smoke manual.
+- Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual.
 - O benchmark de password hashing ainda deve ser repetido em hardware Windows representativo.
 - Verificação automatizada de dependências vulneráveis e script de package/release permanecem pendências de engenharia.
-- O módulo de Compras não deve ser modelado por suposição. Antes do primeiro slice é necessário definir estados, atores, invariantes e o menor fluxo real que o ERP precisa suportar.
+- Não estender Compras para aprovação, recebimento, estoque, financeiro, fiscal ou integrações externas por suposição. Cada próximo slice deve definir estados, atores, invariantes e limites de escopo antes da implementação.
 
 Nada acima deve ser ocultado por TODOs dispersos no código.

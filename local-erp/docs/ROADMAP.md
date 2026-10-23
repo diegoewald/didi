@@ -78,7 +78,7 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [x] compras: quinto slice de Pedido de Compra especificado em `docs/PURCHASE-ORDER-SPEC.md`;
 - [x] compras: Domain/Application de Pedido de Compra implementados com snapshots, estados `Draft/Issued/Cancelled` e permissões `purchase-orders.read/manage`;
 - [x] compras: persistência EF e migration `20261022154117_AddPurchaseOrders` validadas, com FKs/unicidades, preço escalado e sequência protegida por transação imediata SQLite;
-- [ ] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.
+- [x] compras: integrar workspace WPF de Pedido de Compra ao módulo Compras.
 
 ## Fases posteriores
 
@@ -227,3 +227,11 @@ O quinto slice vertical de Compras transforma adjudicação `Finalized` em `Purc
 `SqlitePurchaseOrderRepository` reserva `SequenceNumber` crescente dentro de transação SQLite imediata, evitando `MAX + 1` desprotegido. A persistência garante unicidade de sequência, de `(RequestForQuotationAwardId, SupplierId)` e de `RequestForQuotationAwardLineId`; `UnitPrice` segue o ADR-0005 como inteiro escalado de seis casas. A migration `20261022154117_AddPurchaseOrders` é a 17ª migration.
 
 A validação Windows passou com **269/269 testes** (Domain 75, Application 129, Persistence 59, Infrastructure 6), build Release/benchmark sem warnings ou erros, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply. A próxima prioridade é a **UI WPF de Pedido de Compra**; recebimento continua fora do escopo até especificação própria.
+
+## Marco da UI WPF de Pedido de Compra — 2026-10-23
+
+O módulo `Compras` passou a ter a terceira aba `Pedidos`. O workspace lista e filtra `Draft/Issued/Cancelled`, exibe numeração interna `PC-000001`, fornecedor, moeda, total e data, e abre o documento com suas linhas imutáveis e histórico de ciclo de vida.
+
+A criação usa `PurchaseOrderCreationLookupService`, que exige `purchase-orders.manage` e oferece somente combinações de adjudicação `Finalized` + fornecedor ativo ainda não convertidas. A UI recebe apenas identificadores e dados de apresentação; fornecedor, quantidade, unidade, preço, moeda e data prometida continuam sendo reconstruídos por `PurchaseOrderService` a partir das fontes confiáveis. Observação só pode ser alterada em `Draft`; emissão e cancelamento continuam passando pela Application/Domain. A tela deixa explícito que `Emitir` altera apenas o estado interno e não envia e-mail, EDI, API ou outra comunicação ao fornecedor. Um pedido emitido e depois cancelado preserva visualmente a data original de emissão.
+
+O CI Windows validou **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e as 17 migrations em apply -> rollback 0 -> reapply. O próximo gate é o **smoke visual/interativo em Windows real do fluxo completo de Compras**. Qualquer novo slice funcional deve ser especificado antes da implementação; recebimento, estoque, financeiro, fiscal, aprovação e integrações externas continuam fora do escopo atual.
