@@ -1,5 +1,10 @@
-import { BarChart3, BookOpen, CreditCard, DatabaseBackup, FileDown, Flag, Home, LayoutDashboard, PieChart, ReceiptText, Settings, Tags, Upload, WalletCards } from 'lucide-react';
+import { BrainCircuit, FileImage, Microscope, ShieldAlert } from 'lucide-react';
+
 export const routes = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }, { path: '/lancamentos', label: 'Lançamentos', icon: ReceiptText }, { path: '/importar', label: 'Importar', icon: Upload }, { path: '/categorias', label: 'Categorias', icon: Tags }, { path: '/contas', label: 'Contas', icon: WalletCards }, { path: '/cartoes', label: 'Cartões', icon: CreditCard }, { path: '/orcamentos', label: 'Orçamentos', icon: PieChart }, { path: '/metas', label: 'Metas', icon: Flag }, { path: '/relatorios', label: 'Relatórios', icon: BarChart3 }, { path: '/backups', label: 'Backups', icon: DatabaseBackup }, { path: '/configuracoes', label: 'Configurações', icon: Settings },
+  { path: '/forense', label: 'Análise forense', icon: Microscope },
+  { path: '/forense#metadados', label: 'Metadados', icon: FileImage },
+  { path: '/forense#evidencias', label: 'Evidências', icon: ShieldAlert },
+  { path: '/forense#modelos', label: 'Heurísticas', icon: BrainCircuit },
 ];
-export const quickActions = [{ path: '/importar', label: 'Importar planilha', icon: FileDown }, { path: '/lancamentos', label: 'Novo lançamento', icon: BookOpen }, { path: '/dashboard', label: 'Ver resumo', icon: Home }];
+
+export const quickActions = [{ path: '/forense', label: 'Nova análise', icon: FileImage }];
