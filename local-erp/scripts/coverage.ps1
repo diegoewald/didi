@@ -149,6 +149,9 @@ try {
         throw "Coverage test run produced no .coverage files under '$rawRoot'."
     }
 
+    $env:DOTNET_COVERAGE_TELEMETRY_OPTOUT = '1'
+    $env:DOTNET_COVERAGE_NOLOGO = '1'
+
     $mergeArguments = @('tool', 'run', 'dotnet-coverage', '--', 'merge')
     $mergeArguments += @($coverageFiles | ForEach-Object FullName)
     $mergeArguments += @('-o', $coberturaPath, '-f', 'cobertura', '--nologo')
@@ -165,19 +168,52 @@ try {
     }
 
     $lineRate = Get-RequiredDoubleAttribute -Element $coverageElement -Name 'line-rate'
-    $branchRate = Get-RequiredDoubleAttribute -Element $coverageElement -Name 'branch-rate'
     $linesCovered = Get-OptionalInt64Attribute -Element $coverageElement -Name 'lines-covered'
     $linesValid = Get-OptionalInt64Attribute -Element $coverageElement -Name 'lines-valid'
-    $branchesCovered = Get-OptionalInt64Attribute -Element $coverageElement -Name 'branches-covered'
-    $branchesValid = Get-OptionalInt64Attribute -Element $coverageElement -Name 'branches-valid'
+
+    if ($null -eq $linesValid -or $linesValid -le 0) {
+        throw 'Merged coverage report contains no valid source lines.'
+    }
+
+    $branchNodes = @($coverageDocument.SelectNodes("//line[@branch='True' or @branch='true']"))
+    $branchDataAvailable = $branchNodes.Count -gt 0
+    $branchRate = if ($branchDataAvailable) {
+        Get-RequiredDoubleAttribute -Element $coverageElement -Name 'branch-rate'
+    }
+    else {
+        $null
+    }
+
+    $branchesCovered = if ($branchDataAvailable) {
+        Get-OptionalInt64Attribute -Element $coverageElement -Name 'branches-covered'
+    }
+    else {
+        $null
+    }
+
+    $branchesValid = if ($branchDataAvailable) {
+        Get-OptionalInt64Attribute -Element $coverageElement -Name 'branches-valid'
+    }
+    else {
+        $null
+    }
 
     $packageSummaries = @(
         foreach ($packageNode in @($coverageDocument.SelectNodes('/coverage/packages/package'))) {
             $packageElement = [System.Xml.XmlElement]$packageNode
+            $packageBranchNodes = @($packageElement.SelectNodes(".//line[@branch='True' or @branch='true']"))
+            $packageBranchDataAvailable = $packageBranchNodes.Count -gt 0
+
             [pscustomobject][ordered]@{
                 name = $packageElement.GetAttribute('name')
                 lineRate = Get-RequiredDoubleAttribute -Element $packageElement -Name 'line-rate'
-                branchRate = Get-RequiredDoubleAttribute -Element $packageElement -Name 'branch-rate'
+                branchDataAvailable = $packageBranchDataAvailable
+                branchRate = if ($packageBranchDataAvailable) {
+                    Get-RequiredDoubleAttribute -Element $packageElement -Name 'branch-rate'
+                }
+                else {
+                    $null
+                }
             }
         }
     ) | Sort-Object name
@@ -187,7 +223,7 @@ try {
     }
 
     $summary = [ordered]@{
-        schemaVersion = 1
+        schemaVersion = 2
         generatedAtUtc = [DateTimeOffset]::UtcNow.ToString('O')
         configuration = $Configuration
         rawReportCount = $coverageFiles.Count
@@ -196,10 +232,11 @@ try {
         overall = [ordered]@{
             lineRate = [Math]::Round($lineRate, 6)
             linePercent = [Math]::Round($lineRate * 100, 2)
-            branchRate = [Math]::Round($branchRate, 6)
-            branchPercent = [Math]::Round($branchRate * 100, 2)
             linesCovered = $linesCovered
             linesValid = $linesValid
+            branchDataAvailable = $branchDataAvailable
+            branchRate = if ($null -ne $branchRate) { [Math]::Round($branchRate, 6) } else { $null }
+            branchPercent = if ($null -ne $branchRate) { [Math]::Round($branchRate * 100, 2) } else { $null }
             branchesCovered = $branchesCovered
             branchesValid = $branchesValid
         }
@@ -209,11 +246,16 @@ try {
     $summary | ConvertTo-Json -Depth 8 | Set-Content $summaryPath -Encoding utf8
 
     $linePercentText = ('{0:F2}%' -f ($lineRate * 100))
-    $branchPercentText = ('{0:F2}%' -f ($branchRate * 100))
+    $branchCoverageText = if ($null -ne $branchRate) {
+        '{0:F2}%' -f ($branchRate * 100)
+    }
+    else {
+        'not available in the generated Cobertura report'
+    }
 
-    Write-Host "Coverage baseline generated successfully."
+    Write-Host 'Coverage baseline generated successfully.'
     Write-Host "Line coverage:   $linePercentText"
-    Write-Host "Branch coverage: $branchPercentText"
+    Write-Host "Branch coverage: $branchCoverageText"
     Write-Host "Packages:        $($packageSummaries.Count)"
     Write-Host "Cobertura:       $coberturaPath"
     Write-Host "Summary:         $summaryPath"
@@ -224,7 +266,7 @@ try {
             '## Local ERP code coverage baseline',
             '',
             "- Line coverage: **$linePercentText**",
-            "- Branch coverage: **$branchPercentText**",
+            "- Branch coverage: **$branchCoverageText**",
             "- Covered packages: **$($packageSummaries.Count)**",
             "- Raw reports merged: **$($coverageFiles.Count)**",
             '- Policy: baseline/observability only; no arbitrary percentage threshold is enforced.'
