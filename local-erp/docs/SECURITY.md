@@ -11,6 +11,14 @@
 - princípio do menor privilégio;
 - ações administrativas auditáveis.
 
+## Dependências e supply chain
+
+A auditoria de pacotes NuGet é política explícita do repositório. `Directory.Build.props` mantém `NuGetAudit=true`, `NuGetAuditMode=all` e `NuGetAuditLevel=low`, portanto referências diretas e transitivas entram na verificação desde a menor severidade reportada.
+
+`NU1901` a `NU1904` permanecem warnings durante restore/build mesmo com `TreatWarningsAsErrors`, porque o gate dedicado `scripts/check-vulnerable-packages.ps1` é a autoridade do CI: ele consulta `dotnet package list --vulnerable --include-transitive` em JSON e falha se existir qualquer advisory conhecido. O CI também injeta um relatório sintético vulnerável e exige que ele seja rejeitado, evitando um gate que passe apenas por erro de parser ou configuração.
+
+Não há supressão geral de advisories. Uma vulnerabilidade nova deve ser resolvida por atualização/remoção da dependência ou, se uma exceção específica algum dia for necessária, por decisão de risco documentada e restrita ao advisory correspondente.
+
 ## Password hashing e política de senha
 
 A implementação inicial usa `PasswordHasher<TUser>` da Microsoft no formato IdentityV3, encapsulada por `IPasswordHashService`, com `IterationCount = 220000`.

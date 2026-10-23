@@ -12,7 +12,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 
 - [x] solução em camadas, logging e diretórios locais;
 - [x] restore/build/test Windows sem warnings/erros;
-- [x] CI Windows permanente.
+- [x] CI Windows permanente;
+- [x] auditoria automatizada de vulnerabilidades NuGet diretas/transitivas no CI.
 
 ## Fase 2 — Persistência
 
@@ -248,3 +249,10 @@ O baseline subiu para **271/271 testes** (Domain 75, Application 130, Persistenc
 O projeto passou a gerar `LocalErp-0.1.0-win-x64.zip` por `scripts/package-release.ps1`. O pacote contém o Desktop WPF publicado como self-contained, migration bundle da mesma release, inicializador restrito a banco novo, manifesto de release e hashes SHA-256.
 
 O CI #204 validou o pacote de ponta a ponta: 271/271 testes, smoke WPF normal, snapshot EF limpo, 17 migrations em apply -> rollback 0 -> reapply, criação de banco novo pelo bundle, recusa explícita de banco existente e um segundo smoke WPF executando o binário publicado com o bundle publicado. Esse marco destrava o smoke manual em máquina Windows sem depender do SDK .NET, mas não conclui instalador, assinatura, atualização automática, backup ou recuperação segura de upgrade.
+
+
+## Marco da auditoria NuGet automatizada — 2026-10-23
+
+O CI passou a executar `scripts/check-vulnerable-packages.ps1` após o restore, usando o relatório JSON de `dotnet package list --vulnerable --include-transitive`. A política explícita usa `NuGetAuditMode=all` e `NuGetAuditLevel=low`; qualquer advisory conhecido, direto ou transitivo, bloqueia o baseline validado.
+
+O CI técnico #207 confirmou que o conjunto real de dependências está sem vulnerabilidades conhecidas e também validou o caminho negativo com uma fixture sintética de severidade `high`, que foi corretamente rejeitada. O mesmo run preservou 271/271 testes, build sem warnings/erros, smoke WPF, snapshot EF, 17 migrations e smoke do pacote publicado.

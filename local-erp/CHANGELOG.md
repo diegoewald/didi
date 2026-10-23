@@ -11,6 +11,7 @@ O projeto segue versionamento semântico.
 - fundação .NET 10/WPF, SQLite/EF Core, WAL e tooling de migrations;
 - smoke WPF automatizado no CI Windows com dados descartáveis, cobrindo bootstrap, autenticação, shell, abas básicas de Compras e logout;
 - pacote portátil Windows de QA com publicação `win-x64` self-contained, migration bundle, inicializador seguro de banco novo, metadados de release e hashes SHA-256;
+- auditoria automatizada de vulnerabilidades NuGet diretas/transitivas, com parser JSON e teste sintético de rejeição no CI;
 - autenticação local, sessão, RBAC deny-by-default e bootstrap atômico;
 - throttling/lockout, mitigação de timing e `SecurityAuditEvents`;
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
@@ -91,6 +92,7 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
+- NuGet audit: zero vulnerabilidades conhecidas diretas/transitivas; fixture sintética vulnerável rejeitada;
 - suíte automatizada: 271/271;
 - Domain 75/75, Application 130/130, Persistence 59/59, Infrastructure 7/7;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
@@ -112,6 +114,7 @@ O projeto segue versionamento semântico.
 - CI #188 validou Adjudicação manual de RFQ, compilação WPF, 253/253 testes, snapshot EF limpo e 16 migrations;
 - CI técnico #199 validou o smoke WPF automatizado, 271/271 testes, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply;
 - CI técnico #204 validou geração do pacote portátil, inicialização de banco novo, recusa de banco existente e smoke WPF sobre o executável/migration bundle publicados;
+- CI técnico #207 validou zero vulnerabilidades NuGet conhecidas, rejeição de uma fixture vulnerável, 271/271 testes e todos os gates de WPF, EF/migrations e package;
 - smoke WPF automatizado está integrado ao CI; smoke visual/interativo manual em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
