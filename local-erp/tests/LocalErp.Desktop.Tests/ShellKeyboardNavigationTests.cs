@@ -6,12 +6,12 @@ namespace LocalErp.Desktop.Tests;
 [TestClass]
 public sealed class ShellKeyboardNavigationTests
 {
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(Key.D1, 0)]
     [DataRow(Key.NumPad1, 0)]
     [DataRow(Key.D3, 2)]
     [DataRow(Key.NumPad8, 7)]
-    public void TryGetNavigationIndex_MapsSupportedSectionKeys(Key key, int expectedIndex)
+    public void TryGetNavigationIndexMapsSupportedSectionKeys(Key key, int expectedIndex)
     {
         var matched = ShellKeyboardNavigation.TryGetNavigationIndex(key, out var index);
 
@@ -20,7 +20,7 @@ public sealed class ShellKeyboardNavigationTests
     }
 
     [TestMethod]
-    public void TryGetNavigationIndex_RejectsUnsupportedKey()
+    public void TryGetNavigationIndexRejectsUnsupportedKey()
     {
         var matched = ShellKeyboardNavigation.TryGetNavigationIndex(Key.D9, out var index);
 
@@ -28,12 +28,12 @@ public sealed class ShellKeyboardNavigationTests
         Assert.AreEqual(-1, index);
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(0, 3, 1, 1)]
     [DataRow(2, 3, 1, 0)]
     [DataRow(0, 3, -1, 2)]
     [DataRow(-1, 3, 1, 1)]
-    public void GetNextTabIndex_CyclesWithinTabSet(int currentIndex, int itemCount, int direction, int expected)
+    public void GetNextTabIndexCyclesWithinTabSet(int currentIndex, int itemCount, int direction, int expected)
     {
         var next = ShellKeyboardNavigation.GetNextTabIndex(currentIndex, itemCount, direction);
 
@@ -41,24 +41,24 @@ public sealed class ShellKeyboardNavigationTests
     }
 
     [TestMethod]
-    public void GetNextTabIndex_RejectsInvalidDirection()
+    public void GetNextTabIndexRejectsInvalidDirection()
     {
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
             ShellKeyboardNavigation.GetNextTabIndex(0, 3, 0));
     }
 
     [TestMethod]
-    public void GetNextTabIndex_RejectsEmptyTabSet()
+    public void GetNextTabIndexRejectsEmptyTabSet()
     {
         Assert.ThrowsExactly<ArgumentOutOfRangeException>(() =>
             ShellKeyboardNavigation.GetNextTabIndex(0, 0, 1));
     }
 
-    [DataTestMethod]
+    [TestMethod]
     [DataRow(ShellFocusRegion.Navigation, ShellFocusRegion.Content)]
     [DataRow(ShellFocusRegion.Content, ShellFocusRegion.Account)]
     [DataRow(ShellFocusRegion.Account, ShellFocusRegion.Navigation)]
-    public void GetNextFocusRegion_CyclesShellRegions(ShellFocusRegion current, ShellFocusRegion expected)
+    public void GetNextFocusRegionCyclesShellRegions(ShellFocusRegion current, ShellFocusRegion expected)
     {
         var next = ShellKeyboardNavigation.GetNextFocusRegion(current);
 
