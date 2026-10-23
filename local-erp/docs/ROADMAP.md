@@ -36,7 +36,8 @@ Legenda: `[ ]` pendente, `[-]` em andamento, `[x]` concluído.
 - [ ] atalhos e foco/teclado;
 - [-] estados loading/empty/error já existem em Administração, Cadastros, Solicitações de Compra e RFQ, ainda sem componente comum;
 - [ ] componentes reutilizáveis de tabela/filtro quando repetição justificar;
-- [ ] smoke visual/interativo em Windows real.
+- [x] smoke WPF automatizado no CI Windows para bootstrap, autenticação, shell, abas de Compras e logout;
+- [ ] smoke visual/interativo manual em Windows real.
 
 ## Fase 5 — Administração de usuários e roles
 
@@ -235,3 +236,9 @@ O módulo `Compras` passou a ter a terceira aba `Pedidos`. O workspace lista e f
 A criação usa `PurchaseOrderCreationLookupService`, que exige `purchase-orders.manage` e oferece somente combinações de adjudicação `Finalized` + fornecedor ativo ainda não convertidas. A UI recebe apenas identificadores e dados de apresentação; fornecedor, quantidade, unidade, preço, moeda e data prometida continuam sendo reconstruídos por `PurchaseOrderService` a partir das fontes confiáveis. Observação só pode ser alterada em `Draft`; emissão e cancelamento continuam passando pela Application/Domain. A tela deixa explícito que `Emitir` altera apenas o estado interno e não envia e-mail, EDI, API ou outra comunicação ao fornecedor. Um pedido emitido e depois cancelado preserva visualmente a data original de emissão.
 
 O CI Windows validou **270/270 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 6), build Release e benchmark tool com 0 warnings/erros, snapshot EF limpo e as 17 migrations em apply -> rollback 0 -> reapply. O próximo gate é o **smoke visual/interativo em Windows real do fluxo completo de Compras**. Qualquer novo slice funcional deve ser especificado antes da implementação; recebimento, estoque, financeiro, fiscal, aprovação e integrações externas continuam fora do escopo atual.
+
+## Marco do smoke WPF automatizado — 2026-10-23
+
+O CI Windows passou a executar `scripts/smoke-wpf.ps1` com um diretório `LOCALERP_DATA_ROOT` temporário e banco SQLite descartável. O gate aplica as migrations reais, abre o executável WPF e valida por UI Automation o bootstrap do primeiro administrador, a autenticação automática pós-bootstrap, a abertura da `MainWindow`, a navegação por `Compras` e pelas abas `Solicitações`, `Cotações` e `Pedidos`, logout, login explícito e retorno ao shell.
+
+O baseline subiu para **271/271 testes** (Domain 75, Application 130, Persistence 59, Infrastructure 7), mantendo 17 migrations e snapshot EF limpo. Esse smoke reduz regressões de startup/composição/navegação, mas não substitui o smoke visual/interativo manual de ergonomia, foco, DPI e do fluxo completo com Comparação, Adjudicação e mutações de Pedido de Compra.

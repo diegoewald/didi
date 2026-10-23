@@ -9,6 +9,7 @@ O projeto segue versionamento semântico.
 ### Added
 
 - fundação .NET 10/WPF, SQLite/EF Core, WAL e tooling de migrations;
+- smoke WPF automatizado no CI Windows com dados descartáveis, cobrindo bootstrap, autenticação, shell, abas básicas de Compras e logout;
 - autenticação local, sessão, RBAC deny-by-default e bootstrap atômico;
 - throttling/lockout, mitigação de timing e `SecurityAuditEvents`;
 - administração de usuários, roles/permissões e auditoria administrativa atômica;
@@ -89,10 +90,10 @@ O projeto segue versionamento semântico.
 - .NET SDK 10.0.402 / runtime 10.0.13;
 - Release build: 0 warnings / 0 errors;
 - benchmark tool: 0 warnings / 0 errors;
-- suíte automatizada: 253/253;
-- Domain 69/69, Application 124/124, Persistence 54/54, Infrastructure 6/6;
+- suíte automatizada: 271/271;
+- Domain 75/75, Application 130/130, Persistence 59/59, Infrastructure 7/7;
 - EF Core 10.0.13: sem mudanças pendentes no modelo;
-- 16 migrations: apply -> rollback 0 -> reapply passando;
+- 17 migrations: apply -> rollback 0 -> reapply passando;
 - CI #108 validou o slice completo de Fornecedores;
 - CI #109 recompilou o tratamento global de exceções e preservou todo o baseline;
 - CI #112 validou o núcleo de Materiais, snapshot EF e a nona migration;
@@ -108,7 +109,8 @@ O projeto segue versionamento semântico.
 - CI #160 validou o slice vertical de RFQ com 235/235 testes, snapshot EF consistente e 15 migrations em apply -> rollback 0 -> reapply;
 - CI #166 validou Comparação de Cotações, compilação WPF, 238/238 testes, snapshot EF limpo e as mesmas 15 migrations;
 - CI #188 validou Adjudicação manual de RFQ, compilação WPF, 253/253 testes, snapshot EF limpo e 16 migrations;
-- smoke visual/interativo em Windows real permanece obrigatório antes de release.
+- CI técnico #199 validou o smoke WPF automatizado, 271/271 testes, snapshot EF limpo e 17 migrations em apply -> rollback 0 -> reapply;
+- smoke WPF automatizado está integrado ao CI; smoke visual/interativo manual em Windows real permanece obrigatório antes de release.
 
 ## [0.1.0] - 2026-10-15
 
