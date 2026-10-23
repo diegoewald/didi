@@ -81,3 +81,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "ci(purchases): remove temporary WPF validation"
           git push origin HEAD:erp-purchase-order-wpf
+
+# explicit rerun after analyzer and lifecycle fixes
