@@ -1,0 +1,60 @@
+name: ERP Fix Purchase Order WPF Findings
+
+on:
+  push:
+    branches:
+      - erp-purchase-order-wpf
+    paths:
+      - '.github/workflows/erp-fix-purchase-order-wpf.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Apply validation and lifecycle fixes
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_exact(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise RuntimeError(f'Expected text not found in {path}: {old!r}')
+              p.write_text(text.replace(old, new), encoding='utf-8')
+
+          test = 'local-erp/tests/LocalErp.Application.Tests/PurchaseOrderCreationLookupServiceTests.cs'
+          replace_exact(test, 'award.Lines.First().Id', 'award.Lines[0].Id')
+
+          vm = 'local-erp/src/LocalErp.Desktop/ViewModels/PurchaseOrdersWorkspaceViewModel.cs'
+          replace_exact(
+              vm,
+              '    public bool IsIssued => CurrentPurchaseOrder?.Status == PurchaseOrderStatus.Issued;\n\n    public bool IsCancelled',
+              '    public bool IsIssued => CurrentPurchaseOrder?.Status == PurchaseOrderStatus.Issued;\n\n    public bool HasIssuedHistory => CurrentPurchaseOrder?.IssuedAtUtc is not null;\n\n    public bool IsCancelled')
+          replace_exact(
+              vm,
+              '        OnPropertyChanged(nameof(IsIssued));\n        OnPropertyChanged(nameof(IsCancelled));',
+              '        OnPropertyChanged(nameof(IsIssued));\n        OnPropertyChanged(nameof(HasIssuedHistory));\n        OnPropertyChanged(nameof(IsCancelled));')
+
+          xaml = 'local-erp/src/LocalErp.Desktop/Views/PurchaseOrdersWorkspaceView.xaml'
+          replace_exact(
+              xaml,
+              'Visibility="{Binding IsIssued, Converter={StaticResource BoolToVisibilityConverter}}">',
+              'Visibility="{Binding HasIssuedHistory, Converter={StaticResource BoolToVisibilityConverter}}">')
+
+      - name: Commit fixes and remove temporary workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/erp-fix-purchase-order-wpf.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add local-erp/tests/LocalErp.Application.Tests/PurchaseOrderCreationLookupServiceTests.cs \
+                  local-erp/src/LocalErp.Desktop/ViewModels/PurchaseOrdersWorkspaceViewModel.cs \
+                  local-erp/src/LocalErp.Desktop/Views/PurchaseOrdersWorkspaceView.xaml
+          git commit -m "fix(purchases): address WPF validation findings"
+          git push origin HEAD:erp-purchase-order-wpf
