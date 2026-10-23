@@ -9,7 +9,7 @@ ERP desktop local-first para Windows, desenvolvido como produto de longo prazo.
 - UI: WPF em .NET 10 LTS
 - Persistência: SQLite via EF Core 10
 - Estratégia futura de rede: PostgreSQL em arquitetura cliente/servidor
-- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, smoke WPF e smoke do pacote publicado passando
+- CI Windows: build Release com 0 warnings / 0 errors, 271/271 testes, auditoria NuGet direta/transitiva, smoke WPF e smoke do pacote publicado passando
 - Migrations: 17 migrations, snapshot consistente e ciclo apply -> rollback 0 -> reapply validado
 
 ## Fluxo de acesso, segurança e robustez
@@ -140,6 +140,7 @@ scripts/
 ./scripts/run.ps1
 ./scripts/new-migration.ps1 NomeDaMigration
 ./scripts/benchmark-password-hashing.ps1
+./scripts/check-vulnerable-packages.ps1
 ./scripts/package-release.ps1 -Configuration Release -Runtime win-x64
 ```
 

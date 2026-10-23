@@ -25,7 +25,7 @@
 - O CI Windows agora possui smoke WPF automatizado com banco descartável para bootstrap, autenticação, abertura do shell, navegação pelas abas de Compras e logout. Esse gate não valida ergonomia, foco, DPI nem o fluxo completo com dados e, portanto, não substitui o smoke visual/interativo manual em Windows real.
 - Empresas, Filiais, Fornecedores, Materiais, Produtos, Unidades de Medida, Categorias, Centros de Custo, Solicitação de Compra, RFQ, Comparação, Adjudicação, Pedido de Compra e o encerramento por falha global precisam entrar no smoke manual completo.
 - O benchmark de password hashing ainda deve ser repetido em hardware Windows representativo.
-- A verificação automatizada de dependências vulneráveis permanece pendência de engenharia. O package/release portátil de QA já existe e é validado no CI, mas assinatura de código, Velopack e orquestração segura de upgrade de banco existente continuam fora dele e permanecem necessários para distribuição de produção.
+- A auditoria automatizada de dependências vulneráveis diretas/transitivas já integra o CI e falha para qualquer advisory conhecido; manter a fonte de auditoria acessível e revisar advisories novos continua parte da manutenção. O package/release portátil de QA já existe e é validado no CI, mas assinatura de código, Velopack e orquestração segura de upgrade de banco existente continuam fora dele e permanecem necessários para distribuição de produção.
 - Não estender Compras para aprovação, recebimento, estoque, financeiro, fiscal ou integrações externas por suposição. Cada próximo slice deve definir estados, atores, invariantes e limites de escopo antes da implementação.
 
 Nada acima deve ser ocultado por TODOs dispersos no código.

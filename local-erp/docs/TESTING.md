@@ -18,7 +18,7 @@
 
 ## Validação Windows
 
-O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, smoke WPF, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply. Depois gera o pacote portátil Windows self-contained, valida a inicialização de banco novo e executa novamente o smoke usando o executável e o migration bundle publicados.
+O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13. Executa restore, auditoria NuGet direta/transitiva com gate de rejeição sintética, build Release, build de `LocalErp.PasswordHashBenchmark`, testes, smoke WPF, `has-pending-model-changes`, apply de migrations, rollback para zero e reapply. Depois gera o pacote portátil Windows self-contained, valida a inicialização de banco novo e executa novamente o smoke usando o executável e o migration bundle publicados.
 
 ## Baseline atual — 2026-10-23
 
@@ -29,9 +29,16 @@ O CI permanente usa Windows Server 2025, .NET SDK 10.0.402 e `dotnet-ef` 10.0.13
 - Total automatizado: 271/271;
 - Build Release: 0 warnings / 0 errors;
 - Benchmark tool: 0 warnings / 0 errors;
+- NuGet audit: nenhuma vulnerabilidade conhecida em dependências diretas ou transitivas; fixture sintética vulnerável rejeitada pelo gate;
 - EF Core: sem mudanças pendentes no modelo;
 - Migrations: 17; apply -> rollback 0 -> reapply passando.
 - Package QA: `win-x64` self-contained + migration bundle + hashes; inicialização de banco novo e smoke do binário publicado passando.
+
+### Auditoria NuGet automatizada
+
+Após o restore, `scripts/check-vulnerable-packages.ps1 -NoRestore` executa `dotnet package list --vulnerable --include-transitive --format json`, interpreta o relatório e falha se qualquer pacote direto ou transitivo possuir advisory. Projetos limpos podem aparecer no JSON sem coleção `frameworks`; o parser trata essa forma como zero achados sem relaxar validação de relatório ausente ou inválido.
+
+O CI executa ainda uma fixture JSON com uma dependência sintética `high` e considera sucesso somente quando o script a rejeita. O CI técnico #207 validou simultaneamente o caso limpo real e o caminho de falha sintético.
 
 ### Smoke WPF automatizado
 
