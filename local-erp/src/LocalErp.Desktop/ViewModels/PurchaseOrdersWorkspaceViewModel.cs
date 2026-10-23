@@ -66,6 +66,8 @@ public partial class PurchaseOrdersWorkspaceViewModel : ObservableObject
 
     public bool IsIssued => CurrentPurchaseOrder?.Status == PurchaseOrderStatus.Issued;
 
+    public bool HasIssuedHistory => CurrentPurchaseOrder?.IssuedAtUtc is not null;
+
     public bool IsCancelled => CurrentPurchaseOrder?.Status == PurchaseOrderStatus.Cancelled;
 
     public bool IsReadOnly => CurrentPurchaseOrder is not null && !IsDraft;
@@ -285,6 +287,7 @@ public partial class PurchaseOrdersWorkspaceViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCurrentPurchaseOrder));
         OnPropertyChanged(nameof(IsDraft));
         OnPropertyChanged(nameof(IsIssued));
+        OnPropertyChanged(nameof(HasIssuedHistory));
         OnPropertyChanged(nameof(IsCancelled));
         OnPropertyChanged(nameof(IsReadOnly));
         OnPropertyChanged(nameof(CanIssue));

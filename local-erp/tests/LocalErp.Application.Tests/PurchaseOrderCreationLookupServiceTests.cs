@@ -97,7 +97,7 @@ public sealed class PurchaseOrderCreationLookupServiceTests
                 Now.AddMinutes(9),
                 [
                     new PurchaseOrderLineSnapshot(
-                        award.Lines.First().Id,
+                        award.Lines[0].Id,
                         "Item convertido",
                         1m,
                         Guid.NewGuid(),

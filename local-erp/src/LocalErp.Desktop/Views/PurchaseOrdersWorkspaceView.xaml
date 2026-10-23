@@ -227,7 +227,7 @@
             </Border>
 
             <Border Padding="12,10" Background="#F7F9FB" BorderBrush="{StaticResource Brush.Border}" BorderThickness="1" CornerRadius="5"
-                    Visibility="{Binding IsIssued, Converter={StaticResource BoolToVisibilityConverter}}">
+                    Visibility="{Binding HasIssuedHistory, Converter={StaticResource BoolToVisibilityConverter}}">
               <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Emitido em: " Foreground="{StaticResource Brush.Muted}" />
                 <TextBlock Text="{Binding CurrentIssuedDisplay}" FontWeight="SemiBold" />
