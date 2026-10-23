@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - erp-local-ci
+      - erp-coverage-baseline
     paths:
       - 'local-erp/**'
       - '.github/workflows/erp-ci.yml'
@@ -34,7 +35,7 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Restore EF tool
+      - name: Restore EF and coverage tools
         run: dotnet tool restore
 
       - name: Restore dependencies
@@ -100,6 +101,10 @@ jobs:
 
       - name: Run tests
         run: dotnet test LocalErp.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
+
+      - name: Collect code coverage baseline
+        shell: pwsh
+        run: ./scripts/coverage.ps1 -Configuration Release -NoBuild -NoRestore -NoToolRestore
 
       - name: Run WPF smoke
         shell: pwsh
@@ -167,6 +172,17 @@ jobs:
           name: localerp-windows-portable
           path: ${{ runner.temp }}/localerp-release/LocalErp-*.zip*
           if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload code coverage baseline
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: localerp-code-coverage
+          path: |
+            local-erp/artifacts/coverage/coverage.cobertura.xml
+            local-erp/artifacts/coverage/coverage-summary.json
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Upload test results
