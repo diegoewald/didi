@@ -36,14 +36,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         NavigationItems =
         [
-            new("Visão geral", "\uE80F"),
-            new("Cadastros", "\uE8D4"),
-            new("Compras", "\uE719"),
-            new("Estoque", "\uE7BF"),
-            new("Vendas", "\uE8A1"),
-            new("Financeiro", "\uE8C7"),
-            new("Relatórios", "\uE9D2"),
-            new("Administração", "\uE713")
+            new("Visão geral", "\uE80F", "Ctrl+1"),
+            new("Cadastros", "\uE8D4", "Ctrl+2"),
+            new("Compras", "\uE719", "Ctrl+3"),
+            new("Estoque", "\uE7BF", "Ctrl+4"),
+            new("Vendas", "\uE8A1", "Ctrl+5"),
+            new("Financeiro", "\uE8C7", "Ctrl+6"),
+            new("Relatórios", "\uE9D2", "Ctrl+7"),
+            new("Administração", "\uE713", "Ctrl+8")
         ];
 
         currentSection = NavigationItems[0].Title;
